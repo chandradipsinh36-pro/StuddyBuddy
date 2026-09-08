@@ -1,0 +1,63 @@
+.card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex; flex-direction: column; gap: var(--space-4);
+  transition: box-shadow var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
+  position: relative;
+}
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  border-color: var(--color-primary-200);
+}
+
+.header { display: flex; gap: var(--space-3); align-items: flex-start; }
+
+.info { flex: 1; display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+
+.nameRow { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.name { font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); color: var(--color-gray-900); }
+
+.subjects { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+
+.saveBtn {
+  position: absolute; top: var(--space-4); right: var(--space-4);
+  background: none; border: none; cursor: pointer;
+  color: var(--color-gray-400);
+  transition: color var(--transition-fast);
+  padding: var(--space-1);
+  border-radius: var(--radius-base);
+}
+.saveBtn:hover { color: var(--color-primary-500); }
+.saveBtn.saved { color: var(--color-primary-500); }
+
+.bio {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  line-height: var(--line-height-relaxed);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.stats { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+.stat {
+  display: flex; align-items: center; gap: var(--space-1);
+  font-size: var(--font-size-xs); color: var(--color-gray-500);
+}
+.statIcon { color: var(--color-primary-400); }
+
+.skills { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+.skill {
+  font-size: var(--font-size-xs);
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-medium);
+}
+
+.viewLink { text-decoration: none; }

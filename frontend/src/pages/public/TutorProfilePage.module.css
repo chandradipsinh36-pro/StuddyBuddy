@@ -1,0 +1,89 @@
+.page { background: var(--color-surface); min-height: 100vh; padding: var(--space-8) 0 var(--space-16); }
+.container { max-width: var(--container-max); margin: 0 auto; padding: 0 var(--space-6); }
+
+.back {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  background: none; border: none; cursor: pointer;
+  font-size: var(--font-size-sm); color: var(--color-gray-600);
+  margin-bottom: var(--space-6);
+  transition: color var(--transition-fast);
+}
+.back:hover { color: var(--color-primary-500); }
+
+.profileHeader {
+  background: var(--color-white); border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl); padding: var(--space-8);
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--space-8); margin-bottom: var(--space-8); flex-wrap: wrap;
+}
+
+.profileLeft { display: flex; gap: var(--space-6); align-items: flex-start; }
+.profileInfo { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.profileNameRow { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.profileName { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-gray-900); margin: 0; }
+
+.profileSubjects { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+.profileStats { display: flex; gap: var(--space-6); flex-wrap: wrap; }
+.profileStat { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); color: var(--color-gray-700); font-weight: var(--font-weight-medium); }
+.statIcon { color: var(--color-primary-500); }
+.statLabel { color: var(--color-gray-400); font-weight: var(--font-weight-regular); }
+
+.profileActions { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-end; }
+
+/* Video modal */
+.videoOverlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: var(--z-modal);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-6);
+}
+.videoModal {
+  background: black; border-radius: var(--radius-xl);
+  width: 100%; max-width: 800px;
+  position: relative; overflow: hidden;
+}
+.videoFrame { width: 100%; aspect-ratio: 16/9; border: none; }
+.videoClose {
+  position: absolute; top: var(--space-3); right: var(--space-3);
+  background: rgba(0,0,0,0.6); color: white; border: none; cursor: pointer;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+
+/* Tabs content */
+.aboutSection { display: flex; flex-direction: column; gap: var(--space-8); }
+.aboutBlock { display: flex; flex-direction: column; gap: var(--space-3); }
+.aboutBlock h3 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--color-gray-900); }
+.aboutBlock p  { font-size: var(--font-size-base); color: var(--color-gray-600); line-height: var(--line-height-relaxed); }
+
+.tags { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.skill {
+  font-size: var(--font-size-sm); background: var(--color-gray-100);
+  color: var(--color-gray-700); padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full); font-weight: var(--font-weight-medium);
+}
+
+.resourceGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
+
+.reviewList { display: flex; flex-direction: column; gap: var(--space-4); }
+.reviewCard {
+  background: var(--color-white); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: var(--space-5);
+  display: flex; flex-direction: column; gap: var(--space-3);
+}
+.reviewHeader { display: flex; align-items: center; gap: var(--space-3); }
+.reviewName { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); color: var(--color-gray-900); }
+.reviewDate { margin-left: auto; font-size: var(--font-size-xs); color: var(--color-gray-400); }
+.reviewComment { font-size: var(--font-size-sm); color: var(--color-gray-600); line-height: var(--line-height-relaxed); }
+
+@media (max-width: 768px) {
+  .profileHeader { flex-direction: column; }
+  .profileLeft { flex-direction: column; align-items: center; text-align: center; }
+  .profileNameRow { justify-content: center; }
+  .profileSubjects { justify-content: center; }
+  .profileActions { align-items: stretch; width: 100%; }
+  .resourceGrid { grid-template-columns: 1fr; }
+}

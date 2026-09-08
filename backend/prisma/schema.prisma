@@ -1,0 +1,649 @@
+// =============================================================
+// StudyBuddy — Prisma Schema
+// Database: Neon PostgreSQL
+// ORM: Prisma 5.x
+// Excluded: AI tables, resource_access_logs
+// =============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =============================================================
+// ENUMS
+// =============================================================
+
+enum UserRole {
+  student
+  tutor
+  admin
+}
+
+enum UserStatus {
+  active
+  suspended
+  banned
+}
+
+enum ProficiencyLevel {
+  beginner
+  intermediate
+  expert
+}
+
+enum ApplicationStatus {
+  pending
+  under_review
+  approved
+  rejected
+  needs_changes
+}
+
+enum ResourceFileType {
+  pdf
+  image
+  ppt
+  audio
+  youtube
+  test_paper
+}
+
+enum ResourceStatus {
+  draft
+  processing
+  under_review
+  published
+  needs_changes
+  rejected
+}
+
+enum ModerationStepStatus {
+  pass
+  fail
+  skip
+}
+
+enum EnrollmentStatus {
+  active
+  expired
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+}
+
+enum RefundStatus {
+  pending
+  approved
+  rejected
+}
+
+enum GroupMemberRole {
+  member
+  admin
+}
+
+enum ReportStatus {
+  pending
+  reviewed
+  dismissed
+}
+
+// =============================================================
+// 1. USERS
+// =============================================================
+
+model User {
+  id           Int        @id @default(autoincrement())
+  name         String
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  role         UserRole   @default(student)
+  status       UserStatus @default(active)
+  profilePic   String?    @map("profile_pic")
+  isVerified   Boolean    @default(false) @map("is_verified")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  tutorProfile        TutorProfile?
+  tutorSkills         TutorSkill[]
+  tutorApplications   TutorApplication[]
+  reviewedApplications TutorApplication[] @relation("ApplicationReviewer")
+  courses             Course[]
+  uploadedResources   Resource[]
+  bundles             Bundle[]
+  enrollments         Enrollment[]
+  payments            Payment[]
+  refunds             Refund[]
+  reviewedRefunds     Refund[]            @relation("RefundReviewer")
+  courseReviews       CourseReview[]
+  tutorReviewsGiven   TutorReview[]       @relation("TutorReviewStudent")
+  tutorReviewsReceived TutorReview[]      @relation("TutorReviewTutor")
+  createdGroups       Group[]
+  groupMemberships    GroupMember[]
+  groupMessages       GroupMessage[]
+  reportedMessages    GroupMessageReport[] @relation("MessageReporter")
+  reviewedReports     GroupMessageReport[] @relation("ReportReviewer")
+  groupPayments       GroupPayment[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+// =============================================================
+// 2. TUTOR PROFILES
+// =============================================================
+
+model TutorProfile {
+  profileId       Int      @id @default(autoincrement()) @map("profile_id")
+  tutorId         Int      @unique @map("tutor_id")
+  bio             String?
+  instituteName   String?  @map("institute_name")
+  experienceYears Int      @default(0) @map("experience_years")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tutor User @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId])
+  @@map("tutor_profiles")
+}
+
+// =============================================================
+// 3. TUTOR SKILLS
+// =============================================================
+
+model TutorSkill {
+  skillId     Int              @id @default(autoincrement()) @map("skill_id")
+  tutorId     Int              @map("tutor_id")
+  skillName   String           @map("skill_name")
+  proficiency ProficiencyLevel @default(intermediate)
+
+  tutor User @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId])
+  @@map("tutor_skills")
+}
+
+// =============================================================
+// 4. TUTOR APPLICATIONS
+// =============================================================
+
+model TutorApplication {
+  applicationId Int               @id @default(autoincrement()) @map("application_id")
+  userId        Int               @map("user_id")
+  trialVideoUrl String?           @map("trial_video_url")
+  status        ApplicationStatus @default(pending)
+  adminNote     String?           @map("admin_note")
+  reviewedBy    Int?              @map("reviewed_by")
+  reviewedAt    DateTime?         @map("reviewed_at") @db.Timestamptz
+  appliedAt     DateTime          @default(now()) @map("applied_at") @db.Timestamptz
+
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("ApplicationReviewer", fields: [reviewedBy], references: [id])
+
+  documents TutorApplicationDocument[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("tutor_applications")
+}
+
+// =============================================================
+// 5. TUTOR APPLICATION DOCUMENTS
+// =============================================================
+
+model TutorApplicationDocument {
+  docId         Int      @id @default(autoincrement()) @map("doc_id")
+  applicationId Int      @map("application_id")
+  documentUrl   String   @map("document_url")
+  documentType  String   @map("document_type")
+  uploadedAt    DateTime @default(now()) @map("uploaded_at") @db.Timestamptz
+
+  application TutorApplication @relation(fields: [applicationId], references: [applicationId], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("tutor_application_documents")
+}
+
+// =============================================================
+// 6. CATEGORIES
+// =============================================================
+
+model Category {
+  categoryId  Int    @id @default(autoincrement()) @map("category_id")
+  name        String @unique
+  description String?
+
+  courses           Course[]
+  resourceCategories ResourceCategory[]
+
+  @@map("categories")
+}
+
+// =============================================================
+// 7. COURSES
+// =============================================================
+
+model Course {
+  courseId    Int      @id @default(autoincrement()) @map("course_id")
+  tutorId     Int      @map("tutor_id")
+  categoryId  Int?     @map("category_id")
+  title       String
+  description String?
+  price       Decimal  @default(0) @db.Decimal(10, 2)
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tutor    User      @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [categoryId])
+
+  resources   Resource[]
+  enrollments Enrollment[]
+  reviews     CourseReview[]
+  groups      Group[]
+  payments    Payment[]
+
+  @@index([tutorId])
+  @@index([categoryId])
+  @@index([isPublished])
+  @@map("courses")
+}
+
+// =============================================================
+// 8. RESOURCES
+// =============================================================
+
+model Resource {
+  resourceId      Int              @id @default(autoincrement()) @map("resource_id")
+  courseId        Int?             @map("course_id")
+  uploadedBy      Int              @map("uploaded_by")
+  filename        String
+  fileType        ResourceFileType @map("file_type")
+  fileUrl         String?          @map("file_url")
+  isLocked        Boolean          @default(false) @map("is_locked")
+  price           Decimal          @default(0) @db.Decimal(10, 2)
+  status          ResourceStatus   @default(draft)
+  moderationNotes String?          @map("moderation_notes")
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  course   Course? @relation(fields: [courseId], references: [courseId])
+  uploader User    @relation(fields: [uploadedBy], references: [id])
+
+  resourceCategories     ResourceCategory[]
+  moderationLogs         ResourceModerationLog[]
+  extractedContent       ResourceExtractedContent[]
+  videoMetadata          VideoMetadata?
+  videoModerationScenes  VideoModerationScene[]
+  bundleItems            BundleItem[]
+  payments               Payment[]
+
+  @@index([courseId])
+  @@index([uploadedBy])
+  @@index([status])
+  @@map("resources")
+}
+
+// =============================================================
+// 9. RESOURCE CATEGORIES (many-to-many)
+// =============================================================
+
+model ResourceCategory {
+  resourceId Int @map("resource_id")
+  categoryId Int @map("category_id")
+
+  resource Resource @relation(fields: [resourceId], references: [resourceId], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [categoryId], onDelete: Cascade)
+
+  @@id([resourceId, categoryId])
+  @@index([resourceId])
+  @@index([categoryId])
+  @@map("resource_categories")
+}
+
+// =============================================================
+// 10. RESOURCE MODERATION LOGS
+// =============================================================
+
+model ResourceModerationLog {
+  logId      Int                  @id @default(autoincrement()) @map("log_id")
+  resourceId Int                  @map("resource_id")
+  stepName   String               @map("step_name")
+  stepStatus ModerationStepStatus @map("step_status")
+  stepNotes  String?              @map("step_notes")
+  checkedAt  DateTime             @default(now()) @map("checked_at") @db.Timestamptz
+
+  resource Resource @relation(fields: [resourceId], references: [resourceId], onDelete: Cascade)
+
+  @@index([resourceId])
+  @@map("resource_moderation_logs")
+}
+
+// =============================================================
+// 11. RESOURCE EXTRACTED CONTENT
+// =============================================================
+
+model ResourceExtractedContent {
+  extractionId     Int      @id @default(autoincrement()) @map("extraction_id")
+  resourceId       Int      @map("resource_id")
+  extractedText    String?  @map("extracted_text") @db.Text
+  extractionMethod String   @map("extraction_method")
+  extractedAt      DateTime @default(now()) @map("extracted_at") @db.Timestamptz
+
+  resource Resource @relation(fields: [resourceId], references: [resourceId], onDelete: Cascade)
+
+  @@index([resourceId])
+  @@map("resource_extracted_content")
+}
+
+// =============================================================
+// 12. VIDEO METADATA
+// =============================================================
+
+model VideoMetadata {
+  metaId         Int      @id @default(autoincrement()) @map("meta_id")
+  resourceId     Int      @unique @map("resource_id")
+  youtubeVideoId String   @map("youtube_video_id")
+  title          String?
+  durationSeconds Int?    @map("duration_seconds")
+  isEmbeddable   Boolean  @default(true) @map("is_embeddable")
+  fetchedAt      DateTime @default(now()) @map("fetched_at") @db.Timestamptz
+
+  resource Resource @relation(fields: [resourceId], references: [resourceId], onDelete: Cascade)
+
+  @@index([resourceId])
+  @@map("video_metadata")
+}
+
+// =============================================================
+// 13. VIDEO MODERATION SCENES
+// =============================================================
+
+model VideoModerationScene {
+  sceneId        Int      @id @default(autoincrement()) @map("scene_id")
+  resourceId     Int      @map("resource_id")
+  sceneTimestamp Int      @map("scene_timestamp")
+  violenceScore  Decimal? @map("violence_score") @db.Decimal(5, 4)
+  adultScore     Decimal? @map("adult_score") @db.Decimal(5, 4)
+  flagged        Boolean  @default(false)
+
+  resource Resource @relation(fields: [resourceId], references: [resourceId], onDelete: Cascade)
+
+  @@index([resourceId])
+  @@map("video_moderation_scenes")
+}
+
+// =============================================================
+// 14. ENROLLMENTS
+// =============================================================
+
+model Enrollment {
+  enrollmentId      Int              @id @default(autoincrement()) @map("enrollment_id")
+  studentId         Int              @map("student_id")
+  courseId          Int              @map("course_id")
+  priceAtEnrollment Decimal          @map("price_at_enrollment") @db.Decimal(10, 2)
+  status            EnrollmentStatus @default(active)
+  enrolledAt        DateTime         @default(now()) @map("enrolled_at") @db.Timestamptz
+
+  student User   @relation(fields: [studentId], references: [id])
+  course  Course @relation(fields: [courseId], references: [courseId])
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+  @@map("enrollments")
+}
+
+// =============================================================
+// 15. BUNDLES
+// =============================================================
+
+model Bundle {
+  bundleId    Int      @id @default(autoincrement()) @map("bundle_id")
+  tutorId     Int      @map("tutor_id")
+  title       String
+  description String?
+  price       Decimal  @default(0) @db.Decimal(10, 2)
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tutor User @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  bundleItems BundleItem[]
+  payments    Payment[]
+
+  @@index([tutorId])
+  @@map("bundles")
+}
+
+// =============================================================
+// 16. BUNDLE ITEMS (many-to-many)
+// =============================================================
+
+model BundleItem {
+  bundleId   Int @map("bundle_id")
+  resourceId Int @map("resource_id")
+
+  bundle   Bundle   @relation(fields: [bundleId], references: [bundleId], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [resourceId], onDelete: Cascade)
+
+  @@id([bundleId, resourceId])
+  @@index([bundleId])
+  @@index([resourceId])
+  @@map("bundle_items")
+}
+
+// =============================================================
+// 17. PAYMENTS
+// =============================================================
+
+model Payment {
+  paymentId Int           @id @default(autoincrement()) @map("payment_id")
+  studentId Int           @map("student_id")
+  courseId  Int?          @map("course_id")
+  resourceId Int?         @map("resource_id")
+  bundleId  Int?          @map("bundle_id")
+  amount    Decimal       @db.Decimal(10, 2)
+  status    PaymentStatus @default(pending)
+  paidAt    DateTime      @default(now()) @map("paid_at") @db.Timestamptz
+
+  student  User      @relation(fields: [studentId], references: [id])
+  course   Course?   @relation(fields: [courseId], references: [courseId])
+  resource Resource? @relation(fields: [resourceId], references: [resourceId])
+  bundle   Bundle?   @relation(fields: [bundleId], references: [bundleId])
+
+  refunds Refund[]
+
+  @@index([studentId])
+  @@index([courseId])
+  @@index([resourceId])
+  @@index([bundleId])
+  @@index([status])
+  @@map("payments")
+}
+
+// =============================================================
+// 18. REFUNDS
+// =============================================================
+
+model Refund {
+  refundId    Int          @id @default(autoincrement()) @map("refund_id")
+  paymentId   Int          @map("payment_id")
+  studentId   Int          @map("student_id")
+  reason      String
+  status      RefundStatus @default(pending)
+  reviewedBy  Int?         @map("reviewed_by")
+  reviewedAt  DateTime?    @map("reviewed_at") @db.Timestamptz
+  requestedAt DateTime     @default(now()) @map("requested_at") @db.Timestamptz
+
+  payment  Payment @relation(fields: [paymentId], references: [paymentId])
+  student  User    @relation(fields: [studentId], references: [id])
+  reviewer User?   @relation("RefundReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([paymentId])
+  @@index([studentId])
+  @@map("refunds")
+}
+
+// =============================================================
+// 19. COURSE REVIEWS
+// =============================================================
+
+model CourseReview {
+  reviewId  Int      @id @default(autoincrement()) @map("review_id")
+  studentId Int      @map("student_id")
+  courseId  Int      @map("course_id")
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  student User   @relation(fields: [studentId], references: [id])
+  course  Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+  @@map("course_reviews")
+}
+
+// =============================================================
+// 20. TUTOR REVIEWS
+// =============================================================
+
+model TutorReview {
+  reviewId  Int      @id @default(autoincrement()) @map("review_id")
+  studentId Int      @map("student_id")
+  tutorId   Int      @map("tutor_id")
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  student User @relation("TutorReviewStudent", fields: [studentId], references: [id])
+  tutor   User @relation("TutorReviewTutor", fields: [tutorId], references: [id])
+
+  @@unique([studentId, tutorId])
+  @@index([studentId])
+  @@index([tutorId])
+  @@map("tutor_reviews")
+}
+
+// =============================================================
+// 21. GROUPS
+// =============================================================
+
+model Group {
+  groupId      Int      @id @default(autoincrement()) @map("group_id")
+  name         String
+  createdBy    Int      @map("created_by")
+  courseId     Int?     @map("course_id")
+  messageQuota Int      @default(1000) @map("message_quota")
+  messagesUsed Int      @default(0) @map("messages_used")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  creator User    @relation(fields: [createdBy], references: [id])
+  course  Course? @relation(fields: [courseId], references: [courseId])
+
+  members  GroupMember[]
+  messages GroupMessage[]
+  payments GroupPayment[]
+
+  @@index([createdBy])
+  @@index([courseId])
+  @@map("groups")
+}
+
+// =============================================================
+// 22. GROUP MEMBERS
+// =============================================================
+
+model GroupMember {
+  memberId Int             @id @default(autoincrement()) @map("member_id")
+  groupId  Int             @map("group_id")
+  userId   Int             @map("user_id")
+  role     GroupMemberRole @default(member)
+  joinedAt DateTime        @default(now()) @map("joined_at") @db.Timestamptz
+
+  group Group @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_members")
+}
+
+// =============================================================
+// 23. GROUP MESSAGES
+// =============================================================
+
+model GroupMessage {
+  messageId Int      @id @default(autoincrement()) @map("message_id")
+  groupId   Int      @map("group_id")
+  senderId  Int      @map("sender_id")
+  content   String
+  isDeleted Boolean  @default(false) @map("is_deleted")
+  sentAt    DateTime @default(now()) @map("sent_at") @db.Timestamptz
+
+  group  Group @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  sender User  @relation(fields: [senderId], references: [id])
+
+  reports GroupMessageReport[]
+
+  @@index([groupId])
+  @@index([senderId])
+  @@index([sentAt])
+  @@map("group_messages")
+}
+
+// =============================================================
+// 24. GROUP MESSAGE REPORTS
+// =============================================================
+
+model GroupMessageReport {
+  reportId    Int          @id @default(autoincrement()) @map("report_id")
+  messageId   Int          @map("message_id")
+  reportedBy  Int          @map("reported_by")
+  reason      String
+  status      ReportStatus @default(pending)
+  reviewedBy  Int?         @map("reviewed_by")
+  reviewedAt  DateTime?    @map("reviewed_at") @db.Timestamptz
+  reportedAt  DateTime     @default(now()) @map("reported_at") @db.Timestamptz
+
+  message    GroupMessage @relation(fields: [messageId], references: [messageId], onDelete: Cascade)
+  reporter   User         @relation("MessageReporter", fields: [reportedBy], references: [id])
+  reviewer   User?        @relation("ReportReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([messageId])
+  @@index([reportedBy])
+  @@map("group_message_reports")
+}
+
+// =============================================================
+// 25. GROUP PAYMENTS
+// =============================================================
+
+model GroupPayment {
+  gpayId     Int      @id @default(autoincrement()) @map("gpay_id")
+  groupId    Int      @map("group_id")
+  paidBy     Int      @map("paid_by")
+  amount     Decimal  @db.Decimal(10, 2)
+  quotaAdded Int      @map("quota_added")
+  paidAt     DateTime @default(now()) @map("paid_at") @db.Timestamptz
+
+  group Group @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  payer User  @relation(fields: [paidBy], references: [id])
+
+  @@index([groupId])
+  @@index([paidBy])
+  @@map("group_payments")
+}

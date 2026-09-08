@@ -1,0 +1,30 @@
+.wrapper { display: flex; flex-direction: column; gap: var(--space-1); }
+.label { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-gray-700); }
+
+.selectWrapper {
+  position: relative;
+}
+
+.select {
+  width: 100%;
+  padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-900);
+  background: var(--color-white);
+  appearance: none;
+  cursor: pointer;
+  min-height: 40px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.select:focus { outline: none; border-color: var(--color-primary-500); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+
+.hasError .select { border-color: var(--color-error); }
+
+.icon {
+  position: absolute; right: var(--space-3); top: 50%; transform: translateY(-50%);
+  color: var(--color-gray-400); pointer-events: none;
+}
+
+.error { font-size: var(--font-size-xs); color: var(--color-error); }

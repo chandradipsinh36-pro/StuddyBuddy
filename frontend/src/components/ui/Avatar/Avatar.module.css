@@ -1,0 +1,30 @@
+.avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--color-primary-500);
+}
+.xs  { width: 24px; height: 24px; }
+.sm  { width: 32px; height: 32px; }
+.md  { width: 40px; height: 40px; }
+.lg  { width: 56px; height: 56px; }
+.xl  { width: 80px; height: 80px; }
+
+.img { width: 100%; height: 100%; object-fit: cover; }
+
+.initials {
+  color: var(--color-white);
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.4em;
+  line-height: 1;
+  user-select: none;
+}
+.xs  .initials { font-size: 8px; }
+.sm  .initials { font-size: 11px; }
+.md  .initials { font-size: 14px; }
+.lg  .initials { font-size: 18px; }
+.xl  .initials { font-size: 24px; }

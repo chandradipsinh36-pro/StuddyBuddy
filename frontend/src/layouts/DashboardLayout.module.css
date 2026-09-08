@@ -1,0 +1,13 @@
+.wrapper { min-height: 100vh; display: flex; flex-direction: column; }
+
+.main { flex: 1; background: var(--color-surface); }
+
+.content {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+}
+
+@media (max-width: 640px) {
+  .content { padding: var(--space-6) var(--space-4); }
+}

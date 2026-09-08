@@ -1,0 +1,6 @@
+/* StudyBuddy — Global Entry CSS */
+@import './styles/tokens.css';
+@import './styles/global.css';
+
+/* Spin animation needed by ProtectedRoute loading spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
