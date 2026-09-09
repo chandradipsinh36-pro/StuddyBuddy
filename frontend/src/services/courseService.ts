@@ -1,5 +1,5 @@
 import apiClient from '../api/client';
-import type { Course, CourseFilters, PaginatedResponse } from '../types';
+import type { Course, CourseFilters, CourseLesson, PaginatedResponse } from '../types';
 
 export const courseService = {
   // ── Public ──────────────────────────────────────────────────────
@@ -29,6 +29,8 @@ export const courseService = {
     description?: string;
     price?: number;
     categoryId?: number;
+    resourceIds?: number[];
+    lessons?: CourseLesson[];
   }): Promise<Course> {
     const res = await apiClient.post<Course>('/tutor/courses', data);
     return res.data;
@@ -39,6 +41,9 @@ export const courseService = {
     description: string;
     price: number;
     categoryId: number | null;
+    isPublished: boolean;
+    resourceIds: number[];
+    lessons: CourseLesson[];
   }>): Promise<Course> {
     const res = await apiClient.patch<Course>(`/tutor/courses/${id}`, data);
     return res.data;

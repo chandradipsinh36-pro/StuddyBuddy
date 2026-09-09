@@ -1,12 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Upload, FileText, CheckCircle2, ExternalLink, X, AlertTriangle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  Upload,
+  FileText,
+  CheckCircle2,
+  ExternalLink,
+  X,
+  AlertTriangle,
+  ShieldCheck,
+} from 'lucide-react';
 import { resourceService } from '../../services/resourceService';
 import { Input } from '../../components/ui/Input/Input';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { Select } from '../../components/ui/Select/Select';
 import { Button } from '../../components/ui/Button/Button';
-import { CATEGORIES, ROUTES } from '../../constants';
+import { CATEGORIES, RESOURCE_TYPES, DIFFICULTY_LEVELS, ROUTES } from '../../constants';
 import type { Resource } from '../../types';
 import toast from 'react-hot-toast';
 import styles from './TutorResourceCreatePage.module.css';
@@ -31,6 +41,10 @@ export function TutorResourceEditPage() {
   const [subject, setSubject] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [customCategory, setCustomCategory] = useState('');
+  const [type, setType] = useState('pdf');
+  const [difficulty, setDifficulty] = useState('intermediate');
+  const [accessType, setAccessType] = useState('free');
+  const [price, setPrice] = useState('199');
   const [newFile, setNewFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -53,6 +67,11 @@ export function TutorResourceEditPage() {
           setCategory('Other');
           setCustomCategory(cat);
         }
+
+        setType(r.type || r.fileType || 'pdf');
+        setDifficulty(r.difficulty || 'intermediate');
+        setAccessType(r.accessType || (r.isLocked ? 'premium' : 'free'));
+        setPrice(String(r.price ?? 199));
       } catch (e) {
         console.error(e);
         toast.error('Failed to load resource details.');
@@ -73,6 +92,15 @@ export function TutorResourceEditPage() {
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
+
+    // Auto-detect format to assist tutor
+    if (['pdf'].includes(ext)) setType('pdf');
+    else if (['ppt', 'pptx'].includes(ext)) setType('ppt');
+    else if (['doc', 'docx'].includes(ext)) setType('test_paper');
+    else if (['mp4', 'mov', 'webm', 'mkv', 'avi'].includes(ext)) setType('youtube');
+    else if (['mp3', 'wav', 'm4a', 'ogg', 'aac'].includes(ext)) setType('audio');
+    else if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)) setType('image');
+
     setNewFile(f);
   };
 
@@ -101,6 +129,15 @@ export function TutorResourceEditPage() {
       fd.append('description', description.trim());
       fd.append('subject', subject.trim());
       fd.append('category', finalCategory);
+      fd.append('type', type);
+      fd.append('fileType', type);
+      fd.append('difficulty', difficulty);
+      fd.append('accessType', accessType);
+      if (accessType === 'premium') {
+        fd.append('price', price);
+      } else {
+        fd.append('price', '0');
+      }
       if (newFile) {
         fd.append('file', newFile);
       }
@@ -181,6 +218,46 @@ export function TutorResourceEditPage() {
               required
             />
           )}
+
+          {/* Material Format & Difficulty Level (Matching Upload Page) */}
+          <div className={styles.row}>
+            <Select
+              label="Material Format *"
+              options={RESOURCE_TYPES.map(t => ({ value: t.value, label: t.label }))}
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+            />
+            <Select
+              label="Difficulty Level *"
+              options={DIFFICULTY_LEVELS.map(d => ({ value: d.value, label: d.label }))}
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value)}
+            />
+          </div>
+
+          {/* Access Model & Pricing (Matching Upload Page) */}
+          <div className={styles.row}>
+            <Select
+              label="Access Model *"
+              options={[
+                { value: 'free', label: 'Free (Open to all students)' },
+                { value: 'premium', label: 'Premium (Paid Purchase)' },
+              ]}
+              value={accessType}
+              onChange={(e) => setAccessType(e.target.value)}
+            />
+
+            {accessType === 'premium' && (
+              <Input
+                label="Price (INR ₹) *"
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                helper="You earn 85% of this price on every student purchase"
+                required
+              />
+            )}
+          </div>
 
           {/* Current File Display */}
           {resource?.fileUrl && (
@@ -282,6 +359,11 @@ export function TutorResourceEditPage() {
                 </Button>
               </div>
             )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
+            <ShieldCheck size={16} color="var(--color-success)" />
+            <span>Automated text safety & quality check will run immediately upon upload.</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>

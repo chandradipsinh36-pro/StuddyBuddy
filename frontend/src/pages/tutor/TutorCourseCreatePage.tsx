@@ -4,12 +4,14 @@ import { ArrowLeft, BookOpen, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { courseService } from '../../services/courseService';
 import { categoryService } from '../../services/categoryService';
+import { resourceService } from '../../services/resourceService';
 import { Input } from '../../components/ui/Input/Input';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { Select } from '../../components/ui/Select/Select';
 import { Button } from '../../components/ui/Button/Button';
+import { DynamicCourseLessonsEditor } from '../../components/shared/DynamicCourseLessonsEditor';
 import { ROUTES } from '../../constants';
-import type { Category } from '../../types';
+import type { Category, Resource, CourseLesson } from '../../types';
 import toast from 'react-hot-toast';
 import styles from './TutorCourseCreatePage.module.css';
 
@@ -22,6 +24,10 @@ export function TutorCourseCreatePage() {
   const [categoryId, setCategoryId] = useState<string>('');
   const [price, setPrice] = useState('0');
   const [categories, setCategories] = useState<Category[]>([]);
+  const [availableResources, setAvailableResources] = useState<Resource[]>([]);
+  const [lessons, setLessons] = useState<CourseLesson[]>([]);
+  const [generalResourceIds, setGeneralResourceIds] = useState<number[]>([]);
+  const [loadingResources, setLoadingResources] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -31,6 +37,14 @@ export function TutorCourseCreatePage() {
         setCategoryId(String(cats[0].categoryId));
       }
     }).catch(() => {});
+
+    resourceService.getMyResources({ limit: 100 }).then((res) => {
+      setAvailableResources(res.data || []);
+    }).catch((err) => {
+      console.error('Failed to load tutor resources:', err);
+    }).finally(() => {
+      setLoadingResources(false);
+    });
   }, []);
 
   if (!user?.isVerified) {
@@ -72,6 +86,19 @@ export function TutorCourseCreatePage() {
       return;
     }
 
+    // Validate any added lessons
+    for (let i = 0; i < lessons.length; i++) {
+      const l = lessons[i];
+      if (!l.videoUrl.trim()) {
+        toast.error(`Please enter the video URL for Lecture #${i + 1}`);
+        return;
+      }
+      if (!l.title.trim()) {
+        toast.error(`Please enter a title for Lecture #${i + 1}`);
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       await courseService.createCourse({
@@ -79,9 +106,11 @@ export function TutorCourseCreatePage() {
         description: description.trim() || undefined,
         categoryId: categoryId ? Number(categoryId) : undefined,
         price: parseFloat(price) || 0,
+        resourceIds: generalResourceIds,
+        lessons,
       });
 
-      toast.success('Course created successfully! You can now upload curriculum resources.');
+      toast.success('Course and video chapters created successfully!');
       navigate(ROUTES.TUTOR_COURSES);
     } catch (err: any) {
       toast.error(err?.response?.data?.error?.message || 'Failed to create course. Please try again.');
@@ -99,7 +128,7 @@ export function TutorCourseCreatePage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Create Academic Course</h1>
         <p className={styles.subtitle}>
-          Set up a structured learning course for your students.
+          Set up a structured learning course with dynamic video lectures and attached study materials.
         </p>
       </div>
 
@@ -130,7 +159,7 @@ export function TutorCourseCreatePage() {
             placeholder="Describe what students will learn, prerequisites, and curriculum milestones..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            rows={4}
+            rows={3}
           />
 
           <Input
@@ -143,7 +172,18 @@ export function TutorCourseCreatePage() {
             onChange={(e) => setPrice(e.target.value)}
           />
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
+          <div style={{ marginTop: 'var(--space-2)' }}>
+            <DynamicCourseLessonsEditor
+              lessons={lessons}
+              onLessonsChange={setLessons}
+              availableResources={availableResources}
+              generalResourceIds={generalResourceIds}
+              onGeneralResourceIdsChange={setGeneralResourceIds}
+              isLoading={loadingResources}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
             <Button variant="ghost" type="button" onClick={() => navigate(ROUTES.TUTOR_COURSES)}>
               Cancel
             </Button>

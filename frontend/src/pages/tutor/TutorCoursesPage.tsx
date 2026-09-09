@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, BookOpen, Trash2, ExternalLink, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, BookOpen, Trash2, ExternalLink, ToggleLeft, ToggleRight, Edit3, Paperclip } from 'lucide-react';
 import { courseService } from '../../services/courseService';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -109,8 +109,22 @@ export function TutorCoursesPage() {
                         <Link to={`/courses/${c.courseId}`} className={styles.courseTitle}>
                           {c.title}
                         </Link>
-                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
-                          Created on {new Date(c.createdAt).toLocaleDateString()}
+                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                          <span>Created on {new Date(c.createdAt).toLocaleDateString()}</span>
+                          {c.resources && c.resources.length > 0 && (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 3,
+                              color: 'var(--color-primary-dark, #1D4ED8)',
+                              backgroundColor: 'var(--color-primary-light, #EFF6FF)',
+                              padding: '1px 6px',
+                              borderRadius: 4,
+                              fontWeight: 600,
+                            }}>
+                              <Paperclip size={11} /> {c.resources.length} {c.resources.length === 1 ? 'resource' : 'resources'}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -150,9 +164,14 @@ export function TutorCoursesPage() {
                     </span>
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', gap: 'var(--space-2)' }}>
+                    <div style={{ display: 'inline-flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+                      <Link to={`/tutor/courses/${c.courseId}/edit`}>
+                        <Button variant="secondary" size="sm" leftIcon={<Edit3 size={13} />}>
+                          Edit
+                        </Button>
+                      </Link>
                       <Link to={`/courses/${c.courseId}`}>
-                        <Button variant="ghost" size="sm" rightIcon={<ExternalLink size={14} />}>
+                        <Button variant="ghost" size="sm" rightIcon={<ExternalLink size={13} />}>
                           View Public
                         </Button>
                       </Link>

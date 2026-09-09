@@ -11,6 +11,34 @@ const courseSelect = {
   _count: { select: { enrollments: true, reviews: true, resources: true } },
 };
 
+export function formatCoursePayload(course: any) {
+  if (!course) return course;
+  let overview = course.description || '';
+  let lessons: any[] = [];
+
+  if (course.description && typeof course.description === 'string' && course.description.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(course.description);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.lessons && Array.isArray(parsed.lessons)) {
+          lessons = parsed.lessons;
+        }
+        if (parsed.overview !== undefined) {
+          overview = parsed.overview;
+        }
+      }
+    } catch {
+      // Keep plain text overview
+    }
+  }
+
+  return {
+    ...course,
+    description: overview,
+    lessons,
+  };
+}
+
 export const coursesService = {
   // Public
   async listCourses(query: CourseQuery) {
@@ -39,32 +67,74 @@ export const coursesService = {
       prisma.course.findMany({ where, skip, take, orderBy: { createdAt: 'desc' }, select: courseSelect }),
       prisma.course.count({ where }),
     ]);
-    return { courses, total, page, limit };
+    return { courses: courses.map(formatCoursePayload), total, page, limit };
   },
 
   async getCourseById(courseId: number) {
     const course = await prisma.course.findFirst({
       where: { courseId, isPublished: true },
-      select: { ...courseSelect, resources: { where: { status: 'published' } } },
+      select: {
+        ...courseSelect,
+        resources: {
+          where: { status: 'published' },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
     if (!course) throw new NotFoundError('Course');
-    return course;
+    return formatCoursePayload(course);
   },
 
   // Tutor CRUD
   async listMyCourses(tutorId: number) {
-    return prisma.course.findMany({
+    const courses = await prisma.course.findMany({
       where: { tutorId },
       orderBy: { createdAt: 'desc' },
-      select: courseSelect,
+      select: {
+        ...courseSelect,
+        resources: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            resourceId: true,
+            filename: true,
+            fileType: true,
+            fileUrl: true,
+            isLocked: true,
+            price: true,
+            status: true,
+            moderationNotes: true,
+            createdAt: true,
+          },
+        },
+      },
     });
+    return courses.map(formatCoursePayload);
   },
 
   async getMyCoursById(tutorId: number, courseId: number) {
-    const course = await prisma.course.findUnique({ where: { courseId }, select: courseSelect });
+    const course = await prisma.course.findUnique({
+      where: { courseId },
+      select: {
+        ...courseSelect,
+        resources: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            resourceId: true,
+            filename: true,
+            fileType: true,
+            fileUrl: true,
+            isLocked: true,
+            price: true,
+            status: true,
+            moderationNotes: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
     if (!course) throw new NotFoundError('Course');
     if (course.tutorId !== tutorId) throw new AuthorizationError();
-    return course;
+    return formatCoursePayload(course);
   },
 
   async createCourse(tutorId: number, input: CreateCourseInput) {
@@ -75,10 +145,85 @@ export const coursesService = {
       throw new BadRequestError('Your tutor application is currently pending admin approval. You can only create courses after your application is approved.');
     }
 
-    return prisma.course.create({
-      data: { tutorId, ...input, price: input.price ?? 0 },
-      select: courseSelect,
+    const { resourceIds, lessons, ...courseData } = input;
+
+    // Compile description with lessons if lessons provided
+    let finalDescription = courseData.description;
+    if (lessons && Array.isArray(lessons)) {
+      finalDescription = JSON.stringify({
+        overview: courseData.description || '',
+        lessons,
+      });
+    }
+
+    // Collect all resource IDs across lessons + standalone resourceIds
+    const lessonResourceIds = (lessons || []).flatMap((l: any) => l.resourceIds || []);
+    const combinedResourceIds = Array.from(new Set([
+      ...(resourceIds || []),
+      ...lessonResourceIds,
+    ]));
+
+    const course = await prisma.course.create({
+      data: {
+        tutorId,
+        ...courseData,
+        description: finalDescription,
+        price: courseData.price ?? 0,
+      },
+      select: {
+        ...courseSelect,
+        resources: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            resourceId: true,
+            filename: true,
+            fileType: true,
+            fileUrl: true,
+            isLocked: true,
+            price: true,
+            status: true,
+            moderationNotes: true,
+            createdAt: true,
+          },
+        },
+      },
     });
+
+    if (combinedResourceIds.length > 0) {
+      await prisma.resource.updateMany({
+        where: {
+          resourceId: { in: combinedResourceIds },
+          uploadedBy: tutorId,
+        },
+        data: {
+          courseId: course.courseId,
+        },
+      });
+
+      const updated = await prisma.course.findUnique({
+        where: { courseId: course.courseId },
+        select: {
+          ...courseSelect,
+          resources: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              resourceId: true,
+              filename: true,
+              fileType: true,
+              fileUrl: true,
+              isLocked: true,
+              price: true,
+              status: true,
+              moderationNotes: true,
+              createdAt: true,
+            },
+          },
+        },
+      });
+      return formatCoursePayload(updated);
+    }
+
+    return formatCoursePayload(course);
   },
 
   async updateCourse(tutorId: number, courseId: number, input: UpdateCourseInput) {
@@ -86,11 +231,90 @@ export const coursesService = {
     if (!course) throw new NotFoundError('Course');
     if (course.tutorId !== tutorId) throw new AuthorizationError();
 
-    return prisma.course.update({
+    const { resourceIds, lessons, ...courseData } = input;
+
+    let finalDescription = courseData.description;
+    if (lessons !== undefined) {
+      let currentOverview = '';
+      if (course.description && course.description.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(course.description);
+          currentOverview = parsed.overview || '';
+        } catch {
+          currentOverview = course.description;
+        }
+      } else {
+        currentOverview = course.description || '';
+      }
+
+      finalDescription = JSON.stringify({
+        overview: courseData.description !== undefined ? courseData.description : currentOverview,
+        lessons: lessons || [],
+      });
+    }
+
+    await prisma.course.update({
       where: { courseId },
-      data: input,
-      select: courseSelect,
+      data: {
+        ...courseData,
+        ...(finalDescription !== undefined && { description: finalDescription }),
+      },
     });
+
+    const lessonResourceIds = (lessons || []).flatMap((l: any) => l.resourceIds || []);
+    const combinedResourceIds = (resourceIds !== undefined || lessons !== undefined)
+      ? Array.from(new Set([...(resourceIds || []), ...lessonResourceIds]))
+      : undefined;
+
+    if (combinedResourceIds !== undefined) {
+      // Detach resources that are no longer in combinedResourceIds
+      await prisma.resource.updateMany({
+        where: {
+          courseId,
+          uploadedBy: tutorId,
+          resourceId: { notIn: combinedResourceIds },
+        },
+        data: {
+          courseId: null,
+        },
+      });
+
+      // Attach newly selected resources
+      if (combinedResourceIds.length > 0) {
+        await prisma.resource.updateMany({
+          where: {
+            resourceId: { in: combinedResourceIds },
+            uploadedBy: tutorId,
+          },
+          data: {
+            courseId,
+          },
+        });
+      }
+    }
+
+    const updated = await prisma.course.findUnique({
+      where: { courseId },
+      select: {
+        ...courseSelect,
+        resources: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            resourceId: true,
+            filename: true,
+            fileType: true,
+            fileUrl: true,
+            isLocked: true,
+            price: true,
+            status: true,
+            moderationNotes: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    return formatCoursePayload(updated);
   },
 
   async publishCourse(tutorId: number, courseId: number, isPublished: boolean) {

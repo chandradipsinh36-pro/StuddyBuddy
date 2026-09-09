@@ -151,6 +151,13 @@ export interface Category {
 
 // ---- Course ----
 
+export interface CourseLesson {
+  id?: string;
+  title: string;
+  videoUrl: string;
+  resourceIds: number[];
+}
+
 export interface Course {
   courseId: number;
   tutorId: number;
@@ -168,6 +175,7 @@ export interface Course {
     resources?: number;
   };
   resources?: Resource[];
+  lessons?: CourseLesson[];
 }
 
 // ---- Resource ----

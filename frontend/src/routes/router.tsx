@@ -51,6 +51,7 @@ import { TutorProfileEditPage } from '../pages/tutor/TutorProfileEditPage';
 import { TutorSettingsPage } from '../pages/tutor/TutorSettingsPage';
 import { TutorCoursesPage } from '../pages/tutor/TutorCoursesPage';
 import { TutorCourseCreatePage } from '../pages/tutor/TutorCourseCreatePage';
+import { TutorCourseEditPage } from '../pages/tutor/TutorCourseEditPage';
 import { TutorResourceCreatePage } from '../pages/tutor/TutorResourceCreatePage';
 import { TutorResourceEditPage } from '../pages/tutor/TutorResourceEditPage';
 
@@ -131,6 +132,7 @@ const router = createBrowserRouter([
       { path: ROUTES.TUTOR_PROFILE_EDIT,     element: <TutorProfileEditPage /> },
       { path: ROUTES.TUTOR_COURSES,          element: <TutorCoursesPage /> },
       { path: ROUTES.TUTOR_COURSE_CREATE,    element: <TutorCourseCreatePage /> },
+      { path: '/tutor/courses/:id/edit',     element: <TutorCourseEditPage /> },
       { path: ROUTES.TUTOR_RESOURCES,        element: <TutorResourcesPage /> },
       { path: ROUTES.TUTOR_RESOURCE_CREATE,  element: <TutorResourceCreatePage /> },
       { path: '/tutor/resources/:id/edit',   element: <TutorResourceEditPage /> },

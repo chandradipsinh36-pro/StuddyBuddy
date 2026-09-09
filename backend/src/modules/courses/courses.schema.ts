@@ -1,13 +1,24 @@
 import { z } from 'zod';
 
+export const courseLessonSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1).max(250),
+  videoUrl: z.string().min(1).max(1000),
+  resourceIds: z.array(z.coerce.number().int().positive()).default([]),
+});
+
 export const createCourseSchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
   title: z.string().min(3).max(200),
-  description: z.string().max(5000).optional(),
+  description: z.string().max(20000).optional(),
   price: z.coerce.number().min(0).default(0),
+  resourceIds: z.array(z.coerce.number().int().positive()).optional(),
+  lessons: z.array(courseLessonSchema).optional(),
 });
 
-export const updateCourseSchema = createCourseSchema.partial();
+export const updateCourseSchema = createCourseSchema.extend({
+  isPublished: z.boolean().optional(),
+}).partial();
 
 export const courseQuerySchema = z.object({
   search: z.string().optional(),

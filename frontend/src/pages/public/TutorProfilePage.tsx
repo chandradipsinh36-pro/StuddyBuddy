@@ -13,6 +13,7 @@ import { Tabs } from '../../components/ui/Tabs/Tabs';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState';
 import type { Tutor, Resource } from '../../types';
+import { parseVideoUrl } from '../../utils/videoUtils';
 
 import styles from './TutorProfilePage.module.css';
 
@@ -177,20 +178,32 @@ export function TutorProfilePage() {
         </div>
 
         {/* Trial Video Modal */}
-        {videoOpen && trialVideoUrl && (
-          <div className={styles.videoOverlay} onClick={() => setVideoOpen(false)}>
-            <div className={styles.videoModal} onClick={e => e.stopPropagation()}>
-              <button className={styles.videoClose} onClick={() => setVideoOpen(false)}>✕</button>
-              <iframe
-                src={trialVideoUrl}
-                title="Trial Video"
-                className={styles.videoFrame}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+        {videoOpen && trialVideoUrl && (() => {
+          const videoInfo = parseVideoUrl(trialVideoUrl);
+          return (
+            <div className={styles.videoOverlay} onClick={() => setVideoOpen(false)}>
+              <div className={styles.videoModal} onClick={e => e.stopPropagation()}>
+                <button className={styles.videoClose} onClick={() => setVideoOpen(false)}>✕</button>
+                {videoInfo.type === 'direct' ? (
+                  <video
+                    src={videoInfo.embedUrl}
+                    controls
+                    autoPlay
+                    className={styles.videoFrame}
+                  />
+                ) : (
+                  <iframe
+                    src={videoInfo.embedUrl}
+                    title="Trial Video"
+                    className={styles.videoFrame}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         <Tabs tabs={tabs} defaultTab="about" />
       </div>

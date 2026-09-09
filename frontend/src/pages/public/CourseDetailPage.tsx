@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, ShieldCheck, Star, FileText } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ShieldCheck, Star, FileText, Video, Paperclip, ExternalLink, BookOpen } from 'lucide-react';
+import { parseVideoUrl } from '../../utils/videoUtils';
 import { courseService } from '../../services/courseService';
 import { enrollmentService } from '../../services/enrollmentService';
 import { paymentService } from '../../services/paymentService';
@@ -183,10 +184,171 @@ export function CourseDetailPage() {
             </div>
           </div>
 
-          {/* Curriculum / Resources */}
+          {/* Curriculum / Video Lectures & Resources */}
           <div className={styles.sectionCard}>
-            <h2 className={styles.sectionTitle}>Course Curriculum & Study Materials</h2>
-            {!course.resources || course.resources.length === 0 ? (
+            <h2 className={styles.sectionTitle}>Course Curriculum & Video Lectures</h2>
+
+            {/* If structured lessons exist */}
+            {course.lessons && course.lessons.length > 0 ? (
+              <div className={styles.lessonsList}>
+                {course.lessons.map((lesson, idx) => {
+                  const videoInfo = parseVideoUrl(lesson.videoUrl);
+                  const lessonResources = (course.resources || []).filter((r) =>
+                    (lesson.resourceIds || []).includes(Number(r.resourceId || r.id))
+                  );
+
+                  return (
+                    <div key={lesson.id || idx} className={styles.lessonCard}>
+                      {/* Lesson Header */}
+                      <div className={styles.lessonHeader}>
+                        <h3 className={styles.lessonTitle}>
+                          <span style={{
+                            backgroundColor: 'var(--color-primary-light, #EFF6FF)',
+                            color: 'var(--color-primary-dark, #1D4ED8)',
+                            padding: '3px 10px',
+                            borderRadius: 'var(--radius-full)',
+                            fontSize: 'var(--font-size-xs)',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                          }}>
+                            <Video size={13} /> Lecture #{idx + 1}
+                          </span>
+                          <span>{lesson.title || `Lecture ${idx + 1}`}</span>
+                        </h3>
+
+                        {lesson.videoUrl && (
+                          <a
+                            href={lesson.videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              fontSize: 'var(--font-size-xs)',
+                              color: 'var(--color-primary-600)',
+                              textDecoration: 'none',
+                              fontWeight: 500,
+                            }}
+                          >
+                            <span>Open Video</span>
+                            <ExternalLink size={12} />
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Embedded Video Player */}
+                      {videoInfo.type !== 'none' && videoInfo.embedUrl && (
+                        <div className={styles.videoWrapper}>
+                          {videoInfo.type === 'direct' ? (
+                            <video src={videoInfo.embedUrl} controls className={styles.videoFrame} />
+                          ) : (
+                            <iframe
+                              src={videoInfo.embedUrl}
+                              title={lesson.title}
+                              className={styles.videoFrame}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      {/* Under-Video Attached Study Materials */}
+                      <div className={styles.lessonMaterials}>
+                        <div className={styles.lessonMaterialsHeader}>
+                          <Paperclip size={14} color="var(--color-primary-600)" />
+                          <span>Study Materials for this Lecture ({lessonResources.length})</span>
+                        </div>
+
+                        {lessonResources.length === 0 ? (
+                          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', fontStyle: 'italic' }}>
+                            No dedicated study materials attached to this video lecture.
+                          </p>
+                        ) : (
+                          <div className={styles.materialsSubList}>
+                            {lessonResources.map((r, rIdx) => {
+                              const resId = r.resourceId || r.id;
+                              return (
+                                <Link
+                                  key={resId || rIdx}
+                                  to={ROUTES.RESOURCE_DETAIL(resId!)}
+                                  className={styles.resourceItem}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                    <FileText size={16} color="var(--color-primary-600)" />
+                                    <span style={{ fontWeight: 500, fontSize: 'var(--font-size-sm)' }}>
+                                      {r.filename || r.title}
+                                    </span>
+                                  </div>
+                                  <Badge variant="outline">{r.fileType || 'Material'}</Badge>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* General Course Materials not linked to a specific lesson */}
+                {(() => {
+                  const allLessonResourceIds = new Set((course.lessons || []).flatMap((l) => l.resourceIds || []));
+                  const generalResources = (course.resources || []).filter(
+                    (r) => !allLessonResourceIds.has(Number(r.resourceId || r.id))
+                  );
+
+                  if (generalResources.length === 0) return null;
+
+                  return (
+                    <div className={styles.lessonCard} style={{ background: '#FAF5FF', borderColor: '#E9D5FF' }}>
+                      <div className={styles.lessonHeader}>
+                        <h3 className={styles.lessonTitle}>
+                          <span style={{
+                            backgroundColor: '#F3E8FF',
+                            color: '#7E22CE',
+                            padding: '3px 10px',
+                            borderRadius: 'var(--radius-full)',
+                            fontSize: 'var(--font-size-xs)',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                          }}>
+                            <BookOpen size={13} /> General
+                          </span>
+                          <span>Course Reference Materials & Syllabus</span>
+                        </h3>
+                      </div>
+
+                      <div className={styles.materialsSubList}>
+                        {generalResources.map((r, rIdx) => {
+                          const resId = r.resourceId || r.id;
+                          return (
+                            <Link
+                              key={resId || rIdx}
+                              to={ROUTES.RESOURCE_DETAIL(resId!)}
+                              className={styles.resourceItem}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                <FileText size={16} color="var(--color-primary-600)" />
+                                <span style={{ fontWeight: 500, fontSize: 'var(--font-size-sm)' }}>
+                                  {r.filename || r.title}
+                                </span>
+                              </div>
+                              <Badge variant="outline">{r.fileType || 'Material'}</Badge>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : !course.resources || course.resources.length === 0 ? (
               <p style={{ color: 'var(--color-gray-500)', fontSize: 'var(--font-size-sm)', margin: 0 }}>
                 The instructor is currently preparing notes and lecture materials for this curriculum.
               </p>

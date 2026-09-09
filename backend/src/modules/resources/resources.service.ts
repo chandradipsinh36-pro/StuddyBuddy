@@ -154,9 +154,30 @@ export const resourcesService = {
     const description = body.description !== undefined ? body.description : existingMeta.description;
     const subject = body.subject !== undefined ? body.subject : existingMeta.subject;
     const category = body.category !== undefined ? body.category : existingMeta.category;
+    const difficulty = body.difficulty !== undefined ? body.difficulty : (existingMeta.difficulty || 'intermediate');
+
+    const validTypes = ['pdf', 'image', 'ppt', 'audio', 'youtube', 'test_paper'];
+    const rawType = body.type || body.fileType;
+    let fileType = resource.fileType;
+    if (rawType && validTypes.includes(rawType)) {
+      fileType = rawType;
+    }
+
+    let isLocked = resource.isLocked;
+    if (body.accessType !== undefined) {
+      isLocked = body.accessType === 'premium';
+    } else if (body.isLocked !== undefined) {
+      isLocked = body.isLocked === 'true' || body.isLocked === true;
+    }
+
+    let price: any = resource.price;
+    if (!isLocked) {
+      price = 0;
+    } else if (body.price !== undefined) {
+      price = Number(body.price || 0);
+    }
 
     let fileUrl = resource.fileUrl;
-    let fileType = resource.fileType;
     let savedFilename = existingMeta.savedFilename;
     let originalFilename = existingMeta.originalFilename;
     let fileSize = existingMeta.fileSize;
@@ -207,6 +228,7 @@ export const resourcesService = {
       description,
       subject,
       category,
+      difficulty,
       savedFilename,
       originalFilename,
       fileSize,
@@ -216,6 +238,8 @@ export const resourcesService = {
       filename: title,
       fileType,
       fileUrl,
+      isLocked,
+      price,
       moderationNotes: JSON.stringify(newMeta),
     };
 

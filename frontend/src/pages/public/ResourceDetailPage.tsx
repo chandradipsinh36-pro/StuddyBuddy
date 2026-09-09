@@ -11,6 +11,7 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState';
 import { Modal } from '../../components/ui/Modal/Modal';
 import type { Resource, Review } from '../../types';
+import { parseVideoUrl } from '../../utils/videoUtils';
 import { ROUTES } from '../../constants';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -111,12 +112,24 @@ export function ResourceDetailPage() {
             </div>
 
             {/* If YouTube and accessible */}
-            {canAccess && resource.type === 'youtube' && resource.youtubeUrl && (
-              <div className={styles.videoWrapper}>
-                <iframe src={resource.youtubeUrl} title={resource.title} className={styles.video}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-              </div>
-            )}
+            {canAccess && resource.type === 'youtube' && (resource.youtubeUrl || resource.fileUrl) && (() => {
+              const videoInfo = parseVideoUrl(resource.youtubeUrl || resource.fileUrl);
+              return (
+                <div className={styles.videoWrapper}>
+                  {videoInfo.type === 'direct' ? (
+                    <video src={videoInfo.embedUrl} controls className={styles.video} />
+                  ) : (
+                    <iframe
+                      src={videoInfo.embedUrl}
+                      title={resource.title}
+                      className={styles.video}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Details */}
             <div className={styles.details}>
