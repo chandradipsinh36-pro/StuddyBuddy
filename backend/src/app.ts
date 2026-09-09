@@ -22,6 +22,7 @@ import {
   tutorReviewRouter, tutorReviewDetailRouter,
 } from './modules/reviews/reviews.routes';
 import groupsRoutes from './modules/groups/groups.routes';
+import adminRoutes from './modules/admin/admin.routes';
 import { prisma } from './config/database';
 
 export function createApp(): Application {
@@ -29,8 +30,24 @@ export function createApp(): Application {
 
   // ── Security ────────────────────────────────────────────────────
   app.use(helmet());
+  const allowedOrigins = [
+    env.CLIENT_URL,
+    env.ADMIN_URL,
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:5175',
+  ];
+
   app.use(cors({
-    origin: env.CLIENT_URL,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -93,6 +110,9 @@ export function createApp(): Application {
 
   // Groups (chat, payments, reports)
   app.use('/api/groups',            groupsRoutes);
+
+  // Admin (user management, tutor management, application review, dashboard)
+  app.use('/api/admin',             adminRoutes);
 
   // ── 404 ──────────────────────────────────────────────────────────
   app.use((_req: Request, res: Response) => {

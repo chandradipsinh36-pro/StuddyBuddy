@@ -10,6 +10,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(5000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
+  ADMIN_URL: z.string().url().default('http://localhost:5174'),
 });
 
 const parsed = envSchema.safeParse(process.env);

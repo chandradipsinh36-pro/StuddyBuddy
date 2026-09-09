@@ -1,15 +1,18 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, ShieldCheck, BookOpen, Bot, Users,
   Play, ChevronRight, Zap, Award, TrendingUp
 } from 'lucide-react';
-import { MOCK_TUTORS, MOCK_RESOURCES, MOCK_CATEGORIES } from '../../mock/data';
+import { categoryService } from '../../services/categoryService';
+import { tutorService } from '../../services/tutorService';
+import { resourceService } from '../../services/resourceService';
 import { TutorCard } from '../../components/shared/TutorCard';
 import { ResourceCard } from '../../components/shared/ResourceCard';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
-import { Rating } from '../../components/ui/Rating/Rating';
 import { ROUTES } from '../../constants';
+import type { Category, Tutor, Resource } from '../../types';
 import styles from './LandingPage.module.css';
 
 const HOW_IT_WORKS = [
@@ -32,6 +35,16 @@ const HOW_IT_WORKS = [
 ];
 
 export function LandingPage() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
+
+  useEffect(() => {
+    categoryService.getCategories().then(setCategories).catch(() => {});
+    tutorService.getTutors({ limit: 3 }).then(res => setTutors(res.data || [])).catch(() => {});
+    resourceService.getResources({ limit: 4 }).then(res => setResources(res.data || [])).catch(() => {});
+  }, []);
+
   return (
     <div className={styles.page}>
 
@@ -110,73 +123,81 @@ export function LandingPage() {
           </div>
           <div className={styles.heroFloatingCard2}>
             <TrendingUp size={16} color="var(--color-primary-500)" />
-            <span>+23% this week</span>
+            <span>Active Community</span>
           </div>
         </div>
       </section>
 
       {/* ===== CATEGORIES ===== */}
-      <section className={styles.section}>
-        <div className={styles.container}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Browse by Subject</h2>
-            <Link to={ROUTES.EXPLORE} className={styles.seeAll}>
-              See all subjects <ChevronRight size={16} />
-            </Link>
-          </div>
-          <div className={styles.categoriesGrid}>
-            {MOCK_CATEGORIES.map(cat => (
-              <Link key={cat.id} to={`${ROUTES.EXPLORE}?subject=${cat.slug}`} className={styles.categoryCard}>
-                <span className={styles.categoryIcon}>{cat.icon}</span>
-                <span className={styles.categoryName}>{cat.name}</span>
-                <span className={styles.categoryCount}>{cat.resourceCount} resources</span>
+      {categories.length > 0 && (
+        <section className={styles.section}>
+          <div className={styles.container}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Browse by Subject</h2>
+              <Link to={ROUTES.EXPLORE} className={styles.seeAll}>
+                See all subjects <ChevronRight size={16} />
               </Link>
-            ))}
+            </div>
+            <div className={styles.categoriesGrid}>
+              {categories.map(cat => (
+                <Link key={cat.id} to={`${ROUTES.EXPLORE}?subject=${cat.slug || cat.name.toLowerCase()}`} className={styles.categoryCard}>
+                  <span className={styles.categoryIcon}>{cat.icon || '📚'}</span>
+                  <span className={styles.categoryName}>{cat.name}</span>
+                  {typeof cat.resourceCount === 'number' && (
+                    <span className={styles.categoryCount}>{cat.resourceCount} resources</span>
+                  )}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ===== FEATURED TUTORS ===== */}
-      <section className={`${styles.section} ${styles.sectionAlt}`}>
-        <div className={styles.container}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <Badge variant="primary" className={styles.sectionBadge}>Expert Tutors</Badge>
-              <h2 className={styles.sectionTitle}>Learn from the Best</h2>
-              <p className={styles.sectionSubtitle}>All tutors are verified, background-checked, and rated by real students.</p>
+      {tutors.length > 0 && (
+        <section className={`${styles.section} ${styles.sectionAlt}`}>
+          <div className={styles.container}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <Badge variant="primary" className={styles.sectionBadge}>Expert Tutors</Badge>
+                <h2 className={styles.sectionTitle}>Learn from the Best</h2>
+                <p className={styles.sectionSubtitle}>All tutors are verified, background-checked, and rated by real students.</p>
+              </div>
+              <Link to={ROUTES.TUTORS} className={styles.seeAll}>
+                Browse all tutors <ChevronRight size={16} />
+              </Link>
             </div>
-            <Link to={ROUTES.TUTORS} className={styles.seeAll}>
-              Browse all tutors <ChevronRight size={16} />
-            </Link>
+            <div className={styles.tutorGrid}>
+              {tutors.slice(0, 3).map(tutor => (
+                <TutorCard key={tutor.id} tutor={tutor} />
+              ))}
+            </div>
           </div>
-          <div className={styles.tutorGrid}>
-            {MOCK_TUTORS.slice(0, 3).map(tutor => (
-              <TutorCard key={tutor.id} tutor={tutor} />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ===== POPULAR RESOURCES ===== */}
-      <section className={styles.section}>
-        <div className={styles.container}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <Badge variant="premium" className={styles.sectionBadge}>Resources</Badge>
-              <h2 className={styles.sectionTitle}>Popular Learning Resources</h2>
-              <p className={styles.sectionSubtitle}>PDFs, videos, tests, and more — all verified and safe.</p>
+      {resources.length > 0 && (
+        <section className={styles.section}>
+          <div className={styles.container}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <Badge variant="premium" className={styles.sectionBadge}>Resources</Badge>
+                <h2 className={styles.sectionTitle}>Popular Learning Resources</h2>
+                <p className={styles.sectionSubtitle}>PDFs, videos, tests, and more — all verified and safe.</p>
+              </div>
+              <Link to={ROUTES.RESOURCES} className={styles.seeAll}>
+                Browse all resources <ChevronRight size={16} />
+              </Link>
             </div>
-            <Link to={ROUTES.RESOURCES} className={styles.seeAll}>
-              Browse all resources <ChevronRight size={16} />
-            </Link>
+            <div className={styles.resourceGrid}>
+              {resources.slice(0, 4).map(resource => (
+                <ResourceCard key={resource.id} resource={resource} />
+              ))}
+            </div>
           </div>
-          <div className={styles.resourceGrid}>
-            {MOCK_RESOURCES.slice(0, 4).map(resource => (
-              <ResourceCard key={resource.id} resource={resource} />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ===== HOW IT WORKS ===== */}
       <section className={`${styles.section} ${styles.howSection}`}>
@@ -248,7 +269,7 @@ export function LandingPage() {
                   <div className={styles.aiDemoUsageBar}>
                     <div style={{ width: '60%', height: '100%', background: 'var(--color-ai)', borderRadius: 'var(--radius-full)' }} />
                   </div>
-                  <span>3 / 5 free messages used today</span>
+                  <span>Free messages included daily</span>
                 </div>
               </div>
             </div>
@@ -271,23 +292,21 @@ export function LandingPage() {
           </div>
           <div className={styles.groupsGrid}>
             {[
-              { name: 'JEE 2026 Aspirants', subject: 'Physics / Chem / Maths', members: 234, online: 18, emoji: '⚗️' },
-              { name: 'CS Interview Prep', subject: 'Computer Science', members: 156, online: 12, emoji: '💻' },
-              { name: 'Mathematics Enthusiasts', subject: 'Mathematics', members: 178, online: 15, emoji: '📐' },
-              { name: 'IB Study Hub', subject: 'IB Curriculum', members: 89, online: 7, emoji: '📚', premium: true },
+              { name: 'Mathematics Study Group', subject: 'Mathematics', members: 0, online: 0, emoji: '📐' },
+              { name: 'Physics & Science Hub', subject: 'Physics', members: 0, online: 0, emoji: '⚗️' },
+              { name: 'Computer Science & Coding', subject: 'Computer Science', members: 0, online: 0, emoji: '💻' },
+              { name: 'Language & Literature', subject: 'English', members: 0, online: 0, emoji: '📚' },
             ].map((g, i) => (
               <Link key={i} to={ROUTES.STUDY_GROUPS} className={styles.groupCard}>
                 <div className={styles.groupEmoji}>{g.emoji}</div>
                 <div className={styles.groupInfo}>
                   <div className={styles.groupName}>
                     {g.name}
-                    {g.premium && <Badge variant="premium">Premium</Badge>}
                   </div>
                   <div className={styles.groupSubject}>{g.subject}</div>
                   <div className={styles.groupStats}>
                     <Users size={12} />
-                    <span>{g.members} members</span>
-                    <span className={styles.groupOnline}>• {g.online} online</span>
+                    <span>Join community</span>
                   </div>
                 </div>
                 <ChevronRight size={16} className={styles.groupArrow} />
@@ -305,12 +324,12 @@ export function LandingPage() {
               <h2 className={styles.tutorCtaTitle}>Are You an Expert? Start Teaching Today.</h2>
               <p className={styles.tutorCtaDesc}>
                 Share your knowledge, build your brand, and earn by creating resources and teaching students.
-                Join 500+ verified tutors on StudyBuddy.
+                Join our verified tutor community on StudyBuddy.
               </p>
               <div className={styles.tutorCtaStats}>
-                <div><strong>₹48,000+</strong><br /><span>Avg. monthly earnings</span></div>
-                <div><strong>500+</strong><br /><span>Active tutors</span></div>
-                <div><strong>10K+</strong><br /><span>Students reached</span></div>
+                <div><strong>100%</strong><br /><span>Secure payouts</span></div>
+                <div><strong>Verified</strong><br /><span>Tutor badge</span></div>
+                <div><strong>Global</strong><br /><span>Student reach</span></div>
               </div>
             </div>
             <div className={styles.tutorCtaActions}>
@@ -324,19 +343,6 @@ export function LandingPage() {
                   Learn More
                 </Button>
               </Link>
-              <div className={styles.tutorCtaReviews}>
-                <div style={{ display: 'flex', marginLeft: 8 }}>
-                  {['Sarah', 'James', 'Priya', 'David'].map(name => (
-                    <div key={name} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.5)', marginLeft: -8, background: 'var(--color-primary-700)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'white', fontWeight: 600 }}>
-                      {name[0]}
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <Rating value={4.8} showValue count={248} size="sm" />
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>from verified tutors</div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

@@ -47,3 +47,12 @@ export const reportLimiter = rateLimit({
   legacyHeaders,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many reports submitted.' } },
 });
+
+// Admin sensitive action limiter (suspend/ban/reactivate/approve/reject)
+export const adminActionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 30,
+  standardHeaders,
+  legacyHeaders,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many admin actions, please slow down.' } },
+});

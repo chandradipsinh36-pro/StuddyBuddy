@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
 export const createProfileSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
   bio: z.string().max(2000).optional(),
   instituteName: z.string().max(200).optional(),
   experienceYears: z.coerce.number().int().min(0).max(60).default(0),
+  trialVideoUrl: z.string().url().or(z.string()).optional(),
+  skills: z.union([z.array(z.string()), z.string()]).optional(),
 });
 
 export const updateProfileSchema = createProfileSchema.partial();

@@ -4,16 +4,16 @@ import { TutorCard } from '../../components/shared/TutorCard';
 import { PlaylistCard } from '../../components/shared/PlaylistCard';
 import { Tabs } from '../../components/ui/Tabs/Tabs';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
-import { MOCK_RESOURCES, MOCK_TUTORS, MOCK_PLAYLISTS } from '../../mock/data';
 import { ROUTES } from '../../constants';
+import type { Resource, Tutor, Playlist } from '../../types';
 import toast from 'react-hot-toast';
 import styles from './StudentSavedPage.module.css';
 
 export function StudentSavedPage() {
   const [activeTab, setActiveTab] = useState('resources');
-  const [savedResources, setSavedResources] = useState(MOCK_RESOURCES.slice(0, 3));
-  const [savedTutors, setSavedTutors] = useState(MOCK_TUTORS.slice(0, 2));
-  const [savedPlaylists] = useState(MOCK_PLAYLISTS.slice(0, 2));
+  const [savedResources, setSavedResources] = useState<Resource[]>([]);
+  const [savedTutors, setSavedTutors] = useState<Tutor[]>([]);
+  const [savedPlaylists] = useState<Playlist[]>([]);
 
   const handleUnsaveResource = (id: number) => {
     setSavedResources(prev => prev.filter(r => r.id !== id));
@@ -93,11 +93,22 @@ export function StudentSavedPage() {
       )}
 
       {activeTab === 'playlists' && (
-        <div className={styles.grid}>
-          {savedPlaylists.map(p => (
-            <PlaylistCard key={p.id} playlist={p} />
-          ))}
-        </div>
+        savedPlaylists.length === 0 ? (
+          <EmptyState
+            title="No saved playlists yet"
+            description="Browse curated playlists and bookmark them for your study track."
+            action={{
+              label: "Browse Playlists",
+              onClick: () => window.location.href = ROUTES.PLAYLISTS,
+            }}
+          />
+        ) : (
+          <div className={styles.grid}>
+            {savedPlaylists.map(p => (
+              <PlaylistCard key={p.id} playlist={p} />
+            ))}
+          </div>
+        )
       )}
     </div>
   );

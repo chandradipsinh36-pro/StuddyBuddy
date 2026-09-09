@@ -5,42 +5,13 @@ import { Badge } from '../../components/ui/Badge/Badge';
 import { Modal } from '../../components/ui/Modal/Modal';
 import { Input } from '../../components/ui/Input/Input';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
-import { MOCK_RESOURCES } from '../../mock/data';
+import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
 import type { Bundle } from '../../types';
 import toast from 'react-hot-toast';
 import styles from './TutorBundlesPage.module.css';
 
-const INITIAL_BUNDLES: Bundle[] = [
-  {
-    id: 1,
-    tutorId: 1,
-    name: 'Calculus & Statistics Complete Exam Pack',
-    description: 'Bundle containing complete calculus theory notes and the 50-question probability & statistics practice test.',
-    resources: [MOCK_RESOURCES[0], MOCK_RESOURCES[3]],
-    originalPrice: 498,
-    discountPercent: 20,
-    finalPrice: 399,
-    isPublished: true,
-    purchaseCount: 84,
-    createdAt: '2026-08-01T00:00:00Z',
-  },
-  {
-    id: 2,
-    tutorId: 1,
-    name: 'University Mathematics Foundation Bundle',
-    description: 'All differentiation, integration, and linear algebra cheatsheets and solved problem sets.',
-    resources: [MOCK_RESOURCES[0]],
-    originalPrice: 299,
-    discountPercent: 15,
-    finalPrice: 254,
-    isPublished: true,
-    purchaseCount: 42,
-    createdAt: '2026-08-15T00:00:00Z',
-  },
-];
-
 export function TutorBundlesPage() {
-  const [bundles, setBundles] = useState<Bundle[]>(INITIAL_BUNDLES);
+  const [bundles, setBundles] = useState<Bundle[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
 
   // Form State
@@ -64,8 +35,8 @@ export function TutorBundlesPage() {
       id: Date.now(),
       tutorId: 1,
       name: bundleName,
-      description: bundleDesc || 'Curated package of verified study materials at a special discounted price.',
-      resources: [MOCK_RESOURCES[0], MOCK_RESOURCES[2]],
+      description: bundleDesc || 'Curated package of study materials at a special discounted price.',
+      resources: [],
       originalPrice: orig,
       discountPercent: disc,
       finalPrice: finalP,
@@ -99,32 +70,43 @@ export function TutorBundlesPage() {
         </Button>
       </div>
 
-      <div className={styles.grid}>
-        {bundles.map(b => (
-          <div key={b.id} className={styles.card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Badge variant="primary">
-                <Package size={12} style={{ marginRight: 4 }} />
-                {b.resources?.length ?? b.bundleItems?.length ?? 0} Materials Included
-              </Badge>
-              <Badge variant="success">{b.discountPercent ?? 20}% OFF</Badge>
-            </div>
+      {bundles.length === 0 ? (
+        <EmptyState
+          title="No bundles created yet"
+          description="Group your high-yield resources together and offer a bundled discount to students."
+          action={{
+            label: "Create First Bundle",
+            onClick: () => setModalOpen(true),
+          }}
+        />
+      ) : (
+        <div className={styles.grid}>
+          {bundles.map(b => (
+            <div key={b.id} className={styles.card}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Badge variant="primary">
+                  <Package size={12} style={{ marginRight: 4 }} />
+                  {b.resources?.length ?? b.bundleItems?.length ?? 0} Materials Included
+                </Badge>
+                <Badge variant="success">{b.discountPercent ?? 20}% OFF</Badge>
+              </div>
 
-            <h2 className={styles.bundleName}>{b.name || b.title}</h2>
-            <p className={styles.bundleDesc}>{b.description}</p>
+              <h2 className={styles.bundleName}>{b.name || b.title}</h2>
+              <p className={styles.bundleDesc}>{b.description}</p>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
-              <ShoppingBag size={14} />
-              <span>{b.purchaseCount} students bought this package</span>
-            </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
+                <ShoppingBag size={14} />
+                <span>{b.purchaseCount} students bought this package</span>
+              </div>
 
-            <div className={styles.pricingRow}>
-              <span className={styles.originalPrice}>₹{b.originalPrice}</span>
-              <span className={styles.finalPrice}>₹{b.finalPrice}</span>
+              <div className={styles.pricingRow}>
+                <span className={styles.originalPrice}>₹{b.originalPrice}</span>
+                <span className={styles.finalPrice}>₹{b.finalPrice}</span>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <Modal
         isOpen={modalOpen}

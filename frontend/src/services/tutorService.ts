@@ -36,13 +36,17 @@ export const tutorService = {
     return res.data;
   },
 
-  async updateProfile(data: any): Promise<TutorProfile> {
+  async updateProfile(data: any): Promise<any> {
     const payload = {
+      name: data.name,
       bio: data.bio,
       instituteName: data.instituteName,
       experienceYears: data.experienceYears ?? (data.experience ? parseInt(data.experience, 10) : undefined),
+      trialVideoUrl: data.trialVideoUrl,
+      skills: data.skills,
     };
-    return this.updateMyProfile(payload);
+    const res = await apiClient.patch('/tutors/me/profile', payload);
+    return res.data;
   },
 
   // ── Skills ────────────────────────────────────────────────────────

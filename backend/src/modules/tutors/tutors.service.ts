@@ -68,31 +68,142 @@ export const tutorsService = {
 
   // ── Own profile ──────────────────────────────────────
   async getMyProfile(tutorId: number) {
-    const profile = await prisma.tutorProfile.findUnique({ where: { tutorId } });
-    return profile;
+    const user = await prisma.user.findUnique({
+      where: { id: tutorId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        profilePic: true,
+        isVerified: true,
+        createdAt: true,
+        tutorProfile: true,
+        tutorSkills: {
+          select: { skillId: true, skillName: true, proficiency: true },
+        },
+        tutorApplications: {
+          orderBy: { appliedAt: 'desc' },
+          take: 1,
+          select: {
+            applicationId: true,
+            status: true,
+            trialVideoUrl: true,
+            adminNote: true,
+            reviewedAt: true,
+            appliedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!user) throw new NotFoundError('User');
+
+    let profile = user.tutorProfile;
+    // Auto-create empty profile if it doesn't exist yet so it's always ready
+    if (!profile) {
+      profile = await prisma.tutorProfile.create({
+        data: { tutorId: user.id, bio: '', instituteName: '', experienceYears: 0 },
+      });
+    }
+
+    const latestApp = user.tutorApplications[0] ?? null;
+
+    return {
+      profileId:         profile.profileId,
+      tutorId:           user.id,
+      name:              user.name,
+      email:             user.email,
+      role:              user.role,
+      status:            user.status,
+      profilePic:        user.profilePic,
+      isVerified:        user.isVerified,
+      bio:               profile.bio ?? '',
+      instituteName:     profile.instituteName ?? '',
+      experienceYears:   profile.experienceYears ?? 0,
+      trialVideoUrl:     latestApp?.trialVideoUrl ?? '',
+      applicationStatus: latestApp ? latestApp.status : (user.isVerified ? 'approved' : 'none'),
+      application:       latestApp,
+      skills:            user.tutorSkills,
+      createdAt:         profile.createdAt,
+    };
   },
 
   async createMyProfile(tutorId: number, input: CreateProfileInput) {
-    const existing = await prisma.tutorProfile.findUnique({ where: { tutorId } });
-    if (existing) throw new ConflictError('Tutor profile already exists. Use PATCH to update.');
-
-    // Verify user is actually a tutor
-    const user = await prisma.user.findUnique({ where: { id: tutorId } });
-    if (!user || user.role !== 'tutor') throw new AuthorizationError('Only tutors can create a tutor profile');
-
-    return prisma.tutorProfile.create({
-      data: { tutorId, ...input },
-    });
+    return this.updateMyProfile(tutorId, input);
   },
 
-  async updateMyProfile(tutorId: number, input: UpdateProfileInput) {
-    const profile = await prisma.tutorProfile.findUnique({ where: { tutorId } });
-    if (!profile) throw new NotFoundError('Tutor profile');
+  async updateMyProfile(tutorId: number, input: any) {
+    const { name, bio, instituteName, experienceYears, trialVideoUrl, skills } = input;
 
-    return prisma.tutorProfile.update({
+    // 1. Upsert tutorProfile
+    await prisma.tutorProfile.upsert({
       where: { tutorId },
-      data: input,
+      create: {
+        tutorId,
+        bio: bio ?? '',
+        instituteName: instituteName ?? '',
+        experienceYears: experienceYears !== undefined ? Number(experienceYears) : 0,
+      },
+      update: {
+        ...(bio !== undefined ? { bio } : {}),
+        ...(instituteName !== undefined ? { instituteName } : {}),
+        ...(experienceYears !== undefined ? { experienceYears: Number(experienceYears) } : {}),
+      },
     });
+
+    // 2. If name provided, update user name
+    if (name && typeof name === 'string' && name.trim()) {
+      await prisma.user.update({
+        where: { id: tutorId },
+        data: { name: name.trim() },
+      });
+    }
+
+    // 3. If trialVideoUrl provided, update or create tutorApplication
+    if (trialVideoUrl !== undefined) {
+      const existingApp = await prisma.tutorApplication.findFirst({
+        where: { userId: tutorId },
+        orderBy: { appliedAt: 'desc' },
+      });
+      if (existingApp) {
+        await prisma.tutorApplication.update({
+          where: { applicationId: existingApp.applicationId },
+          data: { trialVideoUrl },
+        });
+      } else if (trialVideoUrl) {
+        await prisma.tutorApplication.create({
+          data: {
+            userId: tutorId,
+            trialVideoUrl,
+            status: 'pending',
+          },
+        });
+      }
+    }
+
+    // 4. If skills provided, sync skills
+    if (skills !== undefined) {
+      const skillList = Array.isArray(skills)
+        ? skills
+        : typeof skills === 'string'
+        ? skills.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+
+      if (skillList.length > 0) {
+        await prisma.tutorSkill.deleteMany({ where: { tutorId } });
+        await prisma.tutorSkill.createMany({
+          data: skillList.map((skillName: string) => ({
+            tutorId,
+            skillName,
+            proficiency: 'intermediate',
+          })),
+        });
+      }
+    }
+
+    return this.getMyProfile(tutorId);
   },
 
   // ── Skills ───────────────────────────────────────────
