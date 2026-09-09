@@ -77,6 +77,64 @@ function mapTutorProfile(t: Record<string, unknown>): TutorProfile {
   const apps    = (t.tutorApplications as Record<string, unknown>[]) ?? [];
   const latestApp = apps[0] ?? {};
   const skills  = (t.tutorSkills as Record<string, unknown>[]) ?? [];
+  const counts  = (t._count as Record<string, number>) ?? {};
+
+  // Courses
+  const rawCourses = (t.courses as Record<string, any>[]) ?? [];
+  const courses = rawCourses.map((c) => ({
+    courseId:        (c.courseId as number) ?? (c.id as number) ?? 0,
+    title:           (c.title as string) ?? 'Untitled Course',
+    description:     c.description as string | undefined,
+    price:           c.price ?? 0,
+    isPublished:     (c.isPublished as boolean) ?? true,
+    createdAt:       (c.createdAt as string) ?? '',
+    category:        c.category as { categoryId: number; name: string } | undefined,
+    enrollmentCount: (c._count?.enrollments as number) ?? (c.enrollments?.length as number) ?? 0,
+    ratingAverage:   (c.averageRating as number) ?? 0,
+    reviewCount:     (c._count?.reviews as number) ?? 0,
+  }));
+
+  // Resources
+  const rawResources = (t.resources as Record<string, any>[]) ?? [];
+  const resources = rawResources.map((r) => {
+    let meta: any = {};
+    try {
+      if (r.moderationNotes && typeof r.moderationNotes === 'string' && r.moderationNotes.startsWith('{')) {
+        meta = JSON.parse(r.moderationNotes);
+      }
+    } catch {}
+
+    const catName = meta.category || r.category || r.resourceCategories?.[0]?.category?.name || 'General';
+    const title = meta.title || r.title || r.filename || 'Untitled Resource';
+
+    return {
+      resourceId:   (r.resourceId as number) ?? (r.id as number) ?? 0,
+      filename:     title,
+      fileType:     (r.fileType as string) ?? (r.type as string) ?? 'pdf',
+      fileUrl:      r.fileUrl as string | undefined,
+      price:        r.price ?? 0,
+      isLocked:     (r.isLocked as boolean) ?? false,
+      status:       (r.status as string) ?? 'published',
+      createdAt:    (r.createdAt as string) ?? '',
+      categoryName: catName,
+      courseTitle:  r.course?.title as string | undefined,
+    };
+  });
+
+  // Bundles
+  const rawBundles = (t.bundles as Record<string, any>[]) ?? [];
+  const bundles = rawBundles.map((b) => ({
+    bundleId:    (b.bundleId as number) ?? (b.id as number) ?? 0,
+    title:       (b.title as string) ?? (b.name as string) ?? 'Untitled Bundle',
+    description: b.description as string | undefined,
+    price:       b.price ?? 0,
+    isPublished: (b.isPublished as boolean) ?? true,
+    createdAt:   (b.createdAt as string) ?? '',
+    bundleItems: b.bundleItems ?? [],
+  }));
+
+  // Earnings
+  const earnings = t.earnings as any;
 
   return {
     profile_id:          (profile.profileId as number) ?? 0,
@@ -104,9 +162,13 @@ function mapTutorProfile(t: Record<string, unknown>): TutorProfile {
     application_status:  (latestApp.status as ApplicationStatus) || 'pending',
     is_verified:         (t.isVerified as boolean) ?? false,
     average_rating:      0,
-    review_count:        0,
-    student_count:       0,
+    review_count:        counts.courseReviews ?? 0,
+    student_count:       counts.enrollments ?? 0,
     created_at:          t.createdAt as string,
+    courses,
+    resources,
+    bundles,
+    earnings,
   };
 }
 
@@ -218,5 +280,47 @@ export const adminTutorService = {
    */
   async deleteTutor(id: number): Promise<void> {
     await apiClient.delete(`/admin/users/${id}`);
+  },
+
+  /**
+   * PATCH /api/admin/tutors/courses/:courseId/status
+   */
+  async updateCourseStatus(courseId: number, isPublished: boolean): Promise<void> {
+    await apiClient.patch(`/admin/tutors/courses/${courseId}/status`, { isPublished });
+  },
+
+  /**
+   * DELETE /api/admin/tutors/courses/:courseId
+   */
+  async deleteCourse(courseId: number): Promise<void> {
+    await apiClient.delete(`/admin/tutors/courses/${courseId}`);
+  },
+
+  /**
+   * PATCH /api/admin/tutors/resources/:resourceId/status
+   */
+  async updateResourceStatus(resourceId: number, status: string): Promise<void> {
+    await apiClient.patch(`/admin/tutors/resources/${resourceId}/status`, { status });
+  },
+
+  /**
+   * DELETE /api/admin/tutors/resources/:resourceId
+   */
+  async deleteResource(resourceId: number): Promise<void> {
+    await apiClient.delete(`/admin/tutors/resources/${resourceId}`);
+  },
+
+  /**
+   * PATCH /api/admin/tutors/bundles/:bundleId/status
+   */
+  async updateBundleStatus(bundleId: number, isPublished: boolean): Promise<void> {
+    await apiClient.patch(`/admin/tutors/bundles/${bundleId}/status`, { isPublished });
+  },
+
+  /**
+   * DELETE /api/admin/tutors/bundles/:bundleId
+   */
+  async deleteBundle(bundleId: number): Promise<void> {
+    await apiClient.delete(`/admin/tutors/bundles/${bundleId}`);
   },
 };

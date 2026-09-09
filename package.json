@@ -2,10 +2,18 @@
   "name": "studybuddy-workspace",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "adminpanel"
+  ],
   "scripts": {
+    "setup": "npm install && npm --prefix backend run db:generate",
     "dev": "npm --prefix frontend run dev",
     "admin": "npm --prefix adminpanel run dev",
     "backend": "npm --prefix backend run dev",
+    "dev:all": "npx concurrently -n backend,frontend,admin -c green,cyan,magenta \"npm run backend\" \"npm run dev\" \"npm run admin\"",
+    "dev:app": "npx concurrently -n backend,frontend -c green,cyan \"npm run backend\" \"npm run dev\"",
     "build": "npm --prefix frontend run build",
     "lint": "npm --prefix frontend run lint",
     "preview": "npm --prefix frontend run preview"

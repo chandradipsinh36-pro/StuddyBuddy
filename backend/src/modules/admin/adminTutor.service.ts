@@ -3,6 +3,7 @@ import { prisma } from '../../config/database';
 import { getPagination } from '../../utils/pagination';
 import { NotFoundError } from '../../utils/AppError';
 import { TutorQuery } from './admin.schema';
+import { tutorEarningsService } from '../tutors/tutor-earnings.service';
 
 // Whitelist for sort
 const SORT_MAP: Record<string, string> = {
@@ -127,6 +128,109 @@ export const adminTutorService = {
     });
 
     if (!tutor) throw new NotFoundError('Tutor');
-    return tutor;
+
+    // Fetch tutor courses
+    const courses = await prisma.course.findMany({
+      where: { tutorId },
+      include: {
+        category: { select: { categoryId: true, name: true } },
+        _count: { select: { enrollments: true, reviews: true, resources: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Fetch tutor resources
+    const resources = await prisma.resource.findMany({
+      where: { uploadedBy: tutorId },
+      include: {
+        resourceCategories: { include: { category: { select: { categoryId: true, name: true } } } },
+        course: { select: { courseId: true, title: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Fetch tutor bundles
+    const bundles = await prisma.bundle.findMany({
+      where: { tutorId },
+      include: {
+        bundleItems: {
+          include: {
+            resource: {
+              select: { resourceId: true, filename: true, fileType: true, price: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Fetch tutor earnings summary and transactions
+    let earnings: any = null;
+    try {
+      const summary = await tutorEarningsService.getSummary(tutorId);
+      const transactions = await tutorEarningsService.getTransactions(tutorId);
+      earnings = {
+        ...summary,
+        transactions,
+      };
+    } catch (e) {
+      console.warn('Could not compute tutor earnings for admin:', e);
+    }
+
+    return {
+      ...tutor,
+      courses,
+      resources,
+      bundles,
+      earnings,
+    };
+  },
+
+  // ── Course Management ──────────────────────────────────────────────
+  async updateCourseStatus(courseId: number, isPublished: boolean) {
+    const course = await prisma.course.findUnique({ where: { courseId } });
+    if (!course) throw new NotFoundError('Course');
+    return prisma.course.update({
+      where: { courseId },
+      data: { isPublished },
+    });
+  },
+
+  async deleteCourse(courseId: number) {
+    const course = await prisma.course.findUnique({ where: { courseId } });
+    if (!course) throw new NotFoundError('Course');
+    return prisma.course.delete({ where: { courseId } });
+  },
+
+  // ── Resource Management ────────────────────────────────────────────
+  async updateResourceStatus(resourceId: number, status: string) {
+    const resource = await prisma.resource.findUnique({ where: { resourceId } });
+    if (!resource) throw new NotFoundError('Resource');
+    return prisma.resource.update({
+      where: { resourceId },
+      data: { status: status as any },
+    });
+  },
+
+  async deleteResource(resourceId: number) {
+    const resource = await prisma.resource.findUnique({ where: { resourceId } });
+    if (!resource) throw new NotFoundError('Resource');
+    return prisma.resource.delete({ where: { resourceId } });
+  },
+
+  // ── Bundle Management ──────────────────────────────────────────────
+  async updateBundleStatus(bundleId: number, isPublished: boolean) {
+    const bundle = await prisma.bundle.findUnique({ where: { bundleId } });
+    if (!bundle) throw new NotFoundError('Bundle');
+    return prisma.bundle.update({
+      where: { bundleId },
+      data: { isPublished },
+    });
+  },
+
+  async deleteBundle(bundleId: number) {
+    const bundle = await prisma.bundle.findUnique({ where: { bundleId } });
+    if (!bundle) throw new NotFoundError('Bundle');
+    return prisma.bundle.delete({ where: { bundleId } });
   },
 };

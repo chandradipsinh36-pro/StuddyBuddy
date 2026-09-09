@@ -23,4 +23,67 @@ export const adminTutorController = {
       next(err);
     }
   },
+
+  async updateCourseStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const courseId = parseInt(req.params.courseId, 10);
+      const { isPublished } = req.body;
+      const updated = await adminTutorService.updateCourseStatus(courseId, Boolean(isPublished));
+      sendSuccess(res, updated, { message: 'Course status updated successfully' });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async deleteCourse(req: Request, res: Response, next: NextFunction) {
+    try {
+      const courseId = parseInt(req.params.courseId, 10);
+      await adminTutorService.deleteCourse(courseId);
+      res.status(204).end();
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async updateResourceStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const resourceId = parseInt(req.params.resourceId, 10);
+      const { status } = req.body;
+      const updated = await adminTutorService.updateResourceStatus(resourceId, status);
+      sendSuccess(res, updated, { message: 'Resource status updated successfully' });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async deleteResource(req: Request, res: Response, next: NextFunction) {
+    try {
+      const resourceId = parseInt(req.params.resourceId, 10);
+      await adminTutorService.deleteResource(resourceId);
+      res.status(204).end();
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async updateBundleStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const bundleId = parseInt(req.params.bundleId, 10);
+      const { isPublished } = req.body;
+      const updated = await adminTutorService.updateBundleStatus(bundleId, Boolean(isPublished));
+      sendSuccess(res, updated, { message: 'Bundle status updated successfully' });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async deleteBundle(req: Request, res: Response, next: NextFunction) {
+    try {
+      const bundleId = parseInt(req.params.bundleId, 10);
+      await adminTutorService.deleteBundle(bundleId);
+      res.status(204).end();
+    } catch (err) {
+      next(err);
+    }
+  },
 };

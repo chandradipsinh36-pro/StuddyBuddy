@@ -64,6 +64,81 @@ export interface TutorApplication {
   applied_at: string;
 }
 
+export interface TutorCourseItem {
+  courseId: number;
+  title: string;
+  description?: string;
+  price: number | string;
+  isPublished: boolean;
+  createdAt: string;
+  category?: { categoryId: number; name: string };
+  enrollmentCount?: number;
+  ratingAverage?: number;
+  reviewCount?: number;
+}
+
+export interface TutorResourceItem {
+  resourceId: number;
+  filename: string;
+  fileType: string;
+  fileUrl?: string;
+  price: number | string;
+  isLocked: boolean;
+  status: string;
+  createdAt: string;
+  categoryName?: string;
+  courseTitle?: string;
+}
+
+export interface TutorBundleItem {
+  bundleId: number;
+  title: string;
+  description?: string;
+  price: number | string;
+  isPublished: boolean;
+  createdAt: string;
+  bundleItems?: Array<{
+    resource?: {
+      resourceId: number;
+      filename: string;
+      fileType: string;
+      price: number | string;
+    };
+  }>;
+}
+
+export interface TutorEarningsData {
+  totalEarned: number;
+  totalEarnings: number;
+  currentBalance: number;
+  availableBalance: number;
+  pendingPayout: number;
+  pendingEarnings: number;
+  completedEarnings: number;
+  thisMonthEarnings: number;
+  lastMonthEarnings: number;
+  nextPayoutDate?: string;
+  transactions?: Array<{
+    id?: number;
+    paymentId?: number;
+    orderId?: string;
+    amount: number | string;
+    grossAmount?: number | string;
+    netAmount?: number | string;
+    platformFee?: number | string;
+    status: string;
+    paidAt?: string;
+    date?: string;
+    createdAt?: string;
+    buyerName?: string;
+    resourceTitle?: string;
+    student?: { id: number; name: string; email: string };
+    course?: { courseId: number; title: string };
+    resource?: { resourceId: number; filename: string };
+    bundle?: { bundleId: number; title: string };
+  }>;
+}
+
 export interface TutorProfile {
   profile_id: number;
   tutor_id: number;
@@ -79,6 +154,10 @@ export interface TutorProfile {
   review_count: number;
   student_count: number;
   created_at: string;
+  courses?: TutorCourseItem[];
+  resources?: TutorResourceItem[];
+  bundles?: TutorBundleItem[];
+  earnings?: TutorEarningsData;
 }
 
 export interface ActivityLogItem {

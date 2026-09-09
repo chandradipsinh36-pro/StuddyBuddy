@@ -2,7 +2,7 @@
   "watch": ["src"],
   "ext": "ts,json",
   "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts", "dist"],
-  "exec": "ts-node --files -r dotenv/config src/server.ts",
+  "exec": "ts-node --transpile-only -r dotenv/config src/server.ts",
   "env": {
     "NODE_ENV": "development"
   }
