@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Users, Eye, DollarSign, Star, TrendingUp, ArrowRight, Plus } from 'lucide-react';
+import { BookOpen, Users, Eye, DollarSign, Star, TrendingUp, ArrowRight, Plus, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { earningsService } from '../../services/earningsService';
 import { resourceService } from '../../services/resourceService';
 import { reviewService } from '../../services/reviewService';
+import { applicationService } from '../../services/applicationService';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
 import { Rating } from '../../components/ui/Rating/Rating';
@@ -12,22 +13,26 @@ import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { ROUTES } from '../../constants';
 import type { Resource } from '../../types';
+import toast from 'react-hot-toast';
 import styles from './TutorDashboard.module.css';
 
 export function TutorDashboard() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [earnings, setEarnings] = useState<any>(null);
   const [resources, setResources] = useState<Resource[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    refreshUser();
     Promise.allSettled([
       earningsService.getSummary().then(setEarnings).catch(() => null),
       resourceService.getMyResources({ limit: 5 }).then(res => setResources(res.data || [])).catch(() => []),
       reviewService.getTutorReceivedReviews().then(setReviews).catch(() => []),
+      applicationService.getMyApplication().then(app => setApplicationStatus(app.status)).catch(() => null),
     ]).finally(() => setLoading(false));
-  }, []);
+  }, [refreshUser]);
 
   const firstName = user?.name?.split(' ')[0] || 'there';
 
@@ -42,6 +47,59 @@ export function TutorDashboard() {
 
   return (
     <div className={styles.page}>
+      {/* Verification Status Banner */}
+      {!user?.isVerified ? (
+        <div style={{
+          backgroundColor: '#FFFBEB',
+          border: '1px solid #FCD34D',
+          borderRadius: 'var(--radius-lg)',
+          padding: 'var(--space-4) var(--space-6)',
+          marginBottom: 'var(--space-6)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 'var(--space-4)',
+        }}>
+          <ShieldAlert size={26} color="#D97706" style={{ flexShrink: 0, marginTop: 2 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              <strong style={{ color: '#92400E', fontSize: 'var(--font-size-base)' }}>
+                Tutor Verification In Progress
+              </strong>
+              <span style={{
+                backgroundColor: '#FDE68A',
+                color: '#92400E',
+                fontSize: 'var(--font-size-xs)',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                textTransform: 'uppercase',
+              }}>
+                {applicationStatus || 'Pending Admin Approval'}
+              </span>
+            </div>
+            <p style={{ color: '#78350F', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)', lineHeight: 1.5 }}>
+              Your tutor approval application has been sent to the Admin Panel. The admin is verifying your qualification certificate, trial video lecture, degree, and experience. Once approved, you can create courses, playlists, and resource bundles.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          backgroundColor: '#F0FDF4',
+          border: '1px solid #86EFAC',
+          borderRadius: 'var(--radius-lg)',
+          padding: 'var(--space-3) var(--space-5)',
+          marginBottom: 'var(--space-6)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+        }}>
+          <CheckCircle2 size={20} color="#16A34A" />
+          <span style={{ color: '#166534', fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>
+            Verified Tutor Account • Full permissions enabled to create courses, playlists, and bundles.
+          </span>
+        </div>
+      )}
+
       {/* Welcome */}
       <div className={styles.welcome}>
         <div className={styles.welcomeLeft}>
@@ -49,9 +107,19 @@ export function TutorDashboard() {
           <p className={styles.subtitle}>Here's an overview of your teaching impact.</p>
         </div>
         <div className={styles.welcomeActions}>
-          <Link to={ROUTES.TUTOR_RESOURCE_CREATE}>
-            <Button leftIcon={<Plus size={16} />}>Upload Resource</Button>
-          </Link>
+          {user?.isVerified ? (
+            <Link to={ROUTES.TUTOR_RESOURCE_CREATE}>
+              <Button leftIcon={<Plus size={16} />}>Upload Resource</Button>
+            </Link>
+          ) : (
+            <Button
+              variant="secondary"
+              leftIcon={<Plus size={16} />}
+              onClick={() => toast('Your account is awaiting admin approval. Creating courses, resources, and bundles will be enabled once approved.', { icon: '⏳' })}
+            >
+              Upload Resource (Approval Required)
+            </Button>
+          )}
           <Link to={ROUTES.TUTOR_ANALYTICS}>
             <Button variant="secondary" leftIcon={<TrendingUp size={16} />}>Analytics</Button>
           </Link>

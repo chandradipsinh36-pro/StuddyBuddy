@@ -23,13 +23,16 @@ import {
 } from './modules/reviews/reviews.routes';
 import groupsRoutes from './modules/groups/groups.routes';
 import adminRoutes from './modules/admin/admin.routes';
+import { earningsRouter as tutorEarningsRouter, analyticsRouter as tutorAnalyticsRouter } from './modules/tutors/tutor-earnings.routes';
+import notificationsRoutes from './modules/notifications/notifications.routes';
 import { prisma } from './config/database';
+import { getResourcesDirectory } from './middleware/resourceUpload';
 
 export function createApp(): Application {
   const app = express();
 
   // ── Security ────────────────────────────────────────────────────
-  app.use(helmet());
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   const allowedOrigins = [
     env.CLIENT_URL,
     env.ADMIN_URL,
@@ -52,6 +55,10 @@ export function createApp(): Application {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }));
+
+  // ── Static Resource Files (stored locally in StudyBuddy/resources) ─
+  const resourcesFolder = getResourcesDirectory();
+  app.use('/resources', express.static(resourcesFolder));
 
   // ── Body parsing ─────────────────────────────────────────────────
   app.use(express.json({ limit: '10mb' }));
@@ -100,6 +107,9 @@ export function createApp(): Application {
   // Payments & Refunds
   app.use('/api/payments',          paymentsRoutes);
   app.use('/api/refunds',           refundsRouter);
+  app.use('/api/tutor/earnings',    tutorEarningsRouter);
+  app.use('/api/tutor/analytics',   tutorAnalyticsRouter);
+  app.use('/api/notifications',     notificationsRoutes);
 
   // Enrollments (student)
   app.use('/api/students',          studentEnrollmentsRouter);

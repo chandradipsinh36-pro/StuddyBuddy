@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
-import { Shield, Key, Save, Lock, Mail, User as UserIcon } from 'lucide-react';
+import { Shield, Key, Save, Lock, Mail, User as UserIcon, Eye, EyeOff } from 'lucide-react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { StatusBadge } from '../../components/common/StatusBadge';
 
@@ -15,6 +15,9 @@ export const AdminProfilePage: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -211,14 +214,34 @@ export const AdminProfilePage: React.FC = () => {
                   style={{ position: 'absolute', left: 12, top: 12, color: 'var(--color-gray-400)' }}
                 />
                 <input
-                  type="password"
+                  type={showCurrent ? 'text' : 'password'}
                   className="form-input"
                   placeholder="••••••••••••"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  style={{ paddingLeft: 38 }}
+                  style={{ paddingLeft: 38, paddingRight: 38 }}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent(!showCurrent)}
+                  style={{
+                    position: 'absolute',
+                    right: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: 'var(--color-gray-400)',
+                  }}
+                  aria-label={showCurrent ? 'Hide password' : 'Show password'}
+                >
+                  {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 
@@ -230,14 +253,34 @@ export const AdminProfilePage: React.FC = () => {
                   style={{ position: 'absolute', left: 12, top: 12, color: 'var(--color-gray-400)' }}
                 />
                 <input
-                  type="password"
+                  type={showNew ? 'text' : 'password'}
                   className="form-input"
                   placeholder="At least 8 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  style={{ paddingLeft: 38 }}
+                  style={{ paddingLeft: 38, paddingRight: 38 }}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowNew(!showNew)}
+                  style={{
+                    position: 'absolute',
+                    right: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: 'var(--color-gray-400)',
+                  }}
+                  aria-label={showNew ? 'Hide password' : 'Show password'}
+                >
+                  {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 
@@ -249,14 +292,34 @@ export const AdminProfilePage: React.FC = () => {
                   style={{ position: 'absolute', left: 12, top: 12, color: 'var(--color-gray-400)' }}
                 />
                 <input
-                  type="password"
+                  type={showConfirm ? 'text' : 'password'}
                   className="form-input"
                   placeholder="Confirm matching password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  style={{ paddingLeft: 38 }}
+                  style={{ paddingLeft: 38, paddingRight: 38 }}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  style={{
+                    position: 'absolute',
+                    right: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: 'var(--color-gray-400)',
+                  }}
+                  aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 

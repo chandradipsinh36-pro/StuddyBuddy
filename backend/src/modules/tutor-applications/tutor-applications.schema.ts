@@ -9,7 +9,7 @@ export const updateApplicationSchema = z.object({
 });
 
 export const addDocumentSchema = z.object({
-  documentUrl: z.string().url('Must be a valid URL'),
+  documentUrl: z.string().min(1, 'Document URL or content is required'),
   documentType: z.string().min(1).max(100),
 });
 

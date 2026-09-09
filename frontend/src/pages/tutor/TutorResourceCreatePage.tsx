@@ -1,36 +1,96 @@
 import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Upload, FileText, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, CheckCircle2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { resourceService } from '../../services/resourceService';
 import { Input } from '../../components/ui/Input/Input';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { Select } from '../../components/ui/Select/Select';
 import { Button } from '../../components/ui/Button/Button';
 import { ProgressBar } from '../../components/ui/ProgressBar/ProgressBar';
-import { SUBJECTS, CATEGORIES, RESOURCE_TYPES, DIFFICULTY_LEVELS, ROUTES } from '../../constants';
+import { CATEGORIES, RESOURCE_TYPES, DIFFICULTY_LEVELS, ROUTES } from '../../constants';
 import toast from 'react-hot-toast';
 import styles from './TutorResourceCreatePage.module.css';
 
 export function TutorResourceCreatePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const ALLOWED_EXTENSIONS = [
+    'pdf',
+    'ppt', 'pptx',
+    'doc', 'docx',
+    'mp4', 'mov', 'webm', 'mkv', 'avi',
+    'mp3', 'wav', 'm4a', 'ogg', 'aac',
+    'png', 'jpg', 'jpeg', 'webp', 'gif',
+  ];
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [subject, setSubject] = useState(SUBJECTS[0]);
+  const [subject, setSubject] = useState('Mathematics');
   const [category, setCategory] = useState(CATEGORIES[0]);
+  const [customCategory, setCustomCategory] = useState('');
   const [type, setType] = useState('pdf');
   const [difficulty, setDifficulty] = useState('intermediate');
   const [accessType, setAccessType] = useState('free');
   const [price, setPrice] = useState('199');
-  const [tags, setTags] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  if (!user?.isVerified) {
+    return (
+      <div className={styles.page}>
+        <Link to={ROUTES.TUTOR_DASHBOARD} className={styles.backLink}>
+          <ArrowLeft size={16} /> Back to Dashboard
+        </Link>
+        <div style={{
+          backgroundColor: 'var(--color-white)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: 'var(--space-10)',
+          textAlign: 'center',
+          maxWidth: 600,
+          margin: 'var(--space-8) auto',
+        }}>
+          <ShieldAlert size={48} color="#D97706" style={{ margin: '0 auto var(--space-4)' }} />
+          <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, color: 'var(--color-gray-900)' }}>
+            Admin Approval Required
+          </h2>
+          <p style={{ color: 'var(--color-gray-600)', marginTop: 'var(--space-2)', lineHeight: 1.6 }}>
+            Your tutor approval application is currently under review by our admin team. Once the administrator verifies your qualification certificate, trial video lecture, and degree details, resource uploading will be automatically enabled for your account.
+          </p>
+          <div style={{ marginTop: 'var(--space-6)', display: 'flex', gap: 'var(--space-3)', justifyContent: 'center' }}>
+            <Link to={ROUTES.TUTOR_DASHBOARD}>
+              <Button>Go to Dashboard</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) setFile(f);
+    if (!f) return;
+
+    const ext = f.name.split('.').pop()?.toLowerCase();
+    if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
+      toast.error('Only PDF, PPT, Word, Video, MP3, and Images are acceptable.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Auto-detect format to assist tutor
+    if (['pdf'].includes(ext)) setType('pdf');
+    else if (['ppt', 'pptx'].includes(ext)) setType('ppt');
+    else if (['doc', 'docx'].includes(ext)) setType('test_paper');
+    else if (['mp4', 'mov', 'webm', 'mkv', 'avi'].includes(ext)) setType('youtube');
+    else if (['mp3', 'wav', 'm4a', 'ogg', 'aac'].includes(ext)) setType('audio');
+    else if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)) setType('image');
+
+    setFile(f);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,9 +99,24 @@ export function TutorResourceCreatePage() {
       toast.error('Please enter a title.');
       return;
     }
+    if (!subject.trim()) {
+      toast.error('Please enter a subject discipline.');
+      return;
+    }
+    if (category === 'Other' && !customCategory.trim()) {
+      toast.error('Please enter your custom category name.');
+      return;
+    }
     if (!file && type !== 'youtube') {
       toast.error('Please attach the file for this resource.');
       return;
+    }
+    if (file) {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
+        toast.error('Only PDF, PPT, Word, Video, MP3, and Images are acceptable.');
+        return;
+      }
     }
 
     setUploading(true);
@@ -58,11 +133,12 @@ export function TutorResourceCreatePage() {
     }, 200);
 
     try {
+      const finalCategory = category === 'Other' ? (customCategory.trim() || 'Other') : category;
       const fd = new FormData();
-      fd.append('title', title);
-      fd.append('description', description);
-      fd.append('subject', subject);
-      fd.append('category', category);
+      fd.append('title', title.trim());
+      fd.append('description', description.trim());
+      fd.append('subject', subject.trim());
+      fd.append('category', finalCategory);
       fd.append('type', type);
       fd.append('difficulty', difficulty);
       fd.append('accessType', accessType);
@@ -114,19 +190,33 @@ export function TutorResourceCreatePage() {
           />
 
           <div className={styles.row}>
-            <Select
+            <Input
               label="Subject Discipline *"
-              options={SUBJECTS.map(s => ({ value: s, label: s }))}
+              placeholder="e.g. Mathematics, Physics, Organic Chemistry"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
+              required
             />
             <Select
               label="Content Category *"
-              options={CATEGORIES.map(c => ({ value: c, label: c }))}
+              options={[
+                ...CATEGORIES.map(c => ({ value: c, label: c })),
+                { value: 'Other', label: 'Other' },
+              ]}
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             />
           </div>
+
+          {category === 'Other' && (
+            <Input
+              label="Custom Category Name *"
+              placeholder="e.g. Lab Manual, Cheatsheet, Formula Book..."
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              required
+            />
+          )}
 
           <div className={styles.row}>
             <Select
@@ -167,13 +257,6 @@ export function TutorResourceCreatePage() {
             )}
           </div>
 
-          <Input
-            label="Search Tags (Comma separated)"
-            placeholder="e.g. calculus, derivatives, engineering math"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-          />
-
           {/* File Upload Dropzone */}
           <div>
             <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-700)', marginBottom: 'var(--space-2)', display: 'block' }}>
@@ -182,6 +265,7 @@ export function TutorResourceCreatePage() {
             <input
               ref={fileInputRef}
               type="file"
+              accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.mov,.webm,.mkv,.avi,.mp3,.wav,.m4a,.ogg,.aac,.png,.jpg,.jpeg,.webp,.gif"
               style={{ display: 'none' }}
               onChange={handleFileSelect}
             />
@@ -204,7 +288,7 @@ export function TutorResourceCreatePage() {
                     Click or drag file to upload
                   </span>
                   <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
-                    Supports PDF, PPT, Word, Audio, or Images up to 50MB
+                    Supports PDF, PPT, Word, Video, MP3, and Images up to 50MB
                   </span>
                 </>
               )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft, BookOpen, ShieldAlert } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { courseService } from '../../services/courseService';
 import { categoryService } from '../../services/categoryService';
 import { Input } from '../../components/ui/Input/Input';
@@ -14,6 +15,7 @@ import styles from './TutorCourseCreatePage.module.css';
 
 export function TutorCourseCreatePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -30,6 +32,38 @@ export function TutorCourseCreatePage() {
       }
     }).catch(() => {});
   }, []);
+
+  if (!user?.isVerified) {
+    return (
+      <div className={styles.page}>
+        <Link to={ROUTES.TUTOR_DASHBOARD} className={styles.backLink}>
+          <ArrowLeft size={16} /> Back to Dashboard
+        </Link>
+        <div style={{
+          backgroundColor: 'var(--color-white)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: 'var(--space-10)',
+          textAlign: 'center',
+          maxWidth: 600,
+          margin: 'var(--space-8) auto',
+        }}>
+          <ShieldAlert size={48} color="#D97706" style={{ margin: '0 auto var(--space-4)' }} />
+          <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, color: 'var(--color-gray-900)' }}>
+            Admin Approval Required
+          </h2>
+          <p style={{ color: 'var(--color-gray-600)', marginTop: 'var(--space-2)', lineHeight: 1.6 }}>
+            Your tutor approval application is currently under review by our admin team. Once the administrator verifies your qualification certificate, trial video lecture, and degree details, course creation will be automatically enabled for your account.
+          </p>
+          <div style={{ marginTop: 'var(--space-6)', display: 'flex', gap: 'var(--space-3)', justifyContent: 'center' }}>
+            <Link to={ROUTES.TUTOR_DASHBOARD}>
+              <Button>Go to Dashboard</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

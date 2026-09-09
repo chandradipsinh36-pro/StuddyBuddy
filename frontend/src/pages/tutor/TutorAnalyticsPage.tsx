@@ -132,8 +132,8 @@ export function TutorAnalyticsPage() {
           <tbody>
             {(analytics.topResources || []).map((item: any, idx: number) => (
               <tr key={idx}>
-                <td><strong>{item.resource.title}</strong></td>
-                <td><Badge variant="outline">{item.resource.type.toUpperCase()}</Badge></td>
+                <td><strong>{item.resource?.title || item.title || 'Educational Resource'}</strong></td>
+                <td><Badge variant="outline">{(item.resource?.type || item.type || 'PDF').toUpperCase()}</Badge></td>
                 <td>{item.views.toLocaleString()}</td>
                 <td>{item.purchases}</td>
                 <td><strong>₹{item.revenue.toLocaleString()}</strong></td>

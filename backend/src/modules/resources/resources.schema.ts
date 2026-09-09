@@ -4,10 +4,12 @@ export const createResourceSchema = z.object({
   courseId: z.coerce.number().int().positive().optional(),
   filename: z.string().min(1).max(500),
   fileType: z.enum(['pdf', 'image', 'ppt', 'audio', 'youtube', 'test_paper']),
-  fileUrl: z.string().url().optional(),
-  isLocked: z.boolean().default(false),
+  fileUrl: z.string().optional(),
+  isLocked: z.coerce.boolean().default(false),
   price: z.coerce.number().min(0).default(0),
+  status: z.enum(['draft', 'processing', 'under_review', 'published', 'rejected', 'archived']).optional(),
   moderationNotes: z.string().optional(),
+  categoryName: z.string().optional(),
 });
 
 export const updateResourceSchema = z.object({

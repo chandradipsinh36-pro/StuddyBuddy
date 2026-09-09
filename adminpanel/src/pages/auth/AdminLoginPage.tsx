@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Shield, Lock, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Shield, Lock, Mail, ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { ROUTES } from '../../constants';
 
@@ -11,6 +11,7 @@ export const AdminLoginPage: React.FC = () => {
 
   const [email, setEmail] = useState('admin@studybuddy.com');
   const [password, setPassword] = useState('Admin@123456');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -147,14 +148,34 @@ export const AdminLoginPage: React.FC = () => {
                 style={{ position: 'absolute', left: 12, top: 12, color: 'var(--color-gray-400)' }}
               />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 className="form-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                style={{ paddingLeft: 38 }}
+                style={{ paddingLeft: 38, paddingRight: 38 }}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: 'var(--color-gray-400)',
+                }}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 

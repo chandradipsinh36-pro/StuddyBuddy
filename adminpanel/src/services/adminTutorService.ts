@@ -46,15 +46,29 @@ function mapApplication(app: Record<string, unknown>): TutorApplication {
       skill_name:  (s.skillName as string) ?? (s.skill_name as string) ?? '',
       proficiency: ((s.proficiency as string) || 'intermediate') as any,
     })),
-    documents:        ((app.documents as Record<string, unknown>[]) ?? []).map((d) => ({
-      doc_id:        (d.docId as number) ?? (d.doc_id as number) ?? 0,
-      application_id: (app.applicationId as number) ?? (d.applicationId as number) ?? 0,
-      document_url:  (d.documentUrl as string) ?? (d.document_url as string) ?? '',
-      document_type: (d.documentType as string) ?? (d.document_type as string) ?? 'credential',
-      file_name:     (d.documentUrl as string) ?? (d.document_url as string) ?? '',
-      file_size:     '',
-      uploaded_at:   (d.uploadedAt as string) ?? (d.uploaded_at as string) ?? '',
-    })),
+    documents:        ((app.documents as Record<string, unknown>[]) ?? []).map((d) => {
+      const docUrl = (d.documentUrl as string) ?? (d.document_url as string) ?? '';
+      const docType = (d.documentType as string) ?? (d.document_type as string) ?? 'qualification_certificate';
+      let fileName = docType.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+      if (docUrl.startsWith('http')) {
+        const parts = docUrl.split('/');
+        const lastPart = parts[parts.length - 1];
+        if (lastPart && lastPart.length < 50 && lastPart.includes('.')) fileName = lastPart;
+      } else if (docUrl.startsWith('data:image/')) {
+        fileName = 'Qualification_Certificate.png';
+      } else if (docUrl.startsWith('data:application/pdf')) {
+        fileName = 'Qualification_Certificate.pdf';
+      }
+      return {
+        doc_id:        (d.docId as number) ?? (d.doc_id as number) ?? 0,
+        application_id: (app.applicationId as number) ?? (d.applicationId as number) ?? 0,
+        document_url:  docUrl,
+        document_type: docType,
+        file_name:     fileName,
+        file_size:     docUrl.startsWith('data:') ? `${Math.round(docUrl.length * 0.75 / 1024)} KB` : 'Attached Document',
+        uploaded_at:   (d.uploadedAt as string) ?? (d.uploaded_at as string) ?? '',
+      };
+    }),
   };
 }
 

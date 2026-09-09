@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { playlistService } from '../../services/playlistService';
 import { PlaylistCard } from '../../components/shared/PlaylistCard';
 import { Button } from '../../components/ui/Button/Button';
@@ -13,6 +14,7 @@ import toast from 'react-hot-toast';
 import styles from './TutorPlaylistsPage.module.css';
 
 export function TutorPlaylistsPage() {
+  const { user } = useAuth();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -22,6 +24,14 @@ export function TutorPlaylistsPage() {
   const [description, setDescription] = useState('');
   const [subject, setSubject] = useState(SUBJECTS[0]);
   const [difficulty, setDifficulty] = useState('intermediate');
+
+  const handleOpenCreateModal = () => {
+    if (!user?.isVerified) {
+      toast.error('Your tutor approval application is pending admin review. You can create playlists once approved.');
+      return;
+    }
+    setCreateModalOpen(true);
+  };
 
   useEffect(() => {
     const fetchPlaylists = async () => {
@@ -39,6 +49,10 @@ export function TutorPlaylistsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user?.isVerified) {
+      toast.error('Your tutor approval application is pending admin review.');
+      return;
+    }
     if (!name.trim()) {
       toast.error('Please enter a playlist title.');
       return;
@@ -68,7 +82,9 @@ export function TutorPlaylistsPage() {
   if (loading) {
     return (
       <div className={styles.page}>
-        <div style={{ textAlign: 'center', padding: 'var(--space-12)' }}>Loading your playlists...</div>
+        <div style={{ textAlign: 'center', padding: 'var(--space-16)', color: 'var(--color-gray-500)' }}>
+          Loading playlists...
+        </div>
       </div>
     );
   }
@@ -85,7 +101,7 @@ export function TutorPlaylistsPage() {
         <Button
           variant="primary"
           leftIcon={<Plus size={16} />}
-          onClick={() => setCreateModalOpen(true)}
+          onClick={handleOpenCreateModal}
         >
           Create Playlist
         </Button>

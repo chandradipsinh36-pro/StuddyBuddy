@@ -83,10 +83,6 @@ export function TutorCoursesPage() {
         <EmptyState
           title="No courses created yet"
           description="Start building your academic presence by creating your first course on StudyBuddy."
-          action={{
-            label: 'Create Course',
-            onClick: () => { window.location.href = ROUTES.TUTOR_COURSE_CREATE; },
-          }}
         />
       ) : (
         <div className={styles.tableCard}>

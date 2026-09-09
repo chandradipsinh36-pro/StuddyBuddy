@@ -68,9 +68,12 @@ export const coursesService = {
   },
 
   async createCourse(tutorId: number, input: CreateCourseInput) {
-    // Only approved tutors can create (check is_verified OR application approved)
+    // Only approved tutors can create (check is_verified)
     const user = await prisma.user.findUnique({ where: { id: tutorId } });
     if (!user || user.role !== 'tutor') throw new AuthorizationError('Only tutors can create courses');
+    if (!user.isVerified) {
+      throw new BadRequestError('Your tutor application is currently pending admin approval. You can only create courses after your application is approved.');
+    }
 
     return prisma.course.create({
       data: { tutorId, ...input, price: input.price ?? 0 },

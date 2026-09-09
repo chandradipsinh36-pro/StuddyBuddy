@@ -199,10 +199,18 @@ export function ResourceDetailPage() {
                     <Unlock size={20} />
                     <span>You have access</span>
                   </div>
-                  {resource.type !== 'youtube' && (
-                    <Button fullWidth leftIcon={<Download size={16} />}>
-                      Access Resource
-                    </Button>
+                  {resource.type !== 'youtube' && resource.fileUrl && (
+                    <a
+                      href={resource.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      style={{ textDecoration: 'none', display: 'block', width: '100%' }}
+                    >
+                      <Button fullWidth leftIcon={<Download size={16} />}>
+                        Access & Download Resource
+                      </Button>
+                    </a>
                   )}
                 </>
               ) : (

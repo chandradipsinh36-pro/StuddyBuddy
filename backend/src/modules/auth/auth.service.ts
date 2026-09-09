@@ -15,12 +15,46 @@ export const authService = {
     if (existing) throw new ConflictError('An account with this email already exists');
 
     const passwordHash = await hashPassword(input.password);
+    const isTutor = input.role === 'tutor';
+
     const user = await prisma.user.create({
       data: {
         name: input.name,
         email: input.email,
         passwordHash,
         role: input.role as 'student' | 'tutor',
+        isVerified: !isTutor, // Students are verified by default; tutors require admin approval
+        ...(isTutor && {
+          tutorProfile: {
+            create: {
+              instituteName: input.highestQualification || 'Degree / University',
+              bio: input.bio || (input.highestQualification ? `Highest Qualification / Degree: ${input.highestQualification}` : 'Educator on StudyBuddy'),
+              experienceYears: input.experienceYears ?? 0,
+            },
+          },
+          ...(input.subjects && input.subjects.length > 0 && {
+            tutorSkills: {
+              create: input.subjects.map((skillName) => ({
+                skillName,
+                proficiency: 'intermediate',
+              })),
+            },
+          }),
+          tutorApplications: {
+            create: {
+              trialVideoUrl: input.trialVideoUrl || null,
+              status: 'pending',
+              ...(input.documentUrl && {
+                documents: {
+                  create: {
+                    documentUrl: input.documentUrl,
+                    documentType: 'qualification_certificate',
+                  },
+                },
+              }),
+            },
+          },
+        }),
       },
     });
 

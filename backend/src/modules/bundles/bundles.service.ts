@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database';
-import { NotFoundError, AuthorizationError, ConflictError } from '../../utils/AppError';
+import { NotFoundError, AuthorizationError, ConflictError, BadRequestError } from '../../utils/AppError';
 import { CreateBundleInput, UpdateBundleInput } from './bundles.schema';
 
 const bundleSelect = {
@@ -43,6 +43,12 @@ export const bundlesService = {
   },
 
   async createBundle(tutorId: number, input: CreateBundleInput) {
+    const user = await prisma.user.findUnique({ where: { id: tutorId } });
+    if (!user || user.role !== 'tutor') throw new AuthorizationError('Only tutors can create bundles');
+    if (!user.isVerified) {
+      throw new BadRequestError('Your tutor application is currently pending admin approval. You can only create bundles after your application is approved.');
+    }
+
     return prisma.bundle.create({ data: { tutorId, ...input }, select: bundleSelect });
   },
 

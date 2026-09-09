@@ -5,15 +5,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   BookOpen, User, Mail, Lock, Eye, EyeOff, Upload, Video,
-  FileCheck, X, ShieldAlert, Award, Briefcase
+  FileCheck, X, ShieldAlert, Award, Briefcase, Plus
 } from 'lucide-react';
 import { authService } from '../../services/authService';
-import { tutorService } from '../../services/tutorService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
 import { Badge } from '../../components/ui/Badge/Badge';
-import { ROUTES, SUBJECTS } from '../../constants';
+import { ROUTES } from '../../constants';
 import toast from 'react-hot-toast';
 import styles from './Auth.module.css';
 
@@ -38,10 +37,27 @@ export function RegisterPage() {
   const { setCurrentUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState<'student' | 'tutor'>('student');
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>(['Mathematics']);
   const [fileError, setFileError] = useState<string | null>(null);
+
+  // Teaching subjects list with Add button
+  const [subjectInput, setSubjectInput] = useState('');
+  const [subjectsList, setSubjectsList] = useState<string[]>(['Mathematics']);
+
+  const handleAddSubject = () => {
+    const trimmed = subjectInput.trim();
+    if (!trimmed) return;
+    if (!subjectsList.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+      setSubjectsList(prev => [...prev, trimmed]);
+    }
+    setSubjectInput('');
+  };
+
+  const handleRemoveSubject = (indexToRemove: number) => {
+    setSubjectsList(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
 
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(baseSchema),
@@ -54,9 +70,21 @@ export function RegisterPage() {
     setFileError(null);
   };
 
+  const ALLOWED_CERT_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'webp'];
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    const isAllowed = (ext ? ALLOWED_CERT_EXTENSIONS.includes(ext) : false) || file.type === 'application/pdf' || file.type.startsWith('image/');
+
+    if (!isAllowed) {
+      setFileError('Only PDF and image files (PNG, JPG, JPEG) are allowed.');
+      toast.error('Only PDF and image files are allowed for qualification certificate.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
 
     // Check size (max 15MB)
     if (file.size > 15 * 1024 * 1024) {
@@ -68,19 +96,26 @@ export function RegisterPage() {
     setFileError(null);
   };
 
-  const handleToggleSubject = (subject: string) => {
-    setSelectedSubjects(prev =>
-      prev.includes(subject)
-        ? prev.length > 1 ? prev.filter(s => s !== subject) : prev
-        : [...prev, subject]
-    );
-  };
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
 
   const onSubmit = async (data: FormData) => {
     if (role === 'tutor') {
       if (!certificateFile) {
         setFileError('Please upload your qualification certificate or diploma.');
         toast.error('Please upload your qualification certificate.');
+        return;
+      }
+      const ext = certificateFile.name.split('.').pop()?.toLowerCase();
+      const isAllowed = (ext ? ALLOWED_CERT_EXTENSIONS.includes(ext) : false) || certificateFile.type === 'application/pdf' || certificateFile.type.startsWith('image/');
+      if (!isAllowed) {
+        setFileError('Only PDF and image files (PNG, JPG, JPEG) are allowed.');
+        toast.error('Only PDF and image files are allowed for qualification certificate.');
         return;
       }
       if (!data.trialVideoLink || !data.trialVideoLink.trim()) {
@@ -90,58 +125,58 @@ export function RegisterPage() {
     }
 
     try {
-      // Register account
-      await authService.register({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: data.role,
-      });
-
-      const loggedInUser = {
-        id: Date.now(),
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.name)}`,
-        emailVerified: true,
-        createdAt: new Date().toISOString(),
-      };
+      let documentUrl: string | undefined;
+      if (certificateFile) {
+        documentUrl = await readFileAsDataUrl(certificateFile);
+      }
 
       if (role === 'tutor') {
-        // Also submit tutor onboarding request
-        const fd = new window.FormData();
-        fd.append('name', data.name);
-        fd.append('qualification', data.highestQualification || 'Degree');
-        fd.append('experience', data.experienceYears || '1');
-        fd.append('trialVideoUrl', data.trialVideoLink || '');
-        fd.append('subjects', JSON.stringify(selectedSubjects));
-        if (certificateFile) {
-          fd.append('documents', certificateFile);
+        let finalSubjects = [...subjectsList];
+        const pendingInput = subjectInput.trim();
+        if (pendingInput && !finalSubjects.some(s => s.toLowerCase() === pendingInput.toLowerCase())) {
+          finalSubjects.push(pendingInput);
+        }
+        if (finalSubjects.length === 0) {
+          toast.error('Please add at least one teaching subject.');
+          return;
         }
 
-        try {
-          await tutorService.submitOnboarding(fd);
-        } catch {
-          // fallback gracefully
-        }
+        const authUser = await authService.register({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: 'tutor',
+          trialVideoUrl: data.trialVideoLink?.trim() || undefined,
+          highestQualification: data.highestQualification?.trim() || undefined,
+          experienceYears: data.experienceYears ? Number(data.experienceYears) : undefined,
+          documentUrl,
+          subjects: finalSubjects,
+        });
 
-        // Auto-login so user does not need to log in again
-        setCurrentUser(loggedInUser);
+        // Store authenticated session
+        setCurrentUser(authUser, authUser.token);
 
-        toast.success(`Welcome to StudyBuddy, ${data.name}! Your request to become a tutor has been submitted.`);
-        // Direct redirect to Home page
-        navigate(ROUTES.HOME, { replace: true });
+        toast.success(`Welcome to StudyBuddy, ${data.name}! Your tutor approval application has been sent to the admin.`);
+        // Direct redirect to Tutor Dashboard, NOT login page
+        navigate(ROUTES.TUTOR_DASHBOARD, { replace: true });
       } else {
-        // Auto-login so user does not need to log in again
-        setCurrentUser(loggedInUser);
+        const authUser = await authService.register({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: 'student',
+        });
+
+        // Store authenticated session
+        setCurrentUser(authUser, authUser.token);
 
         toast.success(`Welcome to StudyBuddy, ${data.name}! Your account has been created.`);
-        // Direct redirect to Home page
-        navigate(ROUTES.HOME, { replace: true });
+        // Direct redirect to Student Dashboard, NOT login page
+        navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
       }
-    } catch {
-      toast.error('Registration failed. Please try again.');
+    } catch (err: any) {
+      const message = err?.response?.data?.error?.message || err?.message || 'Registration failed. Please try again.';
+      toast.error(message);
     }
   };
 
@@ -232,9 +267,19 @@ export function RegisterPage() {
 
           <Input
             label="Confirm Password"
-            type={showPassword ? 'text' : 'password'}
+            type={showConfirmPassword ? 'text' : 'password'}
             placeholder="Repeat your password"
             leftIcon={<Lock size={16} />}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
+                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
             error={errors.confirmPassword?.message}
             autoComplete="new-password"
             {...register('confirmPassword')}
@@ -259,7 +304,7 @@ export function RegisterPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                  accept=".pdf,image/*,.png,.jpg,.jpeg,.webp"
                   style={{ display: 'none' }}
                   onChange={handleFileChange}
                 />
@@ -275,7 +320,7 @@ export function RegisterPage() {
                       Click to choose certificate or degree document
                     </span>
                     <span className={styles.uploadSub}>
-                      Supports PDF, PNG, JPG up to 15MB (e.g. Master's / PhD / Teaching Certification)
+                      Supports PDF and Images (PNG, JPG) up to 15MB
                     </span>
                   </div>
                 ) : (
@@ -332,24 +377,79 @@ export function RegisterPage() {
 
               {/* Teaching Subjects */}
               <div>
-                <label className={styles.uploadLabel}>
-                  Teaching Subjects (Select primary disciplines)
+                <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-700)', marginBottom: 'var(--space-1)', display: 'block' }}>
+                  Teaching Subjects *
                 </label>
-                <div className={styles.subjectPills}>
-                  {SUBJECTS.slice(0, 8).map(subject => {
-                    const isSelected = selectedSubjects.includes(subject);
-                    return (
-                      <button
-                        key={subject}
-                        type="button"
-                        className={`${styles.subjectPill} ${isSelected ? styles.subjectPillActive : ''}`}
-                        onClick={() => handleToggleSubject(subject)}
-                      >
-                        {isSelected ? '✓ ' : '+ '} {subject}
-                      </button>
-                    );
-                  })}
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <div style={{ flex: 1 }}>
+                    <Input
+                      type="text"
+                      placeholder="Type a subject and click Add (e.g. Mathematics)"
+                      leftIcon={<BookOpen size={16} />}
+                      value={subjectInput}
+                      onChange={(e) => setSubjectInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddSubject();
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleAddSubject}
+                    style={{ height: 40, alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Plus size={16} />
+                    <span>Add</span>
+                  </Button>
                 </div>
+
+                {/* Added subject tags */}
+                {subjectsList.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+                    {subjectsList.map((subj, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '4px 10px',
+                          backgroundColor: 'var(--color-primary-50)',
+                          border: '1px solid var(--color-primary-200)',
+                          borderRadius: 'var(--radius-full)',
+                          fontSize: 'var(--font-size-xs)',
+                          fontWeight: 600,
+                          color: 'var(--color-primary-700)',
+                        }}
+                      >
+                        {subj}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSubject(idx)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: 'var(--color-primary-500)',
+                          }}
+                          title={`Remove ${subj}`}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', marginTop: 'var(--space-1)' }}>
+                  Type a subject and click Add to include multiple teaching disciplines.
+                </p>
               </div>
             </div>
           )}

@@ -7,8 +7,6 @@ import {
 } from '../../utils/AppError';
 import { ApplicationQuery, ApproveTutorInput, RejectTutorInput } from './admin.schema';
 
-// Statuses that represent a final/reviewed state
-const REVIEWED_STATUSES = ['approved', 'rejected'] as const;
 
 // Sort whitelist
 const SORT_MAP: Record<string, string> = {
@@ -66,6 +64,14 @@ export const adminApplicationService = {
           reviewer: {
             select: { id: true, name: true, email: true },
           },
+          documents: {
+            select: {
+              docId:        true,
+              documentUrl:  true,
+              documentType: true,
+              uploadedAt:   true,
+            },
+          },
           _count: { select: { documents: true } },
         },
       }),
@@ -122,9 +128,7 @@ export const adminApplicationService = {
 
   // ── Approve application ───────────────────────────────────────────
   async approveApplication(adminId: number, applicationId: number, input: ApproveTutorInput) {
-    // Use a transaction to ensure atomicity (handles concurrent reviews)
-    return prisma.$transaction(async (tx) => {
-      // Fetch with status check inside the transaction
+    await prisma.$transaction(async (tx) => {
       const application = await tx.tutorApplication.findUnique({
         where: { applicationId },
         select: {
@@ -139,9 +143,15 @@ export const adminApplicationService = {
 
       if (!application) throw new NotFoundError('Tutor application');
 
-      // Prevent double-review (concurrency guard)
-      if (REVIEWED_STATUSES.includes(application.status as typeof REVIEWED_STATUSES[number])) {
-        throw new ConflictError('APPLICATION_ALREADY_REVIEWED');
+      // If already approved, update note if provided and return
+      if (application.status === 'approved') {
+        if (input.admin_note !== undefined) {
+          await tx.tutorApplication.update({
+            where: { applicationId },
+            data: { adminNote: input.admin_note },
+          });
+        }
+        return;
       }
 
       const applicant = application.user;
@@ -150,8 +160,8 @@ export const adminApplicationService = {
         throw new BadRequestError('Cannot approve application for a banned user');
       }
 
-      // 1. Update application status
-      const updatedApp = await tx.tutorApplication.update({
+      // 1. Update application status to approved (allows approving pending or previously rejected applications)
+      await tx.tutorApplication.update({
         where: { applicationId },
         data: {
           status:     'approved',
@@ -191,8 +201,6 @@ export const adminApplicationService = {
         applicationId,
         applicantId:   applicant.id,
       });
-
-      return updatedApp;
     });
 
     return this.getApplicationById(applicationId);
@@ -212,9 +220,15 @@ export const adminApplicationService = {
 
       if (!application) throw new NotFoundError('Tutor application');
 
-      // Prevent double-review
-      if (REVIEWED_STATUSES.includes(application.status as typeof REVIEWED_STATUSES[number])) {
-        throw new ConflictError('APPLICATION_ALREADY_REVIEWED');
+      // If already rejected, update note if provided and return
+      if (application.status === 'rejected') {
+        if (input.admin_note !== undefined) {
+          await tx.tutorApplication.update({
+            where: { applicationId },
+            data: { adminNote: input.admin_note },
+          });
+        }
+        return;
       }
 
       await tx.tutorApplication.update({
@@ -225,6 +239,12 @@ export const adminApplicationService = {
           reviewedAt: new Date(),
           adminNote:  input.admin_note,
         },
+      });
+
+      // If user was previously verified, revoke verified status
+      await tx.user.update({
+        where: { id: application.userId },
+        data:  { isVerified: false },
       });
 
       logger.info({

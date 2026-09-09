@@ -16,8 +16,8 @@ export function TutorResourcesPage() {
   useEffect(() => {
     const fetchTutorResources = async () => {
       try {
-        const data = await resourceService.getTutorResources(1);
-        setResources(data);
+        const res = await resourceService.getMyResources();
+        setResources(res.data);
       } catch (err) {
         console.error(err);
       } finally {

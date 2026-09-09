@@ -114,12 +114,20 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
         </div>
 
         {/* Document Preview Frame */}
-        <div style={{ flex: 1, minHeight: 480, backgroundColor: '#F1F5F9', position: 'relative' }}>
-          <iframe
-            src={doc.document_url}
-            title={doc.file_name}
-            style={{ width: '100%', height: '100%', minHeight: 480, border: 'none' }}
-          />
+        <div style={{ flex: 1, minHeight: 480, backgroundColor: '#F1F5F9', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto', padding: 'var(--space-2)' }}>
+          {doc.document_url.startsWith('data:image/') || doc.document_url.match(/\.(png|jpe?g|webp|gif)(\?.*)?$/i) ? (
+            <img
+              src={doc.document_url}
+              alt={doc.file_name}
+              style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: 'var(--radius-md)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+            />
+          ) : (
+            <iframe
+              src={doc.document_url}
+              title={doc.file_name}
+              style={{ width: '100%', height: '100%', minHeight: 480, border: 'none' }}
+            />
+          )}
         </div>
 
         {/* Footer */}

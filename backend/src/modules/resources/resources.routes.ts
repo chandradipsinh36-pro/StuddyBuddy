@@ -20,13 +20,16 @@ router.delete('/:id/categories/:categoryId', authenticate, authorize('tutor'), r
 
 export default router;
 
+import { resourceUpload } from '../../middleware/resourceUpload';
+
 // Tutor resource routes — mounted at /tutor/resources
 export const tutorResourceRouter = Router();
 tutorResourceRouter.use(authenticate, authorize('tutor'));
 tutorResourceRouter.get('/', validate(resourceQuerySchema, 'query'), resourcesController.listMine);
-tutorResourceRouter.post('/', validate(createResourceSchema), resourcesController.create);
+tutorResourceRouter.post('/', resourceUpload.single('file'), resourcesController.create);
 tutorResourceRouter.get('/:id', resourcesController.getMineById);
-tutorResourceRouter.patch('/:id', validate(updateResourceSchema), resourcesController.update);
+tutorResourceRouter.patch('/:id', resourceUpload.single('file'), resourcesController.update);
+tutorResourceRouter.put('/:id', resourceUpload.single('file'), resourcesController.update);
 tutorResourceRouter.delete('/:id', resourcesController.remove);
 
 // Moderation storage (no AI)

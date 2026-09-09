@@ -1,6 +1,9 @@
+import fs from 'fs';
+import path from 'path';
 import { prisma } from '../../config/database';
-import { NotFoundError, AuthorizationError } from '../../utils/AppError';
+import { NotFoundError, AuthorizationError, BadRequestError } from '../../utils/AppError';
 import { getPagination } from '../../utils/pagination';
+import { getResourcesDirectory } from '../../middleware/resourceUpload';
 import {
   CreateResourceInput, UpdateResourceInput, ResourceQuery,
   AddModerationLogInput, AddExtractedContentInput, AddVideoMetadataInput,
@@ -82,7 +85,13 @@ export const resourcesService = {
   },
 
   async createResource(tutorId: number, input: CreateResourceInput) {
-    return prisma.resource.create({
+    const user = await prisma.user.findUnique({ where: { id: tutorId } });
+    if (!user || user.role !== 'tutor') throw new AuthorizationError('Only tutors can upload resources');
+    if (!user.isVerified) {
+      throw new BadRequestError('Your tutor application is currently pending admin approval. You can only upload resources or playlists after your application is approved.');
+    }
+
+    const resource = await prisma.resource.create({
       data: {
         uploadedBy: tutorId,
         courseId: input.courseId,
@@ -91,20 +100,150 @@ export const resourcesService = {
         fileUrl: input.fileUrl,
         isLocked: input.isLocked ?? false,
         price: input.price ?? 0,
-        status: 'draft',
+        status: (input.status as any) || 'published',
+        moderationNotes: input.moderationNotes,
       },
+      select: resourceSelect,
+    });
+
+    if (input.categoryName && typeof input.categoryName === 'string' && input.categoryName.trim()) {
+      try {
+        const catName = input.categoryName.trim();
+        const category = await prisma.category.upsert({
+          where: { name: catName },
+          update: {},
+          create: { name: catName },
+        });
+        await prisma.resourceCategory.upsert({
+          where: {
+            resourceId_categoryId: {
+              resourceId: resource.resourceId,
+              categoryId: category.categoryId,
+            },
+          },
+          update: {},
+          create: {
+            resourceId: resource.resourceId,
+            categoryId: category.categoryId,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to link category to resource:', err);
+      }
+    }
+
+    return prisma.resource.findUnique({
+      where: { resourceId: resource.resourceId },
       select: resourceSelect,
     });
   },
 
-  async updateResource(tutorId: number, resourceId: number, input: UpdateResourceInput) {
+  async updateResource(tutorId: number, resourceId: number, body: any, file?: Express.Multer.File) {
     const resource = await prisma.resource.findUnique({ where: { resourceId } });
     if (!resource) throw new NotFoundError('Resource');
     if (resource.uploadedBy !== tutorId) throw new AuthorizationError();
 
-    return prisma.resource.update({
+    let existingMeta: any = {};
+    try {
+      if (resource.moderationNotes && resource.moderationNotes.startsWith('{')) {
+        existingMeta = JSON.parse(resource.moderationNotes);
+      }
+    } catch {}
+
+    const title = (body.title || body.filename || existingMeta.title || resource.filename || '').trim();
+    const description = body.description !== undefined ? body.description : existingMeta.description;
+    const subject = body.subject !== undefined ? body.subject : existingMeta.subject;
+    const category = body.category !== undefined ? body.category : existingMeta.category;
+
+    let fileUrl = resource.fileUrl;
+    let fileType = resource.fileType;
+    let savedFilename = existingMeta.savedFilename;
+    let originalFilename = existingMeta.originalFilename;
+    let fileSize = existingMeta.fileSize;
+
+    // If new file is uploaded, automatically delete old resource file from local folder
+    if (file) {
+      const resourcesDir = getResourcesDirectory();
+      const filesToDelete = new Set<string>();
+
+      if (resource.fileUrl) {
+        const oldBase = path.basename(resource.fileUrl);
+        if (oldBase && oldBase !== file.filename) {
+          filesToDelete.add(path.join(resourcesDir, oldBase));
+        }
+      }
+      if (existingMeta.savedFilename && existingMeta.savedFilename !== file.filename) {
+        filesToDelete.add(path.join(resourcesDir, existingMeta.savedFilename));
+      }
+
+      for (const filePath of filesToDelete) {
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+            console.log(`[Storage] Deleted old resource file: ${filePath}`);
+          } catch (e) {
+            console.error('Error deleting old resource file:', e);
+          }
+        }
+      }
+
+      fileUrl = `/resources/${file.filename}`;
+      savedFilename = file.filename;
+      originalFilename = file.originalname;
+      fileSize = file.size;
+
+      const ext = file.originalname.split('.').pop()?.toLowerCase();
+      if (ext === 'pdf') fileType = 'pdf';
+      else if (['ppt', 'pptx'].includes(ext || '')) fileType = 'ppt';
+      else if (['doc', 'docx'].includes(ext || '')) fileType = 'test_paper';
+      else if (['mp4', 'mov', 'webm', 'mkv', 'avi'].includes(ext || '')) fileType = 'youtube';
+      else if (['mp3', 'wav', 'm4a', 'ogg', 'aac'].includes(ext || '')) fileType = 'audio';
+      else if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext || '')) fileType = 'image';
+    }
+
+    const newMeta = {
+      ...existingMeta,
+      title,
+      description,
+      subject,
+      category,
+      savedFilename,
+      originalFilename,
+      fileSize,
+    };
+
+    const updateData: any = {
+      filename: title,
+      fileType,
+      fileUrl,
+      moderationNotes: JSON.stringify(newMeta),
+    };
+
+    await prisma.resource.update({
       where: { resourceId },
-      data: input,
+      data: updateData,
+    });
+
+    if (category && typeof category === 'string' && category.trim()) {
+      try {
+        const catName = category.trim();
+        const cat = await prisma.category.upsert({
+          where: { name: catName },
+          update: {},
+          create: { name: catName },
+        });
+
+        await prisma.resourceCategory.deleteMany({ where: { resourceId } });
+        await prisma.resourceCategory.create({
+          data: { resourceId, categoryId: cat.categoryId },
+        });
+      } catch (err) {
+        console.error('Failed to update category link:', err);
+      }
+    }
+
+    return prisma.resource.findUnique({
+      where: { resourceId },
       select: resourceSelect,
     });
   },
@@ -113,6 +252,31 @@ export const resourcesService = {
     const resource = await prisma.resource.findUnique({ where: { resourceId } });
     if (!resource) throw new NotFoundError('Resource');
     if (resource.uploadedBy !== tutorId) throw new AuthorizationError();
+
+    // Automatically delete local file from disk on resource deletion
+    try {
+      const resourcesDir = getResourcesDirectory();
+      let meta: any = {};
+      try {
+        if (resource.moderationNotes?.startsWith('{')) meta = JSON.parse(resource.moderationNotes);
+      } catch {}
+
+      const filesToDelete = new Set<string>();
+      if (resource.fileUrl) {
+        filesToDelete.add(path.join(resourcesDir, path.basename(resource.fileUrl)));
+      }
+      if (meta.savedFilename) {
+        filesToDelete.add(path.join(resourcesDir, meta.savedFilename));
+      }
+      for (const p of filesToDelete) {
+        if (fs.existsSync(p)) {
+          fs.unlinkSync(p);
+          console.log(`[Storage] Deleted file on resource removal: ${p}`);
+        }
+      }
+    } catch (e) {
+      console.error('Error deleting local file on resource deletion:', e);
+    }
 
     await prisma.resource.delete({ where: { resourceId } });
   },

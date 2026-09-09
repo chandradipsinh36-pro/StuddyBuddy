@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Package, ShoppingBag } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Modal } from '../../components/ui/Modal/Modal';
@@ -11,6 +12,7 @@ import toast from 'react-hot-toast';
 import styles from './TutorBundlesPage.module.css';
 
 export function TutorBundlesPage() {
+  const { user } = useAuth();
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -20,8 +22,20 @@ export function TutorBundlesPage() {
   const [originalPrice, setOriginalPrice] = useState('499');
   const [discount, setDiscount] = useState('25');
 
+  const handleOpenCreateModal = () => {
+    if (!user?.isVerified) {
+      toast.error('Your tutor approval application is pending admin review. You can create bundles once approved.');
+      return;
+    }
+    setModalOpen(true);
+  };
+
   const handleCreateBundle = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user?.isVerified) {
+      toast.error('Your tutor approval application is pending admin review.');
+      return;
+    }
     if (!bundleName.trim()) {
       toast.error('Please enter a bundle name.');
       return;
@@ -64,7 +78,7 @@ export function TutorBundlesPage() {
         <Button
           variant="primary"
           leftIcon={<Plus size={16} />}
-          onClick={() => setModalOpen(true)}
+          onClick={handleOpenCreateModal}
         >
           Create New Bundle
         </Button>
@@ -74,10 +88,6 @@ export function TutorBundlesPage() {
         <EmptyState
           title="No bundles created yet"
           description="Group your high-yield resources together and offer a bundled discount to students."
-          action={{
-            label: "Create First Bundle",
-            onClick: () => setModalOpen(true),
-          }}
         />
       ) : (
         <div className={styles.grid}>

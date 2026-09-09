@@ -480,28 +480,45 @@ export function normalizeMessage(m: any): GroupMessage {
 }
 
 export function normalizeResource(r: any): Resource {
-  const categoryName = r.resourceCategories?.[0]?.category?.name;
+  let meta: any = {};
+  try {
+    if (r.moderationNotes && typeof r.moderationNotes === 'string' && r.moderationNotes.startsWith('{')) {
+      meta = JSON.parse(r.moderationNotes);
+    }
+  } catch {}
+
+  const categoryName = meta.category || r.category || r.resourceCategories?.[0]?.category?.name || 'General';
+  const rawFileUrl = r.fileUrl;
+  const fileUrl = rawFileUrl
+    ? (rawFileUrl.startsWith('http') ? rawFileUrl : `http://localhost:5000${rawFileUrl.startsWith('/') ? '' : '/'}${rawFileUrl}`)
+    : undefined;
+
+  const title = meta.title || r.title || r.filename || 'Untitled Resource';
+
   return {
     ...r,
     id: r.id ?? r.resourceId,
     resourceId: r.resourceId ?? r.id,
-    title: r.title ?? r.filename ?? 'Untitled Resource',
-    filename: r.filename ?? r.title ?? 'Untitled Resource',
+    title,
+    filename: title,
     type: r.type ?? r.fileType ?? 'pdf',
     fileType: r.fileType ?? r.type ?? 'pdf',
+    fileUrl,
     accessType: r.accessType ?? (r.isLocked ? 'premium' : 'free'),
     isLocked: r.isLocked ?? (r.accessType === 'premium'),
-    subject: r.subject ?? categoryName ?? 'General',
-    category: r.category ?? categoryName ?? 'General',
-    description: r.description ?? r.moderationNotes ?? 'Verified educational resource.',
+    subject: meta.subject || r.subject || categoryName,
+    category: categoryName,
+    difficulty: meta.difficulty || r.difficulty || 'intermediate',
+    description: meta.description || r.description || (r.moderationNotes && !r.moderationNotes.startsWith('{') ? r.moderationNotes : ''),
     thumbnailUrl: r.thumbnailUrl ?? (r.fileType === 'youtube' && r.videoMetadata?.youtubeVideoId
       ? `https://img.youtube.com/vi/${r.videoMetadata.youtubeVideoId}/hqdefault.jpg`
       : undefined),
-    rating: r.rating ?? 4.8,
-    reviewCount: r.reviewCount ?? 12,
-    viewCount: r.viewCount ?? 120,
-    downloadCount: r.downloadCount ?? 45,
+    rating: r.rating ?? (r.averageRating ?? 0),
+    reviewCount: r.reviewCount ?? 0,
+    viewCount: r.viewCount ?? 0,
+    downloadCount: r.downloadCount ?? 0,
     uploader: r.uploader ? { ...r.uploader, avatarUrl: r.uploader.profilePic ?? r.uploader.avatarUrl ?? undefined } : undefined,
+    tutor: r.uploader ? { ...r.uploader, avatarUrl: r.uploader.profilePic ?? r.uploader.avatarUrl ?? undefined } : (r.tutor ?? undefined),
   };
 }
 
@@ -511,7 +528,7 @@ export function normalizeCourse(c: any): Course {
     courseId: c.courseId ?? c.id,
     id: c.id ?? c.courseId,
     title: c.title ?? 'Untitled Course',
-    description: c.description ?? 'Comprehensive learning curriculum.',
+    description: c.description ?? '',
     price: c.price ?? 0,
     isPublished: c.isPublished ?? true,
     tutor: c.tutor ? { ...c.tutor, avatarUrl: c.tutor.profilePic ?? c.tutor.avatarUrl ?? undefined } : undefined,

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Lock, ShieldAlert, Save } from 'lucide-react';
+import { Bell, Lock, ShieldAlert, Save, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
 import toast from 'react-hot-toast';
@@ -13,6 +13,9 @@ export function StudentSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSaveNotifs = () => {
     toast.success('Notification preferences updated!');
@@ -109,24 +112,54 @@ export function StudentSettingsPage() {
         <form onSubmit={handlePasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <Input
             label="Current Password"
-            type="password"
+            type={showCurrent ? 'text' : 'password'}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             placeholder="••••••••"
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowCurrent(!showCurrent)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
+              >
+                {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
           />
           <Input
             label="New Password"
-            type="password"
+            type={showNew ? 'text' : 'password'}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="At least 8 characters"
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowNew(!showNew)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                aria-label={showNew ? 'Hide new password' : 'Show new password'}
+              >
+                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
           />
           <Input
             label="Confirm New Password"
-            type="password"
+            type={showConfirm ? 'text' : 'password'}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Repeat new password"
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
+              >
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button variant="primary" size="sm" type="submit">
