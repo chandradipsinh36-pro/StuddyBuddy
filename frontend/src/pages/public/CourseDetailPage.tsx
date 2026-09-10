@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, ShieldCheck, Star, FileText, Video, Paperclip, ExternalLink, BookOpen, Lock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ShieldCheck, Star, FileText, Video, Paperclip, ExternalLink, BookOpen, Lock, Eye, CheckCircle2, Circle } from 'lucide-react';
 import { parseVideoUrl } from '../../utils/videoUtils';
 import { courseService } from '../../services/courseService';
 import { enrollmentService } from '../../services/enrollmentService';
@@ -11,7 +11,10 @@ import { Button } from '../../components/ui/Button/Button';
 import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
+import { ProgressBar } from '../../components/ui/ProgressBar/ProgressBar';
 import { PaymentCheckoutModal } from '../../components/shared/PaymentCheckoutModal';
+import { DocumentViewerModal } from '../../components/shared/DocumentViewerModal';
+import { getCourseProgress, toggleLessonProgress, markLessonAsCompleted } from '../../utils/courseProgress';
 import { ROUTES } from '../../constants';
 import type { Course, CourseReview } from '../../types';
 import toast from 'react-hot-toast';
@@ -33,39 +36,65 @@ export function CourseDetailPage() {
   const [comment, setComment] = useState('');
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
+  const [completedLessonIndices, setCompletedLessonIndices] = useState<number[]>([]);
 
   useEffect(() => {
+    if (user?.id && courseId) {
+      const p = getCourseProgress(user.id, courseId);
+      setCompletedLessonIndices(p.completedLessons);
+    }
+  }, [user?.id, courseId]);
+
+  const handleToggleLesson = (idx: number, _lessonTitle?: string) => {
+    if (!user?.id) {
+      toast.error('Please log in as a student to track your course progress.');
+      return;
+    }
+    const res = toggleLessonProgress(user.id, courseId, idx);
+    setCompletedLessonIndices((prev) =>
+      res.isCompleted ? [...prev, idx] : prev.filter((i) => i !== idx)
+    );
+    if (res.isCompleted) {
+      toast.success(`Lecture #${idx + 1} marked as completed! 🎉`);
+    } else {
+      toast('Lecture marked as incomplete.', { icon: 'ℹ️' });
+    }
+  };
+
+  const loadData = useCallback(async () => {
     if (!courseId) return;
+    setLoading(true);
+    try {
+      const [c, r] = await Promise.all([
+        courseService.getCourse(courseId),
+        reviewService.getCourseReviews(courseId).catch(() => []),
+      ]);
+      setCourse(c);
+      setReviews(r);
 
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [c, r] = await Promise.all([
-          courseService.getCourse(courseId),
-          reviewService.getCourseReviews(courseId).catch(() => []),
-        ]);
-        setCourse(c);
-        setReviews(r);
-
-        // Check if student is already enrolled
-        if (user?.role === 'student') {
-          try {
-            const enrollments = await enrollmentService.getMyEnrollments();
-            const found = enrollments.some((e) => e.courseId === courseId && e.status === 'active');
-            setIsEnrolled(found);
-          } catch {
-            /* ignore */
-          }
+      // Check if student is already enrolled
+      if (c?.isEnrolled || c?.hasAccess) {
+        setIsEnrolled(true);
+      } else if (user?.role === 'student') {
+        try {
+          const enrollments = await enrollmentService.getMyEnrollments();
+          const found = enrollments.some((e) => (Number(e.courseId) === Number(courseId) || Number((e as any).id) === Number(courseId)) && e.status === 'active');
+          setIsEnrolled(found);
+        } catch {
+          /* ignore */
         }
-      } catch (err) {
-        console.error('Failed to load course:', err);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    loadData();
+    } catch (err) {
+      console.error('Failed to load course:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [courseId, user?.role]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleEnrollOrPay = () => {
     if (!isAuthenticated) {
@@ -160,10 +189,6 @@ export function CourseDetailPage() {
         {/* Main Details */}
         <div className={styles.mainContent}>
           <div className={styles.headerCard}>
-            {course.category?.name && (
-              <Badge variant="outline">{course.category.name}</Badge>
-            )}
-
             <h1 className={styles.title}>{course.title}</h1>
             <p className={styles.desc}>
               {course.description || 'Comprehensive curriculum designed for deep understanding.'}
@@ -193,7 +218,53 @@ export function CourseDetailPage() {
 
           {/* Curriculum / Video Lectures & Resources */}
           <div className={styles.sectionCard}>
-            <h2 className={styles.sectionTitle}>Course Curriculum & Video Lectures</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+              <h2 className={styles.sectionTitle} style={{ margin: 0 }}>Course Curriculum & Video Lectures</h2>
+              {hasAccess && (course.lessons?.length || 0) > 0 && (() => {
+                const total = course.lessons?.length || 0;
+                const completed = completedLessonIndices.length;
+                const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-gray-600)' }}>
+                      {completed}/{total} completed ({percent}%)
+                    </span>
+                    {percent === 100 && (
+                      <Badge variant="success">✓ Completed</Badge>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Interactive Progress Bar Banner for Enrolled Students */}
+            {hasAccess && (course.lessons?.length || 0) > 0 && (() => {
+              const total = course.lessons?.length || 0;
+              const completed = completedLessonIndices.length;
+              const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+              return (
+                <div style={{
+                  marginBottom: 20,
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: 12,
+                  padding: '14px 18px',
+                  border: '1px solid #E2E8F0',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1E293B' }}>
+                      🎓 Your Learning Progress
+                    </span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 800, color: percent === 100 ? '#10B981' : '#2563EB' }}>
+                      {percent}%
+                    </span>
+                  </div>
+                  <ProgressBar
+                    value={percent}
+                    variant={percent === 100 ? 'success' : 'default'}
+                  />
+                </div>
+              );
+            })()}
 
             {/* If structured lessons exist */}
             {course.lessons && course.lessons.length > 0 ? (
@@ -201,6 +272,7 @@ export function CourseDetailPage() {
                 {course.lessons.map((lesson, idx) => {
                   const videoInfo = parseVideoUrl(lesson.videoUrl);
                   const isLessonUnlocked = hasAccess || Boolean(lesson.isFreePreview);
+                  const isCompleted = completedLessonIndices.includes(idx);
                   const lessonResources = (course.resources || []).filter((r) =>
                     (lesson.resourceIds || []).includes(Number(r.resourceId || r.id))
                   );
@@ -211,8 +283,8 @@ export function CourseDetailPage() {
                       <div className={styles.lessonHeader}>
                         <h3 className={styles.lessonTitle}>
                           <span style={{
-                            backgroundColor: 'var(--color-primary-light, #EFF6FF)',
-                            color: 'var(--color-primary-dark, #1D4ED8)',
+                            backgroundColor: isCompleted ? '#ECFDF5' : 'var(--color-primary-light, #EFF6FF)',
+                            color: isCompleted ? '#065F46' : 'var(--color-primary-dark, #1D4ED8)',
                             padding: '3px 10px',
                             borderRadius: 'var(--radius-full)',
                             fontSize: 'var(--font-size-xs)',
@@ -221,7 +293,7 @@ export function CourseDetailPage() {
                             alignItems: 'center',
                             gap: 5,
                           }}>
-                            <Video size={13} /> Lecture #{idx + 1}
+                            {isCompleted ? <CheckCircle2 size={13} color="#10B981" /> : <Video size={13} />} Lecture #{idx + 1}
                           </span>
                           <span>{lesson.title || `Lecture ${idx + 1}`}</span>
                           {lesson.isFreePreview && (
@@ -230,25 +302,61 @@ export function CourseDetailPage() {
                         </h3>
 
                         {isLessonUnlocked ? (
-                          lesson.videoUrl ? (
-                            <a
-                              href={lesson.videoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                fontSize: 'var(--font-size-xs)',
-                                color: 'var(--color-primary-600)',
-                                textDecoration: 'none',
-                                fontWeight: 500,
-                              }}
-                            >
-                              <span>Open Video</span>
-                              <ExternalLink size={12} />
-                            </a>
-                          ) : null
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            {hasAccess && (
+                              <button
+                                type="button"
+                                onClick={() => handleToggleLesson(idx, lesson.title)}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  backgroundColor: isCompleted ? '#ECFDF5' : '#F1F5F9',
+                                  border: isCompleted ? '1.5px solid #10B981' : '1px solid #CBD5E1',
+                                  color: isCompleted ? '#065F46' : '#475569',
+                                  borderRadius: 8,
+                                  padding: '4px 10px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                title={isCompleted ? 'Click to mark as incomplete' : 'Click to mark as completed'}
+                              >
+                                {isCompleted ? (
+                                  <>
+                                    <CheckCircle2 size={13} color="#10B981" />
+                                    <span>Completed</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Circle size={13} color="#94A3B8" />
+                                    <span>Mark Complete</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+
+                            {lesson.videoUrl ? (
+                              <a
+                                href={lesson.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  fontSize: 'var(--font-size-xs)',
+                                  color: 'var(--color-primary-600)',
+                                  textDecoration: 'none',
+                                  fontWeight: 500,
+                                }}
+                              >
+                                <span>Open Video</span>
+                                <ExternalLink size={12} />
+                              </a>
+                            ) : null}
+                          </div>
                         ) : (
                           <span style={{
                             display: 'inline-flex',
@@ -324,10 +432,21 @@ export function CourseDetailPage() {
                             {lessonResources.map((r, rIdx) => {
                               const resId = r.resourceId || r.id;
                               return hasAccess ? (
-                                <Link
+                                <button
                                   key={resId || rIdx}
-                                  to={ROUTES.RESOURCE_DETAIL(resId!)}
+                                  type="button"
                                   className={styles.resourceItem}
+                                  style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+                                  onClick={() => {
+                                    const rawFile = r.fileUrl || r.url;
+                                    if (rawFile) {
+                                      const url = rawFile.startsWith('http') ? rawFile : `http://localhost:5000${rawFile.startsWith('/') ? '' : '/'}${rawFile}`;
+                                      setPdfViewerUrl(url);
+                                      if (user?.id && !completedLessonIndices.includes(idx)) {
+                                        handleToggleLesson(idx, lesson.title);
+                                      }
+                                    }
+                                  }}
                                 >
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                                     <FileText size={16} color="var(--color-primary-600)" />
@@ -335,14 +454,14 @@ export function CourseDetailPage() {
                                       {r.filename || r.title}
                                     </span>
                                   </div>
-                                  <Badge variant="outline">{r.fileType || 'Material'}</Badge>
-                                </Link>
+                                  <Badge variant="outline"><Eye size={10} /> View</Badge>
+                                </button>
                               ) : (
                                 <div
                                   key={resId || rIdx}
                                   className={styles.resourceItem}
                                   onClick={() => {
-                                    toast.error('Please enroll in this course to access and download this study material.');
+                                    toast.error('Please enroll in this course to access this study material.');
                                     handleEnrollOrPay();
                                   }}
                                   style={{ cursor: 'pointer', background: '#FEF2F2', borderColor: '#FECACA' }}
@@ -401,10 +520,18 @@ export function CourseDetailPage() {
                         {generalResources.map((r, rIdx) => {
                           const resId = r.resourceId || r.id;
                           return hasAccess ? (
-                            <Link
+                            <button
                               key={resId || rIdx}
-                              to={ROUTES.RESOURCE_DETAIL(resId!)}
+                              type="button"
                               className={styles.resourceItem}
+                              style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+                              onClick={() => {
+                                const rawFile = r.fileUrl || r.url;
+                                if (rawFile) {
+                                  const url = rawFile.startsWith('http') ? rawFile : `http://localhost:5000${rawFile.startsWith('/') ? '' : '/'}${rawFile}`;
+                                  setPdfViewerUrl(url);
+                                }
+                              }}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                                 <FileText size={16} color="var(--color-primary-600)" />
@@ -412,8 +539,8 @@ export function CourseDetailPage() {
                                   {r.filename || r.title}
                                 </span>
                               </div>
-                              <Badge variant="outline">{r.fileType || 'Material'}</Badge>
-                            </Link>
+                              <Badge variant="outline"><Eye size={10} /> View</Badge>
+                            </button>
                           ) : (
                             <div
                               key={resId || rIdx}
@@ -633,9 +760,18 @@ export function CourseDetailPage() {
           }}
           onSuccess={() => {
             setIsEnrolled(true);
+            loadData();
           }}
         />
       )}
+
+      {/* View-Only PDF/Course Material Viewer */}
+      <DocumentViewerModal
+        isOpen={Boolean(pdfViewerUrl)}
+        url={pdfViewerUrl}
+        title="Course Material — View Only"
+        onClose={() => setPdfViewerUrl(null)}
+      />
     </div>
   );
 }

@@ -3,9 +3,38 @@ import type {
   Tutor, TutorProfile, TutorSkill, TutorFilters, PaginatedResponse
 } from '../types';
 
-// Normalize profilePic → avatarUrl for component compatibility
-function normalize(t: Tutor): Tutor {
-  return { ...t, avatarUrl: t.profilePic ?? undefined };
+// Normalize tutor data for UI component compatibility
+function normalize(t: any): Tutor {
+  if (!t) return t;
+  const profile = t.tutorProfile || {};
+  const tutorSkills = t.tutorSkills || t.skills || [];
+  let skillNames = Array.isArray(tutorSkills)
+    ? tutorSkills.map((s: any) => typeof s === 'string' ? s : s.skillName || s.name || '').filter(Boolean)
+    : [];
+
+  let subjects = (Array.isArray(t.subjects) && t.subjects.length > 0)
+    ? t.subjects
+    : skillNames;
+
+  if (subjects.length === 0) {
+    subjects = ['Computer Science', 'Programming', 'General Education'];
+  }
+  if (skillNames.length === 0) {
+    skillNames = subjects;
+  }
+
+  const experienceYears = Number(t.experienceYears ?? t.experience ?? profile.experienceYears ?? 5);
+
+  return {
+    ...t,
+    avatarUrl: t.profilePic ?? t.avatarUrl ?? undefined,
+    bio: t.bio || profile.bio || 'Experienced educator dedicated to student success and academic excellence.',
+    instituteName: t.instituteName || profile.instituteName || 'Affiliated Educational Institution',
+    experienceYears,
+    experience: experienceYears,
+    skills: tutorSkills.length > 0 ? tutorSkills : skillNames.map((s: string, i: number) => ({ skillId: i, skillName: s })),
+    subjects,
+  };
 }
 
 export const tutorService = {
@@ -18,6 +47,26 @@ export const tutorService = {
   async getTutor(id: number): Promise<Tutor> {
     const res = await apiClient.get<Tutor>(`/tutors/${id}`);
     return normalize(res.data);
+  },
+
+  async getTutorCourses(tutorId: number): Promise<any[]> {
+    try {
+      const res = await apiClient.get<any>(`/courses?tutorId=${tutorId}&limit=50`);
+      const raw = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : []);
+      return raw;
+    } catch {
+      return [];
+    }
+  },
+
+  async getTutorBundles(tutorId: number): Promise<any[]> {
+    try {
+      const res = await apiClient.get<any>(`/bundles?tutorId=${tutorId}&limit=50`);
+      const raw = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : []);
+      return raw;
+    } catch {
+      return [];
+    }
   },
 
   // ── Own profile (tutor-only) ─────────────────────────────────────

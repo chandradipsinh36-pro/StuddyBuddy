@@ -15,7 +15,7 @@ export const adminDashboardService = {
       totalUsers, activeUsers, suspendedUsers, bannedUsers,
       studentCount, tutorCount, adminCount,
       totalApplications, pendingApplications, approvedApplications, rejectedApplications,
-    ] = await prisma.$transaction([
+    ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { status: 'active' } }),
       prisma.user.count({ where: { status: 'suspended' } }),
@@ -80,7 +80,7 @@ export const adminDashboardService = {
 
   // ── Tutor application analytics ───────────────────────────────────
   async getTutorApplicationAnalytics() {
-    const [pending, underReview, approved, rejected, needsChanges] = await prisma.$transaction([
+    const [pending, underReview, approved, rejected, needsChanges] = await Promise.all([
       prisma.tutorApplication.count({ where: { status: 'pending' } }),
       prisma.tutorApplication.count({ where: { status: 'under_review' } }),
       prisma.tutorApplication.count({ where: { status: 'approved' } }),

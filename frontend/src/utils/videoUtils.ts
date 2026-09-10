@@ -67,9 +67,12 @@ export function parseVideoUrl(url?: string | null): VideoInfo {
   }
 
   // 4. Direct video file stream or other web URL
-  const original = trimmed.startsWith('http') || trimmed.startsWith('/') || trimmed.startsWith('blob:') || trimmed.startsWith('data:')
-    ? trimmed
-    : `https://${trimmed}`;
+  let original = trimmed;
+  if (trimmed.startsWith('/')) {
+    original = `http://localhost:5000${trimmed}`;
+  } else if (!trimmed.startsWith('http') && !trimmed.startsWith('blob:') && !trimmed.startsWith('data:')) {
+    original = `https://${trimmed}`;
+  }
 
   return {
     type: 'direct',

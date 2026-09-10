@@ -25,14 +25,19 @@ import groupsRoutes from './modules/groups/groups.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import { earningsRouter as tutorEarningsRouter, analyticsRouter as tutorAnalyticsRouter } from './modules/tutors/tutor-earnings.routes';
 import notificationsRoutes from './modules/notifications/notifications.routes';
+import playlistsRoutes, { tutorPlaylistsRouter } from './modules/playlists/playlists.routes';
 import { prisma } from './config/database';
 import { getResourcesDirectory } from './middleware/resourceUpload';
 
 export function createApp(): Application {
   const app = express();
 
-  // ── Security ────────────────────────────────────────────────────
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      frameguard: false,
+    })
+  );
   const allowedOrigins = [
     env.CLIENT_URL,
     env.ADMIN_URL,
@@ -103,6 +108,10 @@ export function createApp(): Application {
   // Bundles
   app.use('/api/bundles',           bundlesRoutes);
   app.use('/api/tutor/bundles',     tutorBundleRouter);
+
+  // Playlists
+  app.use('/api/playlists',         playlistsRoutes);
+  app.use('/api/tutor/playlists',   tutorPlaylistsRouter);
 
   // Payments & Refunds
   app.use('/api/payments',          paymentsRoutes);

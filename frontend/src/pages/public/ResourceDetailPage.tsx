@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Lock, Unlock, Star, Eye, ShoppingCart, ArrowLeft, FileText, Video, Headphones, Image, Presentation, Download, BookmarkPlus } from 'lucide-react';
+import { Lock, Unlock, Star, Eye, ShoppingCart, ArrowLeft, FileText, Video, Headphones, Image, Presentation, BookmarkPlus } from 'lucide-react';
 import { resourceService } from '../../services/resourceService';
 import { reviewService } from '../../services/reviewService';
+import { paymentService } from '../../services/paymentService';
+import { enrollmentService } from '../../services/enrollmentService';
 import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Rating } from '../../components/ui/Rating/Rating';
@@ -10,6 +12,7 @@ import { Button } from '../../components/ui/Button/Button';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState';
 import { Modal } from '../../components/ui/Modal/Modal';
+import { DocumentViewerModal } from '../../components/shared/DocumentViewerModal';
 import type { Resource, Review } from '../../types';
 import { parseVideoUrl } from '../../utils/videoUtils';
 import { ROUTES } from '../../constants';
@@ -31,7 +34,7 @@ const TYPE_LABELS: Record<string, string> = {
 export function ResourceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [resource, setResource] = useState<Resource | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +44,7 @@ export function ResourceDetailPage() {
   const [reviewModal, setReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
+  const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -50,7 +54,33 @@ export function ResourceDetailPage() {
           resourceService.getResource(+id),
           reviewService.getResourceReviews(+id),
         ]);
-        setResource(r); setReviews(rv);
+        setResource(r);
+        setReviews(rv);
+
+        // Check if student has purchased this resource directly or via bundle/course
+        if (isAuthenticated && user?.role === 'student') {
+          const resId = Number(id);
+          paymentService.getMyPayments().then((payments: any[]) => {
+            const found = (payments || []).some((p: any) => 
+              Number(p.resourceId) === resId || 
+              Number(p.resource?.resourceId) === resId || 
+              Number(p.resource?.id) === resId ||
+              (p.bundle?.bundleItems || []).some((bi: any) => 
+                Number(bi.resourceId || bi.resource?.resourceId || bi.resource?.id) === resId
+              )
+            );
+            if (found) setHasPurchased(true);
+          }).catch(() => {});
+
+          if (r?.courseId) {
+            enrollmentService.getMyEnrollments().then((enrollments: any[]) => {
+              const enrolled = (enrollments || []).some((e: any) => 
+                (Number(e.courseId) === Number(r.courseId) || Number((e as any).id) === Number(r.courseId)) && e.status === 'active'
+              );
+              if (enrolled) setHasPurchased(true);
+            }).catch(() => {});
+          }
+        }
       } catch {
         setError('Resource not found.');
       } finally {
@@ -58,7 +88,7 @@ export function ResourceDetailPage() {
       }
     };
     load();
-  }, [id]);
+  }, [id, isAuthenticated, user?.role]);
 
   const handlePurchase = async () => {
     if (!isAuthenticated) {
@@ -77,7 +107,9 @@ export function ResourceDetailPage() {
     }
   };
 
-  const canAccess = resource?.accessType === 'free' || hasPurchased;
+  const isAuthor = Boolean(user && (user.id === resource?.uploadedBy || user.id === resource?.tutorId));
+  const isAdmin = (user?.role as string) === 'admin';
+  const canAccess = !resource?.isLocked || resource?.accessType === 'free' || (resource as any)?.hasAccess || hasPurchased || isAuthor || isAdmin;
 
   if (loading) return (
     <div className={styles.page}><div className={styles.container}>
@@ -212,19 +244,26 @@ export function ResourceDetailPage() {
                     <Unlock size={20} />
                     <span>You have access</span>
                   </div>
-                  {resource.type !== 'youtube' && resource.fileUrl && (
-                    <a
-                      href={resource.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download
-                      style={{ textDecoration: 'none', display: 'block', width: '100%' }}
-                    >
-                      <Button fullWidth leftIcon={<Download size={16} />}>
-                        Access & Download Resource
-                      </Button>
-                    </a>
-                  )}
+                  {resource.type !== 'youtube' && resource.fileUrl && (() => {
+                    const rawFile = resource.fileUrl;
+                    const viewUrl = rawFile.startsWith('http') ? rawFile : `http://localhost:5000${rawFile.startsWith('/') ? '' : '/'}${rawFile}`;
+                    return (
+                      <button
+                        onClick={() => setPdfViewerUrl(viewUrl)}
+                        style={{
+                          textDecoration: 'none', display: 'flex', width: '100%',
+                          alignItems: 'center', justifyContent: 'center', gap: 8,
+                          background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                          color: '#fff', border: 'none', borderRadius: 10,
+                          padding: '12px 20px', fontSize: '0.95rem', fontWeight: 700,
+                          cursor: 'pointer', transition: 'opacity 0.2s',
+                        }}
+                      >
+                        <Eye size={16} />
+                        View Resource (Read Only)
+                      </button>
+                    );
+                  })()}
                 </>
               ) : (
                 <>
@@ -292,6 +331,14 @@ export function ResourceDetailPage() {
           </Button>
         </div>
       </Modal>
+
+      {/* View-Only PDF/Resource Viewer Overlay */}
+      <DocumentViewerModal
+        isOpen={Boolean(pdfViewerUrl)}
+        url={pdfViewerUrl}
+        title="Resource Material — View Only"
+        onClose={() => setPdfViewerUrl(null)}
+      />
     </div>
   );
 }

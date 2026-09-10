@@ -45,13 +45,60 @@ export const resourcesService = {
     return { resources, total, page, limit };
   },
 
-  async getById(resourceId: number) {
+  async getById(resourceId: number, user?: { userId: number; role: string }) {
     const resource = await prisma.resource.findFirst({
       where: { resourceId, status: 'published' },
       select: { ...resourceSelect, videoMetadata: true },
     });
     if (!resource) throw new NotFoundError('Resource');
-    return resource;
+
+    const isAuthor = Boolean(user && user.userId === resource.uploadedBy);
+    const isAdmin = Boolean(user && user.role === 'admin');
+
+    let hasPurchased = false;
+    if (user?.userId) {
+      // 1. Direct purchase
+      const direct = await prisma.payment.findFirst({
+        where: { studentId: user.userId, resourceId, status: 'success' },
+      });
+      if (direct) hasPurchased = true;
+
+      // 2. Purchased as part of a bundle
+      if (!hasPurchased) {
+        const inBundle = await prisma.payment.findFirst({
+          where: {
+            studentId: user.userId,
+            status: 'success',
+            bundle: {
+              bundleItems: { some: { resourceId } },
+            },
+          },
+        });
+        if (inBundle) hasPurchased = true;
+      }
+
+      // 3. Enrolled in parent course
+      if (!hasPurchased && resource.courseId) {
+        const enrollment = await prisma.enrollment.findUnique({
+          where: {
+            studentId_courseId: {
+              studentId: user.userId,
+              courseId: resource.courseId,
+            },
+          },
+        });
+        if (enrollment?.status === 'active') hasPurchased = true;
+      }
+    }
+
+    const hasAccess = !resource.isLocked || isAuthor || isAdmin || hasPurchased;
+
+    return {
+      ...resource,
+      isLocked: hasAccess ? false : resource.isLocked,
+      hasAccess,
+      fileUrl: hasAccess ? resource.fileUrl : '',
+    };
   },
 
   // Tutor CRUD

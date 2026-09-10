@@ -45,3 +45,28 @@ export const resourceUpload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB
   },
 });
+
+export function saveBase64ToFile(dataUrl: string, prefix = 'cert'): string {
+  if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) return dataUrl;
+  try {
+    const commaIdx = dataUrl.indexOf(',');
+    if (commaIdx === -1) return dataUrl;
+    const header = dataUrl.slice(0, commaIdx);
+    const base64Content = dataUrl.slice(commaIdx + 1);
+    const buffer = Buffer.from(base64Content, 'base64');
+
+    let ext = 'png';
+    if (header.includes('pdf')) ext = 'pdf';
+    else if (header.includes('jpeg') || header.includes('jpg')) ext = 'jpg';
+    else if (header.includes('webp')) ext = 'webp';
+
+    const dir = getResourcesDirectory();
+    const fileName = `${prefix}-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}.${ext}`;
+    const filePath = path.join(dir, fileName);
+    fs.writeFileSync(filePath, buffer);
+    return `/resources/${fileName}`;
+  } catch (err) {
+    console.error('Failed to save base64 to file:', err);
+    return dataUrl;
+  }
+}

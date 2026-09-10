@@ -25,9 +25,22 @@ const bundleSelect = {
 
 function sanitizeBundle(bundle: any, hasAccess: boolean) {
   if (!bundle) return bundle;
-  if (hasAccess) return bundle;
+  if (hasAccess) {
+    return {
+      ...bundle,
+      isOwned: true,
+      bundleItems: (bundle.bundleItems || []).map((bi: any) => ({
+        ...bi,
+        resource: bi.resource ? {
+          ...bi.resource,
+          isLocked: false,
+        } : bi.resource,
+      })),
+    };
+  }
   return {
     ...bundle,
+    isOwned: false,
     bundleItems: (bundle.bundleItems || []).map((bi: any) => ({
       ...bi,
       resource: bi.resource ? {
@@ -41,7 +54,7 @@ function sanitizeBundle(bundle: any, hasAccess: boolean) {
 
 export const bundlesService = {
   // Public
-  async listBundles(userId?: number) {
+  async listBundles(userId?: number, role?: string) {
     const bundles = await prisma.bundle.findMany({
       where: { isPublished: true },
       select: bundleSelect,
@@ -58,12 +71,12 @@ export const bundlesService = {
     }
 
     return bundles.map(b => {
-      const hasAccess = Boolean(userId && (b.tutorId === userId || purchasedSet.has(b.bundleId)));
+      const hasAccess = Boolean(userId && (role === 'admin' || b.tutorId === userId || purchasedSet.has(b.bundleId)));
       return sanitizeBundle(b, hasAccess);
     });
   },
 
-  async getBundleById(bundleId: number, userId?: number) {
+  async getBundleById(bundleId: number, userId?: number, role?: string) {
     const bundle = await prisma.bundle.findFirst({
       where: { bundleId, isPublished: true },
       select: bundleSelect,
@@ -78,7 +91,7 @@ export const bundlesService = {
       hasPurchased = Boolean(payment);
     }
 
-    const hasAccess = Boolean(userId && (bundle.tutorId === userId || hasPurchased));
+    const hasAccess = Boolean(userId && (role === 'admin' || bundle.tutorId === userId || hasPurchased));
     return sanitizeBundle(bundle, hasAccess);
   },
 

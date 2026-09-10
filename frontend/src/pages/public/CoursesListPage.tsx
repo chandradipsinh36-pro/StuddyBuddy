@@ -4,7 +4,6 @@ import { BookOpen, ArrowRight } from 'lucide-react';
 import { courseService } from '../../services/courseService';
 import { categoryService } from '../../services/categoryService';
 import { SearchBar } from '../../components/ui/SearchBar/SearchBar';
-import { Badge } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
 import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { SkeletonCard } from '../../components/ui/Skeleton/Skeleton';
@@ -110,12 +109,6 @@ export function CoursesListPage() {
                 </div>
 
                 <div className={styles.cardBody}>
-                  {c.category?.name && (
-                    <div>
-                      <Badge variant="outline">{c.category.name}</Badge>
-                    </div>
-                  )}
-
                   <Link to={`/courses/${courseId}`} className={styles.cardTitle}>
                     {c.title}
                   </Link>

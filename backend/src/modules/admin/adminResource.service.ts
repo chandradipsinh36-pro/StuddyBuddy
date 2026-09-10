@@ -54,7 +54,7 @@ export const adminResourceService = {
     const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
     const orderBy = { [sortField]: sortOrder } as Prisma.ResourceOrderByWithRelationInput;
 
-    const [resources, total] = await prisma.$transaction([
+    const [resources, total] = await Promise.all([
       prisma.resource.findMany({
         where,
         skip,

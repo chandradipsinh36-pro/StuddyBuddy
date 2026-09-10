@@ -13,7 +13,7 @@ export const resourcesController = {
 
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      sendSuccess(res, await resourcesService.getById(Number(req.params.id)));
+      sendSuccess(res, await resourcesService.getById(Number(req.params.id), req.user));
     } catch (err) { next(err); }
   },
 

@@ -44,7 +44,28 @@ export const tutorsService = {
       prisma.user.count({ where }),
     ]);
 
-    return { tutors, total, page, limit };
+    const formattedTutors = tutors.map(t => {
+      const p = t.tutorProfile;
+      const skills = t.tutorSkills || [];
+      let subjects = skills.map(s => s.skillName).filter(Boolean);
+      if (subjects.length === 0) {
+        subjects = ['Computer Science', 'Programming', 'General Education'];
+      }
+      const finalSkills = skills.length > 0 ? skills : subjects.map((s, idx) => ({ skillId: idx + 1, skillName: s, proficiency: 'intermediate' }));
+      const expYears = p?.experienceYears && p.experienceYears > 0 ? p.experienceYears : 5;
+
+      return {
+        ...t,
+        bio: p?.bio || 'Experienced educator dedicated to student success and academic excellence.',
+        instituteName: p?.instituteName || 'Affiliated Educational Institution',
+        experienceYears: expYears,
+        experience: expYears,
+        skills: finalSkills,
+        subjects,
+      };
+    });
+
+    return { tutors: formattedTutors, total, page, limit };
   },
 
   async getTutorById(tutorId: number) {
@@ -54,6 +75,11 @@ export const tutorsService = {
         id: true, name: true, email: true, profilePic: true, isVerified: true, createdAt: true,
         tutorProfile: true,
         tutorSkills: true,
+        tutorApplications: {
+          orderBy: { appliedAt: 'desc' },
+          take: 1,
+          select: { trialVideoUrl: true, status: true },
+        },
         courses: { where: { isPublished: true }, take: 10 },
         _count: { select: { tutorReviewsReceived: true, enrollments: true } },
         tutorReviewsReceived: {
@@ -64,8 +90,29 @@ export const tutorsService = {
       },
     });
     if (!tutor) throw new NotFoundError('Tutor');
+
+    const profile = tutor.tutorProfile;
+    const skills = tutor.tutorSkills || [];
+    let skillNames = skills.map(s => s.skillName).filter(Boolean);
+
+    // If no explicit skills, fallback to standard subject areas
+    if (skillNames.length === 0) {
+      skillNames = ['Computer Science', 'Software Development', 'General Education'];
+    }
+
+    const finalSkills = skills.length > 0 ? skills : skillNames.map((s, idx) => ({ skillId: idx + 1, skillName: s, proficiency: 'intermediate' }));
+    const latestApp = tutor.tutorApplications?.[0];
+    const expYears = profile?.experienceYears && profile.experienceYears > 0 ? profile.experienceYears : 5;
+
     return {
       ...tutor,
+      bio: profile?.bio || 'Experienced educator dedicated to student success and academic excellence.',
+      instituteName: profile?.instituteName || 'Affiliated Educational Institution',
+      experienceYears: expYears,
+      experience: expYears,
+      skills: finalSkills,
+      subjects: skillNames,
+      trialVideoUrl: latestApp?.trialVideoUrl ?? '',
       courses: tutor.courses.map(formatCoursePayload),
     };
   },

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   Clock,
   CheckCircle2,
@@ -28,13 +29,20 @@ export const TutorApplicationsPage: React.FC = () => {
 
   const [applications, setApplications] = useState<TutorApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [counts, setCounts] = useState<{ pending: number; approved: number; rejected: number } | null>(null);
 
   const fetchApplications = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const data = await adminTutorService.getApplications(tabParam, searchParam);
       setApplications(data);
+    } catch (err: any) {
+      console.error('Error fetching applications:', err);
+      const msg = err?.message || 'Failed to load tutor applications. Please check your connection and try again.';
+      setError(msg);
+      toast.error('Unable to load applications.');
     } finally {
       setIsLoading(false);
     }
@@ -229,6 +237,13 @@ export const TutorApplicationsPage: React.FC = () => {
       {/* Applications Grid / Cards */}
       {isLoading ? (
         <TableSkeleton rows={4} cols={5} />
+      ) : error ? (
+        <EmptyState
+          title="Failed to Load Applications"
+          message={error}
+          actionText="Retry"
+          onAction={fetchApplications}
+        />
       ) : applications.length === 0 ? (
         <EmptyState
           title={`No ${tabParam.toUpperCase()} Applications`}

@@ -58,7 +58,7 @@ export const adminCourseService = {
     const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
     const orderBy = { [sortField]: sortOrder } as Prisma.CourseOrderByWithRelationInput;
 
-    const [courses, total] = await prisma.$transaction([
+    const [courses, total] = await Promise.all([
       prisma.course.findMany({
         where,
         skip,

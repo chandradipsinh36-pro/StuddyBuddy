@@ -7,8 +7,12 @@ import { logger } from './utils/logger';
 
 async function main() {
   // Connect to database
-  await connectDatabase();
-  logger.info('✅ Database connected');
+  try {
+    await connectDatabase();
+    logger.info('✅ Database connected');
+  } catch (err) {
+    logger.warn(`⚠️ Database connection warning: ${(err as Error).message}. Running server in offline/degraded mode.`);
+  }
 
   const app = createApp();
   const httpServer = http.createServer(app);

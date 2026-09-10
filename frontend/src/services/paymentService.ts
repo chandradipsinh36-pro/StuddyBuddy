@@ -110,6 +110,10 @@ export const paymentService = {
     return res.data;
   },
 
+  async getMyPurchases(): Promise<Payment[]> {
+    return this.getMyPayments();
+  },
+
   async getMyPayment(id: number): Promise<Payment> {
     const res = await apiClient.get<Payment>(`/payments/me/${id}`);
     return res.data;

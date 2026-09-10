@@ -1,0 +1,125 @@
+[
+  {
+    "id": 1,
+    "name": "Mastering Java & Data Structures",
+    "title": "Mastering Java & Data Structures",
+    "description": "A curated pathway covering Core Java, OOP principles, Collections Framework, and foundational Data Structures.",
+    "subject": "Computer Science",
+    "difficulty": "intermediate",
+    "isPremium": false,
+    "isPublished": true,
+    "coverUrl": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80",
+    "price": 0,
+    "tutorId": 1,
+    "tutor": {
+      "id": 1,
+      "name": "Dr. Sarah Jenkins",
+      "isVerified": true
+    },
+    "resources": [
+      {
+        "id": 101,
+        "resourceId": 101,
+        "title": "Java Syntax & Basics Guide",
+        "fileType": "pdf"
+      },
+      {
+        "id": 102,
+        "resourceId": 102,
+        "title": "OOP Principles in Action",
+        "fileType": "pdf"
+      },
+      {
+        "id": 103,
+        "resourceId": 103,
+        "title": "Collections & Generics Cheat Sheet",
+        "fileType": "pdf"
+      }
+    ],
+    "resourceCount": 3,
+    "completedResourceIds": [],
+    "createdAt": "2026-09-10T16:17:26.766Z",
+    "updatedAt": "2026-09-10T16:17:26.767Z"
+  },
+  {
+    "id": 2,
+    "name": "Calculus I: Limits, Derivatives & Applications",
+    "title": "Calculus I: Limits, Derivatives & Applications",
+    "description": "Complete revision sequence for single-variable differential calculus with step-by-step problem sets.",
+    "subject": "Mathematics",
+    "difficulty": "beginner",
+    "isPremium": false,
+    "isPublished": true,
+    "coverUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&auto=format&fit=crop&q=80",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&auto=format&fit=crop&q=80",
+    "price": 0,
+    "tutorId": 2,
+    "tutor": {
+      "id": 2,
+      "name": "Prof. David Chen",
+      "isVerified": true
+    },
+    "resources": [
+      {
+        "id": 201,
+        "resourceId": 201,
+        "title": "Limits & Continuity Summary",
+        "fileType": "pdf"
+      },
+      {
+        "id": 202,
+        "resourceId": 202,
+        "title": "Derivative Rules & Proofs",
+        "fileType": "pdf"
+      },
+      {
+        "id": 203,
+        "resourceId": 203,
+        "title": "Optimization Problems Practice",
+        "fileType": "pdf"
+      }
+    ],
+    "resourceCount": 3,
+    "completedResourceIds": [],
+    "createdAt": "2026-09-10T16:17:26.768Z",
+    "updatedAt": "2026-09-10T16:17:26.768Z"
+  },
+  {
+    "id": 3,
+    "name": "Organic Chemistry Reactions Roadmap",
+    "title": "Organic Chemistry Reactions Roadmap",
+    "description": "Visual mechanism flowcharts, reagent reference cards, and synthesis walkthroughs for organic chemistry.",
+    "subject": "Chemistry",
+    "difficulty": "advanced",
+    "isPremium": false,
+    "isPublished": true,
+    "coverUrl": "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&auto=format&fit=crop&q=80",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&auto=format&fit=crop&q=80",
+    "price": 0,
+    "tutorId": 3,
+    "tutor": {
+      "id": 3,
+      "name": "Elena Rostova",
+      "isVerified": true
+    },
+    "resources": [
+      {
+        "id": 301,
+        "resourceId": 301,
+        "title": "Reaction Mechanisms Flowchart",
+        "fileType": "pdf"
+      },
+      {
+        "id": 302,
+        "resourceId": 302,
+        "title": "Functional Group Conversions",
+        "fileType": "pdf"
+      }
+    ],
+    "resourceCount": 2,
+    "completedResourceIds": [],
+    "createdAt": "2026-09-10T16:17:26.768Z",
+    "updatedAt": "2026-09-10T16:17:26.768Z"
+  }
+]

@@ -39,7 +39,7 @@ export const adminTutorService = {
       }),
     };
 
-    const [tutors, total] = await prisma.$transaction([
+    const [tutors, total] = await Promise.all([
       prisma.user.findMany({
         where,
         skip,

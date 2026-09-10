@@ -2,12 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Search, Package, X, Layers, FileText,
-  Image as ImageIcon, Video, ShoppingBag, Sparkles, ArrowRight, Lock, Download
+  Image as ImageIcon, Video, ShoppingBag, Sparkles, ArrowRight, Lock, Eye, Check
 } from 'lucide-react';
 import { bundleService } from '../../services/bundleService';
 import { paymentService } from '../../services/paymentService';
 import { BundleCard } from '../../components/shared/BundleCard';
 import { PaymentCheckoutModal } from '../../components/shared/PaymentCheckoutModal';
+import { DocumentViewerModal } from '../../components/shared/DocumentViewerModal';
 import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { SkeletonCard } from '../../components/ui/Skeleton/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
@@ -32,6 +33,7 @@ export const BundlesListPage: React.FC = () => {
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
   const [checkoutBundle, setCheckoutBundle] = useState<Bundle | null>(null);
+  const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadBundles() {
@@ -325,10 +327,12 @@ export const BundlesListPage: React.FC = () => {
                       const resTitle = res?.title || res?.filename || `Resource #${idx + 1}`;
                       const resType = res?.fileType || res?.type || 'PDF Document';
                       const resPrice = res?.price ? `₹${res.price}` : 'Free';
-                      const fileUrl = res?.fileUrl;
+                      const rawFile = res?.fileUrl;
+                      const fileUrl = rawFile ? (rawFile.startsWith('http') ? rawFile : `http://localhost:5000${rawFile.startsWith('/') ? '' : '/'}${rawFile}`) : '';
+                      const resId = res?.id || res?.resourceId;
 
                       return (
-                        <div key={res?.id || res?.resourceId || idx} className={styles.materialRow}>
+                        <div key={resId || idx} className={styles.materialRow}>
                           <div className={styles.materialRowLeft}>
                             {getFileIcon(res?.fileType || res?.type)}
                             <div style={{ minWidth: 0 }}>
@@ -338,29 +342,49 @@ export const BundlesListPage: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          {isOwned && fileUrl ? (
-                            <a
-                              href={fileUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{
-                                fontSize: '0.75rem',
-                                color: '#059669',
-                                backgroundColor: '#ECFDF5',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                fontWeight: 700,
-                                textDecoration: 'none',
-                                whiteSpace: 'nowrap',
-                                border: '1px solid #A7F3D0',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                            >
-                              <Download size={12} />
-                              <span>Download</span>
-                            </a>
+                          {isOwned ? (
+                            fileUrl ? (
+                              <button
+                                type="button"
+                                onClick={() => setPdfViewerUrl(fileUrl)}
+                                style={{
+                                  fontSize: '0.75rem',
+                                  color: '#059669',
+                                  backgroundColor: '#ECFDF5',
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  fontWeight: 700,
+                                  whiteSpace: 'nowrap',
+                                  border: '1px solid #A7F3D0',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <Eye size={12} />
+                                <span>View</span>
+                              </button>
+                            ) : (
+                              <span
+                                style={{
+                                  fontSize: '0.75rem',
+                                  color: '#059669',
+                                  backgroundColor: '#ECFDF5',
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  fontWeight: 700,
+                                  whiteSpace: 'nowrap',
+                                  border: '1px solid #A7F3D0',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                }}
+                              >
+                                <Check size={12} />
+                                <span>Unlocked</span>
+                              </span>
+                            )
                           ) : (
                             <button
                               type="button"
@@ -452,9 +476,21 @@ export const BundlesListPage: React.FC = () => {
             const bId = Number(checkoutBundle.id || checkoutBundle.bundleId || 0);
             setPurchasedBundleIds((prev) => new Set([...prev, bId]));
             setCheckoutBundle(null);
+            bundleService.getPublicBundles().then((updated) => setBundles(updated || [])).catch(() => {});
+            bundleService.getBundleById(bId).then((updated) => {
+              if (updated) setSelectedBundle(updated);
+            }).catch(() => {});
           }}
         />
       )}
+
+      {/* In-Browser PDF/Resource Viewer — view only, no download, no print */}
+      <DocumentViewerModal
+        isOpen={Boolean(pdfViewerUrl)}
+        url={pdfViewerUrl}
+        title="Bundle Resource — View Only"
+        onClose={() => setPdfViewerUrl(null)}
+      />
     </div>
   );
 };

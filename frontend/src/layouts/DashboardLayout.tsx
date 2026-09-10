@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { Navbar } from '../components/layout/Navbar';
+import { Footer } from '../components/layout/Footer';
 import styles from './DashboardLayout.module.css';
 
 export function StudentLayout() {
@@ -11,6 +12,7 @@ export function StudentLayout() {
           <Outlet />
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

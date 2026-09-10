@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Flame, Bookmark, Users, Package, ArrowRight, Play } from 'lucide-react';
+import { BookOpen, Flame, Bookmark, Users, Package, ArrowRight, Play, GraduationCap, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { playlistService } from '../../services/playlistService';
 import { bundleService } from '../../services/bundleService';
 import { tutorService } from '../../services/tutorService';
+import { enrollmentService } from '../../services/enrollmentService';
 import { BundleCard } from '../../components/shared/BundleCard';
 import { TutorCard } from '../../components/shared/TutorCard';
 import { ProgressBar } from '../../components/ui/ProgressBar/ProgressBar';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
 import { SkeletonCard, Skeleton } from '../../components/ui/Skeleton/Skeleton';
+import { getCourseProgress } from '../../utils/courseProgress';
 import { ROUTES } from '../../constants';
 import type { Playlist, Bundle, Tutor } from '../../types';
 import styles from './StudentDashboard.module.css';
@@ -21,12 +23,21 @@ export function StudentDashboard() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [progressVersion, setProgressVersion] = useState(0);
+
+  useEffect(() => {
+    const handleProgressUpdate = () => setProgressVersion(v => v + 1);
+    window.addEventListener('course-progress-updated', handleProgressUpdate);
+    return () => window.removeEventListener('course-progress-updated', handleProgressUpdate);
+  }, []);
 
   useEffect(() => {
     Promise.allSettled([
       playlistService.getPlaylists().then(setPlaylists),
       bundleService.getPublicBundles().then(setBundles),
       tutorService.getTutors({ limit: 3 }).then(res => setTutors(res.data || [])),
+      enrollmentService.getMyEnrollments().then(setEnrollments).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -34,10 +45,13 @@ export function StudentDashboard() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
+  // Only active enrollments with a course
+  const activeEnrollments = enrollments.filter(e => e.status === 'active' && (e.course || e.courseId));
+
   const metrics = [
-    { icon: <Package size={20} />, label: 'Bundles Available', value: bundles.length.toString(), color: 'primary' },
+    { icon: <GraduationCap size={20} />, label: 'Enrolled Courses', value: activeEnrollments.length.toString(), color: 'primary' },
     { icon: <Flame size={20} />, label: 'Day Streak', value: '1', color: 'warning' },
-    { icon: <Bookmark size={20} />, label: 'Saved', value: '0', color: 'success' },
+    { icon: <Package size={20} />, label: 'Bundles Available', value: bundles.length.toString(), color: 'success' },
     { icon: <Users size={20} />, label: 'Active Tutors', value: tutors.length.toString(), color: 'primary' },
   ];
 
@@ -77,6 +91,82 @@ export function StudentDashboard() {
             ))
         }
       </div>
+
+      {/* My Enrolled Courses — only show enrolled courses with progress */}
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>
+            <GraduationCap size={20} className={styles.sectionIcon} /> My Courses
+          </h2>
+          <Link to={ROUTES.COURSES} className={styles.seeAll}>Browse more courses</Link>
+        </div>
+
+        {loading ? (
+          <div className={styles.playlistGrid}>
+            {Array.from({ length: 3 }, (_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : activeEnrollments.length === 0 ? (
+          <div className={styles.emptyEnrollment}>
+            <GraduationCap size={40} color="var(--color-gray-300)" />
+            <p style={{ color: 'var(--color-gray-500)', margin: '8px 0 0', fontSize: '0.9rem' }}>
+              You haven't enrolled in any courses yet.
+            </p>
+            <Link to={ROUTES.COURSES}>
+              <Button size="sm" variant="primary" style={{ marginTop: 12 }}>Browse Courses</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className={styles.enrolledGrid}>
+            {activeEnrollments.map((enrollment: any) => {
+              const course = enrollment.course || {};
+              const courseId = Number(enrollment.courseId || course.courseId || course.id);
+              const totalLessons = course.lessons?.length || (course.resources?.length ?? 0) || enrollment.totalLessons || 0;
+              const progressData = getCourseProgress(user?.id, courseId);
+              const completedLessons = Math.min(progressData.completedCount, totalLessons || progressData.completedCount);
+              const progress = totalLessons > 0
+                ? Math.min(100, Math.round((completedLessons / totalLessons) * 100))
+                : Number(enrollment.progress ?? enrollment.progressPercent ?? 0);
+
+              return (
+                <Link
+                  key={enrollment.enrollmentId || enrollment.id}
+                  to={ROUTES.COURSE_DETAIL(courseId)}
+                  className={styles.enrolledCard}
+                >
+                  <div className={styles.enrolledCardBanner}>
+                    <GraduationCap size={28} />
+                  </div>
+                  <div className={styles.enrolledCardBody}>
+                    <div className={styles.enrolledCardTitle}>
+                      {course.title || 'Enrolled Course'}
+                    </div>
+                    {course.tutor?.name && (
+                      <p className={styles.enrolledCardTutor}>by {course.tutor.name}</p>
+                    )}
+                    <div className={styles.enrolledCardProgress}>
+                      <ProgressBar
+                        value={progress}
+                        showValue
+                        variant={progress === 100 ? 'success' : 'default'}
+                        label={totalLessons > 0 ? `${completedLessons}/${totalLessons} lessons` : `${progress}% complete`}
+                      />
+                    </div>
+                    <div className={styles.enrolledCardMeta}>
+                      {progress === 100 ? (
+                        <Badge variant="success">✓ Completed</Badge>
+                      ) : progress > 0 ? (
+                        <Badge variant="warning"><Clock size={11} /> In Progress</Badge>
+                      ) : (
+                        <Badge variant="outline">Not Started</Badge>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Continue Learning Playlists */}
       {playlists.length > 0 && (

@@ -6,6 +6,7 @@ import {
   NotFoundError, ConflictError, BadRequestError,
 } from '../../utils/AppError';
 import { ApplicationQuery, ApproveTutorInput, RejectTutorInput } from './admin.schema';
+import { saveBase64ToFile } from '../../middleware/resourceUpload';
 
 
 // Sort whitelist
@@ -34,7 +35,7 @@ export const adminApplicationService = {
       }),
     };
 
-    const [applications, total] = await prisma.$transaction([
+    const [applications, total] = await Promise.all([
       prisma.tutorApplication.findMany({
         where,
         skip,
@@ -67,7 +68,6 @@ export const adminApplicationService = {
           documents: {
             select: {
               docId:        true,
-              documentUrl:  true,
               documentType: true,
               uploadedAt:   true,
             },
@@ -104,7 +104,7 @@ export const adminApplicationService = {
               },
             },
             tutorSkills: {
-              select: { skillName: true, proficiency: true },
+              select: { skillId: true, skillName: true, proficiency: true },
             },
           },
         },
@@ -123,6 +123,25 @@ export const adminApplicationService = {
     });
 
     if (!application) throw new NotFoundError('Tutor application');
+
+    // Convert any base64 documents to lightweight static files
+    if (application.documents && application.documents.length > 0) {
+      application.documents = application.documents.map((d) => {
+        if (d.documentUrl && d.documentUrl.startsWith('data:')) {
+          const fileUrl = saveBase64ToFile(d.documentUrl, `app-${applicationId}-doc`);
+          if (fileUrl !== d.documentUrl) {
+            // Asynchronously update db row so future reads are instantaneous
+            prisma.tutorApplicationDocument.update({
+              where: { docId: d.docId },
+              data: { documentUrl: fileUrl },
+            }).catch((e) => console.error('Failed to update document URL:', e));
+            return { ...d, documentUrl: fileUrl };
+          }
+        }
+        return d;
+      });
+    }
+
     return application;
   },
 

@@ -130,6 +130,24 @@ export const coursesService = {
           isLocked: true,
         }));
       }
+    } else {
+      // User has full access: ensure all lessons, materials, and resources are explicitly unlocked
+      if (formatted.lessons && Array.isArray(formatted.lessons)) {
+        formatted.lessons = formatted.lessons.map((lesson: any) => ({
+          ...lesson,
+          isLocked: false,
+          ...(lesson.materials && Array.isArray(lesson.materials) ? {
+            materials: lesson.materials.map((m: any) => ({ ...m, isLocked: false })),
+          } : {}),
+        }));
+      }
+
+      if (formatted.resources && Array.isArray(formatted.resources)) {
+        formatted.resources = formatted.resources.map((r: any) => ({
+          ...r,
+          isLocked: false,
+        }));
+      }
     }
 
     return {

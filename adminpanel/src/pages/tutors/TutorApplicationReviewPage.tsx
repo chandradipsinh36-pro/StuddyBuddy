@@ -29,6 +29,7 @@ export const TutorApplicationReviewPage: React.FC = () => {
 
   const [application, setApplication] = useState<TutorApplication | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Reviewer notes state in sidebar
   const [adminNotes, setAdminNotes] = useState('');
@@ -41,6 +42,7 @@ export const TutorApplicationReviewPage: React.FC = () => {
   const fetchApplication = async () => {
     if (!id) return;
     setIsLoading(true);
+    setError(null);
     try {
       const data = await adminTutorService.getApplicationById(Number(id));
       if (data) {
@@ -48,8 +50,13 @@ export const TutorApplicationReviewPage: React.FC = () => {
         if (data.admin_note) {
           setAdminNotes(data.admin_note);
         }
+      } else {
+        setError('Tutor application not found.');
       }
-    } catch {
+    } catch (err: any) {
+      console.error('Failed to load application:', err);
+      const msg = err?.response?.data?.error?.message || err?.message || 'Failed to load tutor application.';
+      setError(msg);
       toast.error('Failed to load tutor application.');
     } finally {
       setIsLoading(false);
@@ -69,13 +76,20 @@ export const TutorApplicationReviewPage: React.FC = () => {
     );
   }
 
-  if (!application) {
+  if (error || !application) {
     return (
       <div style={{ padding: 'var(--space-12)', textAlign: 'center' }}>
-        <h3>Application not found</h3>
-        <button onClick={() => navigate(ROUTES.TUTOR_APPLICATIONS)} className="btn btn-secondary btn-sm" style={{ marginTop: 'var(--space-4)' }}>
-          Back to Applications
-        </button>
+        <h3 style={{ color: error ? '#DC2626' : 'inherit', marginBottom: 'var(--space-2)' }}>
+          {error || 'Application not found'}
+        </h3>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center', marginTop: 'var(--space-4)' }}>
+          <button onClick={() => navigate(ROUTES.TUTOR_APPLICATIONS)} className="btn btn-secondary btn-sm">
+            Back to Applications
+          </button>
+          <button onClick={fetchApplication} className="btn btn-primary btn-sm">
+            Retry
+          </button>
+        </div>
       </div>
     );
   }

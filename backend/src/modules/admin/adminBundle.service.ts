@@ -38,7 +38,7 @@ export const adminBundleService = {
     const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
     const orderBy = { [sortField]: sortOrder } as Prisma.BundleOrderByWithRelationInput;
 
-    const [bundles, total] = await prisma.$transaction([
+    const [bundles, total] = await Promise.all([
       prisma.bundle.findMany({
         where,
         skip,

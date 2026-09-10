@@ -7,8 +7,8 @@
   border-radius: var(--radius-xl); padding: var(--space-8);
   color: white;
 }
-.greeting { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); margin: 0; }
-.welcomeSubtitle { font-size: var(--font-size-base); opacity: 0.75; margin-top: var(--space-1); }
+.greeting { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); margin: 0; color: #ffffff; }
+.welcomeSubtitle { font-size: var(--font-size-base); color: rgba(255,255,255,0.85); margin-top: var(--space-1); }
 .welcomeActions { display: flex; gap: var(--space-3); }
 
 /* Metrics */
@@ -39,6 +39,33 @@
 .sectionIcon { color: var(--color-primary-500); }
 .seeAll { font-size: var(--font-size-sm); color: var(--color-primary-500); text-decoration: none; font-weight: var(--font-weight-medium); }
 .seeAll:hover { text-decoration: underline; }
+
+/* Empty enrollment state */
+.emptyEnrollment {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: var(--space-10); border: 2px dashed var(--color-border);
+  border-radius: var(--radius-xl); text-align: center; color: var(--color-gray-400);
+}
+
+/* Enrolled course cards */
+.enrolledGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+.enrolledCard {
+  background: var(--color-white); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); overflow: hidden; text-decoration: none;
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+  display: flex; flex-direction: column;
+}
+.enrolledCard:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.enrolledCardBanner {
+  background: linear-gradient(135deg, var(--color-primary-700), var(--color-primary-500));
+  padding: var(--space-6); display: flex; align-items: center; justify-content: center;
+  color: white; min-height: 80px;
+}
+.enrolledCardBody { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); flex: 1; }
+.enrolledCardTitle { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); color: var(--color-gray-900); line-height: 1.4; }
+.enrolledCardTutor { font-size: var(--font-size-xs); color: var(--color-gray-500); margin: 0; }
+.enrolledCardProgress { margin-top: auto; }
+.enrolledCardMeta { display: flex; align-items: center; gap: var(--space-2); }
 
 /* Playlist cards */
 .playlistGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
@@ -89,12 +116,14 @@
   .playlistGrid { grid-template-columns: repeat(2, 1fr); }
   .resourceGrid { grid-template-columns: repeat(2, 1fr); }
   .tutorGrid { grid-template-columns: repeat(2, 1fr); }
+  .enrolledGrid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
   .metricsGrid { grid-template-columns: repeat(2, 1fr); }
   .playlistGrid { grid-template-columns: 1fr; }
   .resourceGrid { grid-template-columns: 1fr; }
   .tutorGrid { grid-template-columns: 1fr; }
+  .enrolledGrid { grid-template-columns: 1fr; }
   .welcome { flex-direction: column; }
   .aiShortcut { flex-direction: column; }
 }

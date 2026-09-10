@@ -47,10 +47,11 @@ function mapApplication(app: Record<string, unknown>): TutorApplication {
       proficiency: ((s.proficiency as string) || 'intermediate') as any,
     })),
     documents:        ((app.documents as Record<string, unknown>[]) ?? []).map((d) => {
-      const docUrl = (d.documentUrl as string) ?? (d.document_url as string) ?? '';
+      const docUrl = typeof d.documentUrl === 'string' ? d.documentUrl : typeof d.document_url === 'string' ? d.document_url : '';
+      const fullDocUrl = docUrl ? (docUrl.startsWith('http') || docUrl.startsWith('data:') ? docUrl : `http://localhost:5000${docUrl.startsWith('/') ? '' : '/'}${docUrl}`) : '';
       const docType = (d.documentType as string) ?? (d.document_type as string) ?? 'qualification_certificate';
       let fileName = docType.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-      if (docUrl.startsWith('http')) {
+      if (docUrl.startsWith('http') || docUrl.startsWith('/resources/')) {
         const parts = docUrl.split('/');
         const lastPart = parts[parts.length - 1];
         if (lastPart && lastPart.length < 50 && lastPart.includes('.')) fileName = lastPart;
@@ -62,7 +63,7 @@ function mapApplication(app: Record<string, unknown>): TutorApplication {
       return {
         doc_id:        (d.docId as number) ?? (d.doc_id as number) ?? 0,
         application_id: (app.applicationId as number) ?? (d.applicationId as number) ?? 0,
-        document_url:  docUrl,
+        document_url:  fullDocUrl,
         document_type: docType,
         file_name:     fileName,
         file_size:     docUrl.startsWith('data:') ? `${Math.round(docUrl.length * 0.75 / 1024)} KB` : 'Attached Document',
@@ -261,8 +262,9 @@ export const adminTutorService = {
     try {
       const { data } = await apiClient.get(`/admin/tutor-applications/${id}`);
       return mapApplication(data.data as Record<string, unknown>);
-    } catch {
-      return null;
+    } catch (err) {
+      console.error(`[adminTutorService.getApplicationById] Error loading application ${id}:`, err);
+      throw err;
     }
   },
 

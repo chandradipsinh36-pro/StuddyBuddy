@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { resourcesController } from './resources.controller';
-import { authenticate } from '../../middleware/authenticate';
+import { authenticate, authenticateOptional } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { validate } from '../../middleware/validate';
 import {
@@ -12,7 +12,7 @@ const router = Router();
 
 // Public
 router.get('/', validate(resourceQuerySchema, 'query'), resourcesController.list);
-router.get('/:id', resourcesController.getById);
+router.get('/:id', authenticateOptional, resourcesController.getById);
 
 // Resource categories (tutor)
 router.post('/:id/categories/:categoryId', authenticate, authorize('tutor'), resourcesController.addCategory);

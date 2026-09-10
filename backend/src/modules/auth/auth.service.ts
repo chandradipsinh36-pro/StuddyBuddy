@@ -3,6 +3,7 @@ import { hashPassword, comparePassword } from '../../utils/hash';
 import { signToken } from '../../utils/jwt';
 import { ConflictError, AuthenticationError, NotFoundError } from '../../utils/AppError';
 import { RegisterInput, LoginInput } from './auth.schema';
+import { saveBase64ToFile } from '../../middleware/resourceUpload';
 
 function omitPassword<T extends { passwordHash: string }>(user: T): Omit<T, 'passwordHash'> {
   const { passwordHash: _pw, ...rest } = user;
@@ -47,7 +48,7 @@ export const authService = {
               ...(input.documentUrl && {
                 documents: {
                   create: {
-                    documentUrl: input.documentUrl,
+                    documentUrl: saveBase64ToFile(input.documentUrl, 'cert'),
                     documentType: 'qualification_certificate',
                   },
                 },

@@ -12,8 +12,8 @@ const h = (fn: (req: Request, res: Response, next: NextFunction) => Promise<void
 
 // Public
 const router = Router();
-router.get('/', authenticateOptional, h(async (req, res) => sendSuccess(res, await bundlesService.listBundles(req.user?.userId))));
-router.get('/:id', authenticateOptional, h(async (req, res) => sendSuccess(res, await bundlesService.getBundleById(Number(req.params.id), req.user?.userId))));
+router.get('/', authenticateOptional, h(async (req, res) => sendSuccess(res, await bundlesService.listBundles(req.user?.userId, req.user?.role))));
+router.get('/:id', authenticateOptional, h(async (req, res) => sendSuccess(res, await bundlesService.getBundleById(Number(req.params.id), req.user?.userId, req.user?.role))));
 export default router;
 
 // Tutor

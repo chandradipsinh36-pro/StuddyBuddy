@@ -48,7 +48,7 @@ export const adminUserService = {
       }),
     };
 
-    const [users, total] = await prisma.$transaction([
+    const [users, total] = await Promise.all([
       prisma.user.findMany({ where, select: USER_SELECT, skip, take, orderBy }),
       prisma.user.count({ where }),
     ]);
