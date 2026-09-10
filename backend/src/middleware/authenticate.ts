@@ -19,3 +19,21 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
     next(new AuthenticationError('Invalid or expired token'));
   }
 }
+
+export function authenticateOptional(req: Request, _res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.slice(7);
+
+  try {
+    const payload = verifyToken(token);
+    req.user = payload;
+  } catch {
+    // Ignore token errors in optional authentication
+  }
+  next();
+}

@@ -63,8 +63,9 @@
 .playlistName { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); color: var(--color-gray-900); margin: 0; }
 .playlistTutor { font-size: var(--font-size-xs); color: var(--color-gray-500); }
 
-/* Resource / Tutor grids */
+/* Resource / Tutor / Bundle grids */
 .resourceGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+.bundlesGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4); }
 .tutorGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
 
 /* AI shortcut */

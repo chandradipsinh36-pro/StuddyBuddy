@@ -68,6 +68,7 @@ export interface TutorCourseItem {
   courseId: number;
   title: string;
   description?: string;
+  lessonsCount?: number;
   price: number | string;
   isPublished: boolean;
   createdAt: string;
@@ -252,3 +253,127 @@ export interface AdminNotification {
   type: 'application' | 'user_status' | 'system';
   link?: string;
 }
+
+// ── Admin Courses, Bundles, Resources Models ──────────────
+
+export interface AdminCourse {
+  courseId: number;
+  title: string;
+  description?: string;
+  price: number | string;
+  isPublished: boolean;
+  createdAt: string;
+  categoryId?: number;
+  tutorId: number;
+  tutor: {
+    id: number;
+    name: string;
+    email: string;
+    profilePic?: string;
+    isVerified?: boolean;
+  };
+  category?: {
+    categoryId: number;
+    name: string;
+  };
+  lessons?: any[];
+  lessonsCount: number;
+  enrollmentsCount: number;
+  reviewsCount: number;
+  resourcesCount: number;
+}
+
+export interface AdminBundle {
+  bundleId: number;
+  tutorId: number;
+  title: string;
+  description?: string;
+  price: number | string;
+  originalPrice?: number | string;
+  discountPercent?: number;
+  isPublished: boolean;
+  createdAt: string;
+  tutor: {
+    id: number;
+    name: string;
+    email: string;
+    profilePic?: string;
+  };
+  bundleItems?: Array<{
+    bundleId: number;
+    resourceId: number;
+    resource?: {
+      resourceId: number;
+      filename: string;
+      fileType: string;
+      fileUrl?: string;
+      price: number | string;
+      isLocked: boolean;
+      status: string;
+    };
+  }>;
+  resourcesCount: number;
+  salesCount: number;
+  revenue: number;
+}
+
+export interface AdminResource {
+  resourceId: number;
+  courseId?: number;
+  uploadedBy: number;
+  filename: string;
+  title: string;
+  description?: string;
+  subject?: string;
+  fileType: string;
+  fileUrl?: string;
+  isLocked: boolean;
+  price: number | string;
+  status: string;
+  moderationNotes?: string;
+  createdAt: string;
+  uploader: {
+    id: number;
+    name: string;
+    email: string;
+    profilePic?: string;
+  };
+  course?: {
+    courseId: number;
+    title: string;
+  };
+  categoryName?: string;
+  salesCount: number;
+  revenue: number;
+}
+
+export interface CourseFilterParams {
+  search?: string;
+  is_published?: 'all' | 'published' | 'draft';
+  category_id?: number | 'all';
+  sort_by?: 'createdAt' | 'title' | 'price';
+  sort_order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+export interface BundleFilterParams {
+  search?: string;
+  is_published?: 'all' | 'published' | 'draft';
+  sort_by?: 'createdAt' | 'title' | 'price';
+  sort_order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+export interface ResourceFilterParams {
+  search?: string;
+  status?: string;
+  file_type?: string;
+  is_locked?: 'all' | 'locked' | 'unlocked';
+  sort_by?: 'createdAt' | 'filename' | 'price';
+  sort_order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+

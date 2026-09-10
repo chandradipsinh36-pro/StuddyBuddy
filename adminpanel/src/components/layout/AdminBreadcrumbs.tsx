@@ -26,6 +26,9 @@ export const AdminBreadcrumbs: React.FC = () => {
       if (segment === 'users') label = 'User Management';
       if (segment === 'tutors') label = 'Tutor Management';
       if (segment === 'applications') label = 'Applications';
+      if (segment === 'courses') label = 'Course Management';
+      if (segment === 'bundles') label = 'Bundle Management';
+      if (segment === 'resources') label = 'Resource Management';
       if (segment === 'profile') label = 'Admin Profile';
       if (!isNaN(Number(segment))) label = `#${segment}`;
 

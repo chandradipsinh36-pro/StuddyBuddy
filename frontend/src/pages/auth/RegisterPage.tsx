@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   BookOpen, User, Mail, Lock, Eye, EyeOff, Upload, Video,
-  FileCheck, X, ShieldAlert, Award, Briefcase, Plus
+  FileCheck, X, ShieldAlert, Award, Briefcase, Plus, AlertCircle
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,21 +16,96 @@ import { ROUTES } from '../../constants';
 import toast from 'react-hot-toast';
 import styles from './Auth.module.css';
 
-const baseSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string(),
+const registerSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Full name is required')
+    .min(2, 'Name must be at least 2 characters')
+    .max(60, 'Name cannot exceed 60 characters'),
+  email: z
+    .string()
+    .min(1, 'Email address is required')
+    .email('Please enter a valid email address (e.g. you@example.com)'),
+  password: z
+    .string()
+    .min(1, 'Password is required')
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Za-z]/, 'Password must contain at least one letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
   role: z.enum(['student', 'tutor']),
   trialVideoLink: z.string().optional(),
   highestQualification: z.string().optional(),
   experienceYears: z.string().optional(),
-}).refine(d => d.password === d.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
+}).superRefine((data, ctx) => {
+  if (data.password !== data.confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Passwords do not match',
+      path: ['confirmPassword'],
+    });
+  }
+
+  if (data.role === 'tutor') {
+    if (!data.trialVideoLink || !data.trialVideoLink.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Trial demo video link is required for tutor verification',
+        path: ['trialVideoLink'],
+      });
+    } else {
+      try {
+        const url = new URL(data.trialVideoLink.trim());
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Video link must begin with http:// or https://',
+            path: ['trialVideoLink'],
+          });
+        }
+      } catch {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please enter a valid URL (e.g. https://youtube.com/...)',
+          path: ['trialVideoLink'],
+        });
+      }
+    }
+
+    if (!data.highestQualification || !data.highestQualification.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Highest degree / qualification is required',
+        path: ['highestQualification'],
+      });
+    } else if (data.highestQualification.trim().length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Qualification must be at least 2 characters',
+        path: ['highestQualification'],
+      });
+    }
+
+    if (!data.experienceYears || !data.experienceYears.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Teaching experience is required (enter 0 if beginner)',
+        path: ['experienceYears'],
+      });
+    } else {
+      const exp = Number(data.experienceYears);
+      if (isNaN(exp) || exp < 0 || exp > 50) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Experience must be between 0 and 50 years',
+          path: ['experienceYears'],
+        });
+      }
+    }
+  }
 });
 
-type FormData = z.infer<typeof baseSchema>;
+type FormData = z.infer<typeof registerSchema>;
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -41,6 +116,7 @@ export function RegisterPage() {
   const [role, setRole] = useState<'student' | 'tutor'>('student');
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [subjectError, setSubjectError] = useState<string | null>(null);
 
   // Teaching subjects list with Add button
   const [subjectInput, setSubjectInput] = useState('');
@@ -51,16 +127,24 @@ export function RegisterPage() {
     if (!trimmed) return;
     if (!subjectsList.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
       setSubjectsList(prev => [...prev, trimmed]);
+      setSubjectError(null);
     }
     setSubjectInput('');
   };
 
   const handleRemoveSubject = (indexToRemove: number) => {
-    setSubjectsList(prev => prev.filter((_, idx) => idx !== indexToRemove));
+    setSubjectsList(prev => {
+      const updated = prev.filter((_, idx) => idx !== indexToRemove);
+      if (updated.length === 0 && role === 'tutor') {
+        setSubjectError('Please add at least one teaching subject');
+      }
+      return updated;
+    });
   };
 
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
-    resolver: zodResolver(baseSchema),
+  const { register, handleSubmit, setValue, trigger, formState: { errors, isSubmitting } } = useForm<FormData>({
+    resolver: zodResolver(registerSchema),
+    mode: 'onChange',
     defaultValues: { role: 'student', trialVideoLink: '', highestQualification: '', experienceYears: '' },
   });
 
@@ -68,6 +152,8 @@ export function RegisterPage() {
     setRole(newRole);
     setValue('role', newRole);
     setFileError(null);
+    setSubjectError(null);
+    trigger();
   };
 
   const ALLOWED_CERT_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'webp'];
@@ -137,6 +223,7 @@ export function RegisterPage() {
           finalSubjects.push(pendingInput);
         }
         if (finalSubjects.length === 0) {
+          setSubjectError('Please add at least one teaching subject.');
           toast.error('Please add at least one teaching subject.');
           return;
         }
@@ -359,19 +446,21 @@ export function RegisterPage() {
 
               {/* Highest Qualification */}
               <Input
-                label="Highest Degree / Qualification"
+                label="Highest Degree / Qualification *"
                 type="text"
                 placeholder="e.g. M.Sc in Applied Mathematics, PhD, B.Tech"
                 leftIcon={<Award size={16} />}
+                error={errors.highestQualification?.message}
                 {...register('highestQualification')}
               />
 
               {/* Experience */}
               <Input
-                label="Teaching Experience (Years)"
+                label="Teaching Experience (Years) *"
                 type="number"
                 placeholder="e.g. 5"
                 leftIcon={<Briefcase size={16} />}
+                error={errors.experienceYears?.message}
                 {...register('experienceYears')}
               />
 
@@ -446,6 +535,11 @@ export function RegisterPage() {
                       </span>
                     ))}
                   </div>
+                )}
+                {subjectError && (
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: '#dc2626', fontWeight: 600, marginTop: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <AlertCircle size={13} /> {subjectError}
+                  </p>
                 )}
                 <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', marginTop: 'var(--space-1)' }}>
                   Type a subject and click Add to include multiple teaching disciplines.

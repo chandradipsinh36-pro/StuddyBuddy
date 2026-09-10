@@ -28,10 +28,9 @@ export function Footer() {
             <div className={styles.linkGroup}>
               <h4 className={styles.linkHeading}>Learn</h4>
               <Link to={ROUTES.EXPLORE} className={styles.link}>Explore</Link>
-              <Link to={ROUTES.RESOURCES} className={styles.link}>Resources</Link>
+              <Link to={ROUTES.COURSES} className={styles.link}>Courses</Link>
+              <Link to={ROUTES.BUNDLES} className={styles.link}>Study Bundles</Link>
               <Link to={ROUTES.PLAYLISTS} className={styles.link}>Playlists</Link>
-              <Link to={ROUTES.STUDY_GROUPS} className={styles.link}>Study Groups</Link>
-              <Link to={ROUTES.AI} className={styles.link}>AI Assistant</Link>
             </div>
             <div className={styles.linkGroup}>
               <h4 className={styles.linkHeading}>Tutors</h4>

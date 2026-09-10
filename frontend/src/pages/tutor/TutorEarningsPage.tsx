@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, DollarSign } from 'lucide-react';
+import { CreditCard, IndianRupee } from 'lucide-react';
 import { earningsService } from '../../services/earningsService';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -82,7 +82,7 @@ export function TutorEarningsPage() {
         </div>
         <Button
           variant="primary"
-          leftIcon={<DollarSign size={16} />}
+          leftIcon={<IndianRupee size={16} />}
           onClick={() => setPayoutModalOpen(true)}
         >
           Request Payout

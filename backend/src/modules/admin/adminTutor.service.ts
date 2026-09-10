@@ -4,6 +4,7 @@ import { getPagination } from '../../utils/pagination';
 import { NotFoundError } from '../../utils/AppError';
 import { TutorQuery } from './admin.schema';
 import { tutorEarningsService } from '../tutors/tutor-earnings.service';
+import { formatCoursePayload } from '../courses/courses.service';
 
 // Whitelist for sort
 const SORT_MAP: Record<string, string> = {
@@ -179,7 +180,7 @@ export const adminTutorService = {
 
     return {
       ...tutor,
-      courses,
+      courses: courses.map(formatCoursePayload),
       resources,
       bundles,
       earnings,

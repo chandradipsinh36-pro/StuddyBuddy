@@ -13,26 +13,20 @@ import { VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage } from '../pages
 import { LandingPage } from '../pages/public/LandingPage';
 import { ExplorePage } from '../pages/public/ExplorePage';
 import { TutorProfilePage } from '../pages/public/TutorProfilePage';
-import { ResourceDetailPage } from '../pages/public/ResourceDetailPage';
-
-// Student
-import { StudentDashboard } from '../pages/student/StudentDashboard';
-import { AIAssistantPage } from '../pages/student/AIAssistant';
-
-// Tutor
-import { TutorDashboard } from '../pages/tutor/TutorDashboard';
-import { TutorOnboarding } from '../pages/tutor/TutorOnboarding';
-
-// Public
 import { TutorsListPage } from '../pages/public/TutorsListPage';
-import { ResourcesListPage } from '../pages/public/ResourcesListPage';
 import { CoursesListPage } from '../pages/public/CoursesListPage';
 import { CourseDetailPage } from '../pages/public/CourseDetailPage';
 import { PlaylistsListPage } from '../pages/public/PlaylistsListPage';
 import { PlaylistDetailPage } from '../pages/public/PlaylistDetailPage';
-import { StudyGroupsPage } from '../pages/public/StudyGroupsPage';
-import { StudyGroupDetailPage } from '../pages/public/StudyGroupDetailPage';
+import { BundlesListPage } from '../pages/public/BundlesListPage';
 import { NotFoundPage } from '../pages/public/NotFoundPage';
+
+// Student
+import { StudentDashboard } from '../pages/student/StudentDashboard';
+
+// Tutor
+import { TutorDashboard } from '../pages/tutor/TutorDashboard';
+import { TutorOnboarding } from '../pages/tutor/TutorOnboarding';
 
 // Student
 import { StudentProfilePage } from '../pages/student/StudentProfilePage';
@@ -81,12 +75,14 @@ const router = createBrowserRouter([
       { path: '/tutors/:id',       element: <TutorProfilePage /> },
       { path: ROUTES.COURSES,      element: <CoursesListPage /> },
       { path: '/courses/:id',      element: <CourseDetailPage /> },
-      { path: ROUTES.RESOURCES,    element: <ResourcesListPage /> },
-      { path: '/resources/:id',    element: <ResourceDetailPage /> },
+      { path: ROUTES.BUNDLES,      element: <BundlesListPage /> },
+      { path: '/bundles/:id',      element: <BundlesListPage /> },
       { path: ROUTES.PLAYLISTS,    element: <PlaylistsListPage /> },
       { path: '/playlists/:id',    element: <PlaylistDetailPage /> },
-      { path: ROUTES.STUDY_GROUPS, element: <StudyGroupsPage /> },
-      { path: '/study-groups/:id', element: <StudyGroupDetailPage /> },
+      { path: ROUTES.RESOURCES,    element: <Navigate to={ROUTES.BUNDLES} replace /> },
+      { path: '/resources/:id',    element: <Navigate to={ROUTES.BUNDLES} replace /> },
+      { path: ROUTES.STUDY_GROUPS, element: <Navigate to={ROUTES.BUNDLES} replace /> },
+      { path: '/study-groups/:id', element: <Navigate to={ROUTES.BUNDLES} replace /> },
     ],
   },
 
@@ -106,18 +102,8 @@ const router = createBrowserRouter([
     ],
   },
 
-  // AI route is accessible to both students and tutors (just protected)
-  {
-    path: ROUTES.AI,
-    element: (
-      <ProtectedRoute>
-        <StudentLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      { index: true, element: <AIAssistantPage /> },
-    ],
-  },
+  // Redirect AI route
+  { path: ROUTES.AI, element: <Navigate to={ROUTES.STUDENT_DASHBOARD} replace /> },
 
   // ============ TUTOR (Protected — requires tutor role) ============
   {

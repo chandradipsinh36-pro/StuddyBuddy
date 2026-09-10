@@ -38,6 +38,14 @@ export function TutorResourceCreatePage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [formErrors, setFormErrors] = useState<{
+    title?: string;
+    description?: string;
+    subject?: string;
+    customCategory?: string;
+    price?: string;
+    file?: string;
+  }>({});
 
   if (!user?.isVerified) {
     return (
@@ -91,32 +99,80 @@ export function TutorResourceCreatePage() {
     else if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)) setType('image');
 
     setFile(f);
+    if (formErrors.file) {
+      setFormErrors(prev => ({ ...prev, file: undefined }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: typeof formErrors = {};
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      errors.title = 'Resource title is required';
+    } else if (trimmedTitle.length < 3) {
+      errors.title = 'Title must be at least 3 characters long';
+    } else if (trimmedTitle.length > 150) {
+      errors.title = 'Title cannot exceed 150 characters';
+    }
+
+    const trimmedDesc = description.trim();
+    if (!trimmedDesc) {
+      errors.description = 'Description is required to help students understand the material';
+    } else if (trimmedDesc.length < 10) {
+      errors.description = 'Description must be at least 10 characters long';
+    } else if (trimmedDesc.length > 2000) {
+      errors.description = 'Description cannot exceed 2000 characters';
+    }
+
+    const trimmedSubject = subject.trim();
+    if (!trimmedSubject) {
+      errors.subject = 'Subject discipline is required';
+    } else if (trimmedSubject.length < 2) {
+      errors.subject = 'Subject must be at least 2 characters long';
+    }
+
+    if (category === 'Other' && !customCategory.trim()) {
+      errors.customCategory = 'Please enter your custom category name';
+    }
+
+    if (accessType === 'premium') {
+      if (!price || price.trim() === '') {
+        errors.price = 'Price is required for premium resources';
+      } else {
+        const priceNum = parseFloat(price);
+        if (isNaN(priceNum)) {
+          errors.price = 'Please enter a valid price number';
+        } else if (priceNum < 1) {
+          errors.price = 'Price must be at least ₹1';
+        } else if (priceNum > 50000) {
+          errors.price = 'Price cannot exceed ₹50,000';
+        }
+      }
+    }
+
+    if (!file && type !== 'youtube') {
+      errors.file = 'Please attach the study material file';
+    } else if (file) {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
+        errors.file = 'Invalid file extension. Allowed: PDF, PPT, Word, Video, MP3, Images';
+      } else if (file.size > 50 * 1024 * 1024) {
+        errors.file = 'File size cannot exceed 50MB';
+      }
+    }
+
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error('Please resolve form validation errors before proceeding.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      toast.error('Please enter a title.');
+    if (!validateForm()) {
       return;
-    }
-    if (!subject.trim()) {
-      toast.error('Please enter a subject discipline.');
-      return;
-    }
-    if (category === 'Other' && !customCategory.trim()) {
-      toast.error('Please enter your custom category name.');
-      return;
-    }
-    if (!file && type !== 'youtube') {
-      toast.error('Please attach the file for this resource.');
-      return;
-    }
-    if (file) {
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
-        toast.error('Only PDF, PPT, Word, Video, MP3, and Images are acceptable.');
-        return;
-      }
     }
 
     setUploading(true);
@@ -160,23 +216,27 @@ export function TutorResourceCreatePage() {
   return (
     <div className={styles.page}>
       <Link to={ROUTES.TUTOR_RESOURCES} className={styles.backLink}>
-        <ArrowLeft size={16} /> Back to My Resources
+        <ArrowLeft size={16} /> Back to Resources
       </Link>
 
       <div className={styles.header}>
-        <h1 className={styles.title}>Upload Teaching Material</h1>
+        <h1 className={styles.title}>Upload Teaching Resource</h1>
         <p className={styles.subtitle}>
-          Share quality educational notes, tests, or worksheets with students worldwide.
+          Share study notes, worksheets, past papers, or video walkthroughs with thousands of students.
         </p>
       </div>
 
       <div className={styles.card}>
-        <form onSubmit={handleSubmit} className={styles.form}>
+        <form onSubmit={handleSubmit} className={styles.form} noValidate>
           <Input
             label="Resource Title *"
             placeholder="e.g. Complete Calculus Notes — Differentiation & Integration"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (formErrors.title) setFormErrors(fe => ({ ...fe, title: undefined }));
+            }}
+            error={formErrors.title}
             required
           />
 
@@ -184,7 +244,11 @@ export function TutorResourceCreatePage() {
             label="Description & Learning Objectives *"
             placeholder="Describe what concepts are covered, target grade level, and how students will benefit..."
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              if (formErrors.description) setFormErrors(fe => ({ ...fe, description: undefined }));
+            }}
+            error={formErrors.description}
             rows={4}
             required
           />
@@ -194,7 +258,11 @@ export function TutorResourceCreatePage() {
               label="Subject Discipline *"
               placeholder="e.g. Mathematics, Physics, Organic Chemistry"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={(e) => {
+                setSubject(e.target.value);
+                if (formErrors.subject) setFormErrors(fe => ({ ...fe, subject: undefined }));
+              }}
+              error={formErrors.subject}
               required
             />
             <Select
@@ -213,7 +281,11 @@ export function TutorResourceCreatePage() {
               label="Custom Category Name *"
               placeholder="e.g. Lab Manual, Cheatsheet, Formula Book..."
               value={customCategory}
-              onChange={(e) => setCustomCategory(e.target.value)}
+              onChange={(e) => {
+                setCustomCategory(e.target.value);
+                if (formErrors.customCategory) setFormErrors(fe => ({ ...fe, customCategory: undefined }));
+              }}
+              error={formErrors.customCategory}
               required
             />
           )}
@@ -249,8 +321,14 @@ export function TutorResourceCreatePage() {
               <Input
                 label="Price (INR ₹) *"
                 type="number"
+                min="1"
+                placeholder="199"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                onChange={(e) => {
+                  setPrice(e.target.value);
+                  if (formErrors.price) setFormErrors(fe => ({ ...fe, price: undefined }));
+                }}
+                error={formErrors.price}
                 helper="You earn 85% of this price on every student purchase"
                 required
               />
@@ -262,6 +340,11 @@ export function TutorResourceCreatePage() {
             <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-700)', marginBottom: 'var(--space-2)', display: 'block' }}>
               Resource File Attachment *
             </label>
+            {formErrors.file && (
+              <p style={{ color: '#dc2626', fontSize: '13px', fontWeight: 600, marginBottom: 6 }}>
+                {formErrors.file}
+              </p>
+            )}
             <input
               ref={fileInputRef}
               type="file"

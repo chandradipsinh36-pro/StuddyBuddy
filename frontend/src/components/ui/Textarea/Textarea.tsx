@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 import styles from '../Input/Input.module.css';
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -22,7 +23,12 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             {...props}
           />
         </div>
-        {error && <p className={styles.error} role="alert">{error}</p>}
+        {error && (
+          <p className={styles.error} role="alert">
+            <AlertCircle size={13} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
+          </p>
+        )}
         {helper && !error && <p className={styles.helper}>{helper}</p>}
       </div>
     );

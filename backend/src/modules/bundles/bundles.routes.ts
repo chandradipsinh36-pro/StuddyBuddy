@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { bundlesService } from './bundles.service';
-import { authenticate } from '../../middleware/authenticate';
+import { authenticate, authenticateOptional } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { validate } from '../../middleware/validate';
 import { createBundleSchema, updateBundleSchema } from './bundles.schema';
@@ -12,8 +12,8 @@ const h = (fn: (req: Request, res: Response, next: NextFunction) => Promise<void
 
 // Public
 const router = Router();
-router.get('/', h(async (req, res) => sendSuccess(res, await bundlesService.listBundles())));
-router.get('/:id', h(async (req, res) => sendSuccess(res, await bundlesService.getBundleById(Number(req.params.id)))));
+router.get('/', authenticateOptional, h(async (req, res) => sendSuccess(res, await bundlesService.listBundles(req.user?.userId))));
+router.get('/:id', authenticateOptional, h(async (req, res) => sendSuccess(res, await bundlesService.getBundleById(Number(req.params.id), req.user?.userId))));
 export default router;
 
 // Tutor

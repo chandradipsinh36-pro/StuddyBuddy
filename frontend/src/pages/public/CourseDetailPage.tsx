@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, ShieldCheck, Star, FileText, Video, Paperclip, ExternalLink, BookOpen } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ShieldCheck, Star, FileText, Video, Paperclip, ExternalLink, BookOpen, Lock } from 'lucide-react';
 import { parseVideoUrl } from '../../utils/videoUtils';
 import { courseService } from '../../services/courseService';
 import { enrollmentService } from '../../services/enrollmentService';
-import { paymentService } from '../../services/paymentService';
 import { reviewService } from '../../services/reviewService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -12,6 +11,7 @@ import { Button } from '../../components/ui/Button/Button';
 import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
+import { PaymentCheckoutModal } from '../../components/shared/PaymentCheckoutModal';
 import { ROUTES } from '../../constants';
 import type { Course, CourseReview } from '../../types';
 import toast from 'react-hot-toast';
@@ -26,11 +26,12 @@ export function CourseDetailPage() {
   const [reviews, setReviews] = useState<CourseReview[]>([]);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [enrolling, setEnrolling] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   // Add review form
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
@@ -66,7 +67,7 @@ export function CourseDetailPage() {
     loadData();
   }, [courseId, user?.role]);
 
-  const handleEnrollOrPay = async () => {
+  const handleEnrollOrPay = () => {
     if (!isAuthenticated) {
       toast.error('Please log in as a student to enroll in this course.');
       return;
@@ -76,23 +77,7 @@ export function CourseDetailPage() {
       return;
     }
     if (!course) return;
-
-    setEnrolling(true);
-    try {
-      if (course.price === 0) {
-        await enrollmentService.enroll(courseId);
-        setIsEnrolled(true);
-        toast.success('Successfully enrolled in course!');
-      } else {
-        await paymentService.payCourse(courseId, course.price);
-        setIsEnrolled(true);
-        toast.success('Payment successful! You are now enrolled.');
-      }
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error?.message || 'Enrollment failed. Please try again.');
-    } finally {
-      setEnrolling(false);
-    }
+    setCheckoutOpen(true);
   };
 
   const handleAddReview = async (e: React.FormEvent) => {
@@ -102,11 +87,29 @@ export function CourseDetailPage() {
       return;
     }
 
+    if (!rating || rating < 1 || rating > 5) {
+      toast.error('Please select a star rating between 1 and 5.');
+      return;
+    }
+
+    const trimmed = comment.trim();
+    if (!trimmed) {
+      setReviewError('Review comment is required');
+      toast.error('Please share your thoughts in the review comment.');
+      return;
+    }
+    if (trimmed.length < 5) {
+      setReviewError('Review comment must be at least 5 characters long');
+      toast.error('Please enter at least 5 characters for your review comment.');
+      return;
+    }
+    setReviewError(null);
+
     setSubmittingReview(true);
     try {
       const created = await reviewService.createCourseReview(courseId, {
         rating,
-        comment: comment.trim() || undefined,
+        comment: trimmed,
       });
       setReviews((prev) => [created, ...prev]);
       setComment('');
@@ -142,6 +145,10 @@ export function CourseDetailPage() {
       </div>
     );
   }
+
+  const isAuthor = Boolean(user && (user.id === course.tutor?.id || user.id === course.tutorId));
+  const isAdmin = (user?.role as string) === 'admin';
+  const hasAccess = isAuthor || isAdmin || isEnrolled;
 
   return (
     <div className={styles.page}>
@@ -193,6 +200,7 @@ export function CourseDetailPage() {
               <div className={styles.lessonsList}>
                 {course.lessons.map((lesson, idx) => {
                   const videoInfo = parseVideoUrl(lesson.videoUrl);
+                  const isLessonUnlocked = hasAccess || Boolean(lesson.isFreePreview);
                   const lessonResources = (course.resources || []).filter((r) =>
                     (lesson.resourceIds || []).includes(Number(r.resourceId || r.id))
                   );
@@ -216,43 +224,87 @@ export function CourseDetailPage() {
                             <Video size={13} /> Lecture #{idx + 1}
                           </span>
                           <span>{lesson.title || `Lecture ${idx + 1}`}</span>
+                          {lesson.isFreePreview && (
+                            <Badge variant="success" style={{ fontSize: '10px' }}>Free Preview</Badge>
+                          )}
                         </h3>
 
-                        {lesson.videoUrl && (
-                          <a
-                            href={lesson.videoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              fontSize: 'var(--font-size-xs)',
-                              color: 'var(--color-primary-600)',
-                              textDecoration: 'none',
-                              fontWeight: 500,
-                            }}
-                          >
-                            <span>Open Video</span>
-                            <ExternalLink size={12} />
-                          </a>
+                        {isLessonUnlocked ? (
+                          lesson.videoUrl ? (
+                            <a
+                              href={lesson.videoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                fontSize: 'var(--font-size-xs)',
+                                color: 'var(--color-primary-600)',
+                                textDecoration: 'none',
+                                fontWeight: 500,
+                              }}
+                            >
+                              <span>Open Video</span>
+                              <ExternalLink size={12} />
+                            </a>
+                          ) : null
+                        ) : (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 'var(--font-size-xs)',
+                            color: '#DC2626',
+                            fontWeight: 700,
+                            backgroundColor: '#FEF2F2',
+                            border: '1px solid #FECACA',
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                          }}>
+                            <Lock size={12} /> Locked
+                          </span>
                         )}
                       </div>
 
-                      {/* Embedded Video Player */}
-                      {videoInfo.type !== 'none' && videoInfo.embedUrl && (
-                        <div className={styles.videoWrapper}>
-                          {videoInfo.type === 'direct' ? (
-                            <video src={videoInfo.embedUrl} controls className={styles.videoFrame} />
-                          ) : (
-                            <iframe
-                              src={videoInfo.embedUrl}
-                              title={lesson.title}
-                              className={styles.videoFrame}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                              allowFullScreen
-                            />
-                          )}
+                      {/* Embedded Video Player OR Locked Overlay */}
+                      {isLessonUnlocked ? (
+                        videoInfo.type !== 'none' && videoInfo.embedUrl && (
+                          <div className={styles.videoWrapper}>
+                            {videoInfo.type === 'direct' ? (
+                              <video src={videoInfo.embedUrl} controls className={styles.videoFrame} />
+                            ) : (
+                              <iframe
+                                src={videoInfo.embedUrl}
+                                title={lesson.title}
+                                className={styles.videoFrame}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                              />
+                            )}
+                          </div>
+                        )
+                      ) : (
+                        <div className={styles.lockedVideoOverlay}>
+                          <div className={styles.lockedVideoContent}>
+                            <div className={styles.lockedVideoBadge}>
+                              <Lock size={24} />
+                            </div>
+                            <h4 className={styles.lockedVideoTitle}>
+                              Lecture #{idx + 1} Locked — Enrollment Required
+                            </h4>
+                            <p className={styles.lockedVideoDesc}>
+                              This video lecture and its accompanying study notes are protected for enrolled students. Enroll in this course to watch complete video tutorials and download study materials.
+                            </p>
+                            <Button
+                              variant="primary"
+                              size="md"
+                              onClick={handleEnrollOrPay}
+                              style={{ backgroundColor: '#2563EB', fontWeight: 700 }}
+                            >
+                              {Number(course.price) === 0 ? 'Enroll for Free to Watch' : `Enroll Now • ₹${course.price}`}
+                            </Button>
+                          </div>
                         </div>
                       )}
 
@@ -271,7 +323,7 @@ export function CourseDetailPage() {
                           <div className={styles.materialsSubList}>
                             {lessonResources.map((r, rIdx) => {
                               const resId = r.resourceId || r.id;
-                              return (
+                              return hasAccess ? (
                                 <Link
                                   key={resId || rIdx}
                                   to={ROUTES.RESOURCE_DETAIL(resId!)}
@@ -285,6 +337,27 @@ export function CourseDetailPage() {
                                   </div>
                                   <Badge variant="outline">{r.fileType || 'Material'}</Badge>
                                 </Link>
+                              ) : (
+                                <div
+                                  key={resId || rIdx}
+                                  className={styles.resourceItem}
+                                  onClick={() => {
+                                    toast.error('Please enroll in this course to access and download this study material.');
+                                    handleEnrollOrPay();
+                                  }}
+                                  style={{ cursor: 'pointer', background: '#FEF2F2', borderColor: '#FECACA' }}
+                                  title="Enroll in course to unlock this material"
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                    <Lock size={16} color="#DC2626" />
+                                    <span style={{ fontWeight: 500, fontSize: 'var(--font-size-sm)', color: '#991B1B' }}>
+                                      {r.filename || r.title}
+                                    </span>
+                                  </div>
+                                  <Badge variant="outline" style={{ color: '#DC2626', borderColor: '#FECACA', backgroundColor: '#FFFFFF' }}>
+                                    🔒 Locked • Enroll to Access
+                                  </Badge>
+                                </div>
                               );
                             })}
                           </div>
@@ -327,7 +400,7 @@ export function CourseDetailPage() {
                       <div className={styles.materialsSubList}>
                         {generalResources.map((r, rIdx) => {
                           const resId = r.resourceId || r.id;
-                          return (
+                          return hasAccess ? (
                             <Link
                               key={resId || rIdx}
                               to={ROUTES.RESOURCE_DETAIL(resId!)}
@@ -341,6 +414,27 @@ export function CourseDetailPage() {
                               </div>
                               <Badge variant="outline">{r.fileType || 'Material'}</Badge>
                             </Link>
+                          ) : (
+                            <div
+                              key={resId || rIdx}
+                              className={styles.resourceItem}
+                              onClick={() => {
+                                toast.error('Please enroll in this course to access and download this study material.');
+                                handleEnrollOrPay();
+                              }}
+                              style={{ cursor: 'pointer', background: '#FEF2F2', borderColor: '#FECACA' }}
+                              title="Enroll in course to unlock this material"
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                <Lock size={16} color="#DC2626" />
+                                <span style={{ fontWeight: 500, fontSize: 'var(--font-size-sm)', color: '#991B1B' }}>
+                                  {r.filename || r.title}
+                                </span>
+                              </div>
+                              <Badge variant="outline" style={{ color: '#DC2626', borderColor: '#FECACA', backgroundColor: '#FFFFFF' }}>
+                                🔒 Locked • Enroll to Access
+                              </Badge>
+                            </div>
                           );
                         })}
                       </div>
@@ -356,7 +450,7 @@ export function CourseDetailPage() {
               <div className={styles.resourceList}>
                 {course.resources.map((r, idx) => {
                   const resId = r.resourceId || r.id;
-                  return (
+                  return hasAccess ? (
                     <Link
                       key={resId || idx}
                       to={ROUTES.RESOURCE_DETAIL(resId!)}
@@ -370,6 +464,27 @@ export function CourseDetailPage() {
                       </div>
                       <Badge variant="outline">{r.fileType || 'Doc'}</Badge>
                     </Link>
+                  ) : (
+                    <div
+                      key={resId || idx}
+                      className={styles.resourceItem}
+                      onClick={() => {
+                        toast.error('Please enroll in this course to access and download this study material.');
+                        handleEnrollOrPay();
+                      }}
+                      style={{ cursor: 'pointer', background: '#FEF2F2', borderColor: '#FECACA' }}
+                      title="Enroll in course to unlock this material"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                        <Lock size={16} color="#DC2626" />
+                        <span style={{ fontWeight: 'var(--font-weight-medium)', color: '#991B1B' }}>
+                          {r.filename || r.title}
+                        </span>
+                      </div>
+                      <Badge variant="outline" style={{ color: '#DC2626', borderColor: '#FECACA', backgroundColor: '#FFFFFF' }}>
+                        🔒 Locked • Enroll to Access
+                      </Badge>
+                    </div>
                   );
                 })}
               </div>
@@ -402,10 +517,14 @@ export function CourseDetailPage() {
                 </div>
 
                 <Textarea
-                  label="Review Comments"
+                  label="Review Comments *"
                   placeholder="Share your experience with this course and the instructor..."
                   value={comment}
-                  onChange={(e) => setComment(e.target.value)}
+                  onChange={(e) => {
+                    setComment(e.target.value);
+                    if (reviewError) setReviewError(null);
+                  }}
+                  error={reviewError || undefined}
                   rows={3}
                 />
 
@@ -491,13 +610,32 @@ export function CourseDetailPage() {
               size="lg"
               fullWidth
               onClick={handleEnrollOrPay}
-              isLoading={enrolling}
             >
-              {course.price === 0 ? 'Enroll for Free' : `Enroll Now • ₹${course.price}`}
+              {Number(course.price) === 0 ? 'Enroll for Free' : `Enroll Now • ₹${course.price}`}
             </Button>
           )}
         </div>
       </div>
+
+      {/* Modern Zero-Error Payment Checkout Modal */}
+      {course && (
+        <PaymentCheckoutModal
+          isOpen={checkoutOpen}
+          onClose={() => setCheckoutOpen(false)}
+          item={{
+            type: 'course',
+            id: course.courseId,
+            title: course.title,
+            price: Number(course.price || 0),
+            tutorName: course.tutor?.name,
+            tutorAvatar: course.tutor?.profilePic || undefined,
+            description: course.description || undefined,
+          }}
+          onSuccess={() => {
+            setIsEnrolled(true);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, BookOpen } from 'lucide-react';
+import { ExternalLink, BookOpen, Package, Layers } from 'lucide-react';
 import { paymentService } from '../../services/paymentService';
 import { enrollmentService } from '../../services/enrollmentService';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -8,15 +8,15 @@ import { Button } from '../../components/ui/Button/Button';
 import { Modal } from '../../components/ui/Modal/Modal';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
-import { ROUTES } from '../../constants';
-import type { Payment, Enrollment } from '../../types';
+import type { Payment, Enrollment, Bundle } from '../../types';
 import toast from 'react-hot-toast';
 import styles from './StudentPurchasesPage.module.css';
 
 export function StudentPurchasesPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [activeTab, setActiveTab] = useState<'payments' | 'enrollments'>('payments');
+  const [purchasedBundles, setPurchasedBundles] = useState<Bundle[]>([]);
+  const [activeTab, setActiveTab] = useState<'payments' | 'enrollments' | 'bundles'>('payments');
   const [loading, setLoading] = useState(true);
 
   // Refund modal
@@ -28,13 +28,15 @@ export function StudentPurchasesPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [pRes, eRes] = await Promise.allSettled([
+      const [pRes, eRes, bRes] = await Promise.allSettled([
         paymentService.getMyPayments(),
         enrollmentService.getMyEnrollments(),
+        paymentService.getMyPurchasedBundles(),
       ]);
 
       if (pRes.status === 'fulfilled') setPayments(pRes.value || []);
       if (eRes.status === 'fulfilled') setEnrollments(eRes.value || []);
+      if (bRes.status === 'fulfilled') setPurchasedBundles(bRes.value || []);
     } catch (err) {
       console.error('Failed to load purchases:', err);
     } finally {
@@ -77,7 +79,7 @@ export function StudentPurchasesPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>My Purchases & Enrolled Courses</h1>
         <p className={styles.subtitle}>
-          Manage your course enrollments, premium materials, and transaction history.
+          Manage your course enrollments, study bundles, and verified transaction receipts.
         </p>
       </div>
 
@@ -114,6 +116,22 @@ export function StudentPurchasesPage() {
         >
           Enrolled Courses ({enrollments.length})
         </button>
+
+        <button
+          onClick={() => setActiveTab('bundles')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: 'var(--space-2) var(--space-4)',
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: activeTab === 'bundles' ? 'var(--font-weight-bold)' : 'var(--font-weight-normal)',
+            color: activeTab === 'bundles' ? 'var(--color-primary-600)' : 'var(--color-gray-600)',
+            borderBottom: activeTab === 'bundles' ? '2px solid var(--color-primary-600)' : '2px solid transparent',
+            cursor: 'pointer',
+          }}
+        >
+          My Study Bundles ({purchasedBundles.length})
+        </button>
       </div>
 
       {loading ? (
@@ -124,10 +142,10 @@ export function StudentPurchasesPage() {
         payments.length === 0 ? (
           <EmptyState
             title="No purchases yet"
-            description="You haven't purchased any paid notes, tests, or courses yet."
+            description="You haven't enrolled in any courses or purchased study bundles yet."
             action={{
-              label: 'Explore Resources',
-              onClick: () => { window.location.href = ROUTES.RESOURCES; },
+              label: 'Browse Courses',
+              onClick: () => { window.location.href = '/courses'; },
             }}
           />
         ) : (
@@ -136,7 +154,8 @@ export function StudentPurchasesPage() {
               <thead>
                 <tr>
                   <th>Item Unlocked</th>
-                  <th>Payment ID</th>
+                  <th>Reference ID</th>
+                  <th>Method</th>
                   <th>Date</th>
                   <th>Amount</th>
                   <th>Status</th>
@@ -145,19 +164,37 @@ export function StudentPurchasesPage() {
               </thead>
               <tbody>
                 {payments.map((p) => {
-                  const itemName = p.course?.title || p.resource?.filename || p.bundle?.title || `Payment #${p.paymentId}`;
+                  const itemName = p.course?.title || p.bundle?.title || p.resource?.filename || `Payment #${p.paymentId}`;
+                  const isCourse = Boolean(p.courseId);
+                  const isBundle = Boolean(p.bundleId);
+                  const refId = p.transactionRef || `TXN-SB-${p.paymentId}`;
+                  const method = p.paymentMethod || (Number(p.amount) === 0 ? 'Free Voucher' : 'UPI/Card');
+
                   return (
                     <tr key={p.paymentId}>
                       <td>
                         <div className={styles.resourceCell}>
-                          <div style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-900)' }}>
-                            {itemName}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {isCourse && <BookOpen size={14} color="#2563eb" />}
+                            {isBundle && <Package size={14} color="#7c3aed" />}
+                            <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-900)' }}>
+                              {itemName}
+                            </span>
                           </div>
                         </div>
                       </td>
-                      <td><code style={{ fontSize: 'var(--font-size-xs)' }}>TXN-{p.paymentId}</code></td>
+                      <td>
+                        <code style={{ fontSize: 'var(--font-size-xs)', background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>
+                          {refId}
+                        </code>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', fontWeight: 500 }}>
+                          {method}
+                        </span>
+                      </td>
                       <td>{new Date(p.paidAt).toLocaleDateString()}</td>
-                      <td><strong>₹{p.amount}</strong></td>
+                      <td><strong>₹{Number(p.amount).toLocaleString('en-IN')}</strong></td>
                       <td>
                         <Badge variant={p.status === 'success' ? 'success' : p.status === 'refunded' ? 'error' : 'warning'}>
                           {p.status.toUpperCase()}
@@ -165,7 +202,7 @@ export function StudentPurchasesPage() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: 'var(--space-2)' }}>
-                          {p.status === 'success' && (
+                          {p.status === 'success' && Number(p.amount) > 0 && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -181,10 +218,10 @@ export function StudentPurchasesPage() {
                               </Button>
                             </Link>
                           )}
-                          {p.resourceId && (
-                            <Link to={ROUTES.RESOURCE_DETAIL(p.resourceId)}>
+                          {p.bundleId && (
+                            <Link to={`/bundles/${p.bundleId}`}>
                               <Button variant="primary" size="sm" rightIcon={<ExternalLink size={14} />}>
-                                Access
+                                View Bundle
                               </Button>
                             </Link>
                           )}
@@ -197,7 +234,7 @@ export function StudentPurchasesPage() {
             </table>
           </div>
         )
-      ) : (
+      ) : activeTab === 'enrollments' ? (
         /* Enrollments Tab */
         enrollments.length === 0 ? (
           <EmptyState
@@ -229,7 +266,7 @@ export function StudentPurchasesPage() {
                       </div>
                     </td>
                     <td>{new Date(enr.enrolledAt).toLocaleDateString()}</td>
-                    <td><strong>₹{enr.priceAtEnrollment}</strong></td>
+                    <td><strong>₹{Number(enr.priceAtEnrollment).toLocaleString('en-IN')}</strong></td>
                     <td>
                       <Badge variant={enr.status === 'active' ? 'success' : 'warning'}>
                         {enr.status.toUpperCase()}
@@ -244,6 +281,75 @@ export function StudentPurchasesPage() {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : (
+        /* Study Bundles Tab */
+        purchasedBundles.length === 0 ? (
+          <EmptyState
+            title="No study bundles purchased"
+            description="Explore curated learning packs assembled by top instructors with complete study notes."
+            action={{
+              label: 'Explore Study Bundles',
+              onClick: () => { window.location.href = '/bundles'; },
+            }}
+          />
+        ) : (
+          <div className={styles.tableCard}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Bundle Package</th>
+                  <th>Author / Tutor</th>
+                  <th>Materials Count</th>
+                  <th>Price Paid</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {purchasedBundles.map((b: any) => {
+                  const bId = b.bundleId || b.id;
+                  const title = b.title || b.name || 'Study Bundle';
+                  const tutor = b.tutor?.name || 'Verified Tutor';
+                  const itemCount = b.bundleItems?.length || b.resources?.length || 0;
+                  const pricePaid = b.paidAmount !== undefined ? Number(b.paidAmount) : Number(b.price || 0);
+
+                  return (
+                    <tr key={bId}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Package size={16} color="#7c3aed" />
+                          <div>
+                            <div style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-900)' }}>
+                              {title}
+                            </div>
+                            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
+                              {b.description ? `${b.description.slice(0, 60)}...` : 'Comprehensive learning bundle'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{tutor}</td>
+                      <td>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--font-size-xs)' }}>
+                          <Layers size={13} color="var(--color-primary-600)" /> {itemCount} Materials Included
+                        </span>
+                      </td>
+                      <td>
+                        <strong>{pricePaid === 0 ? 'Free' : `₹${pricePaid.toLocaleString('en-IN')}`}</strong>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <Link to={`/bundles/${bId}`}>
+                          <Button variant="primary" size="sm" rightIcon={<ExternalLink size={14} />}>
+                            Open Bundle
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -283,3 +389,4 @@ export function StudentPurchasesPage() {
     </div>
   );
 }
+

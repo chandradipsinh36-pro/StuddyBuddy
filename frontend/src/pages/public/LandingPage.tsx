@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, ShieldCheck, BookOpen, Bot, Users,
+  ArrowRight, ShieldCheck, BookOpen, Bot,
   Play, ChevronRight, Zap, Award, TrendingUp
 } from 'lucide-react';
 import { categoryService } from '../../services/categoryService';
@@ -277,36 +277,35 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ===== STUDY GROUPS ===== */}
+      {/* ===== STUDY BUNDLES ===== */}
       <section className={styles.section}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <div>
-              <Badge variant="success">Community</Badge>
-              <h2 className={styles.sectionTitle}>Learn Together</h2>
-              <p className={styles.sectionSubtitle}>Join study groups, share resources, and grow together.</p>
+              <Badge variant="primary">Study Packs</Badge>
+              <h2 className={styles.sectionTitle}>Curated Study Bundles</h2>
+              <p className={styles.sectionSubtitle}>Get all-in-one resource packages with exclusive discounts.</p>
             </div>
-            <Link to={ROUTES.STUDY_GROUPS} className={styles.seeAll}>
-              Browse groups <ChevronRight size={16} />
+            <Link to={ROUTES.BUNDLES} className={styles.seeAll}>
+              Browse all bundles <ChevronRight size={16} />
             </Link>
           </div>
           <div className={styles.groupsGrid}>
             {[
-              { name: 'Mathematics Study Group', subject: 'Mathematics', members: 0, online: 0, emoji: '📐' },
-              { name: 'Physics & Science Hub', subject: 'Physics', members: 0, online: 0, emoji: '⚗️' },
-              { name: 'Computer Science & Coding', subject: 'Computer Science', members: 0, online: 0, emoji: '💻' },
-              { name: 'Language & Literature', subject: 'English', members: 0, online: 0, emoji: '📚' },
+              { name: 'Ulimate Maths Bundle', subject: 'Mathematics', items: '2 Resources', price: '₹1,350', emoji: '📐' },
+              { name: 'Physics & Science Pack', subject: 'Physics', items: '3 Resources', price: '₹499', emoji: '⚗️' },
+              { name: 'Computer Science Essentials', subject: 'Computer Science', items: '4 Resources', price: '₹799', emoji: '💻' },
+              { name: 'Complete Grammar & Literature', subject: 'English', items: '2 Resources', price: 'Free', emoji: '📚' },
             ].map((g, i) => (
-              <Link key={i} to={ROUTES.STUDY_GROUPS} className={styles.groupCard}>
+              <Link key={i} to={ROUTES.BUNDLES} className={styles.groupCard}>
                 <div className={styles.groupEmoji}>{g.emoji}</div>
                 <div className={styles.groupInfo}>
                   <div className={styles.groupName}>
                     {g.name}
                   </div>
-                  <div className={styles.groupSubject}>{g.subject}</div>
+                  <div className={styles.groupSubject}>{g.subject} • {g.items}</div>
                   <div className={styles.groupStats}>
-                    <Users size={12} />
-                    <span>Join community</span>
+                    <span style={{ fontWeight: 800, color: 'var(--color-primary-600)' }}>{g.price}</span>
                   </div>
                 </div>
                 <ChevronRight size={16} className={styles.groupArrow} />

@@ -1,31 +1,31 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Flame, Bookmark, Users, TrendingUp, Bot, ArrowRight, Play } from 'lucide-react';
+import { BookOpen, Flame, Bookmark, Users, Package, ArrowRight, Play } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { playlistService } from '../../services/playlistService';
-import { resourceService } from '../../services/resourceService';
+import { bundleService } from '../../services/bundleService';
 import { tutorService } from '../../services/tutorService';
-import { ResourceCard } from '../../components/shared/ResourceCard';
+import { BundleCard } from '../../components/shared/BundleCard';
 import { TutorCard } from '../../components/shared/TutorCard';
 import { ProgressBar } from '../../components/ui/ProgressBar/ProgressBar';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
 import { SkeletonCard, Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { ROUTES } from '../../constants';
-import type { Playlist, Resource, Tutor } from '../../types';
+import type { Playlist, Bundle, Tutor } from '../../types';
 import styles from './StudentDashboard.module.css';
 
 export function StudentDashboard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [resources, setResources] = useState<Resource[]>([]);
+  const [bundles, setBundles] = useState<Bundle[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
 
   useEffect(() => {
     Promise.allSettled([
       playlistService.getPlaylists().then(setPlaylists),
-      resourceService.getResources({ limit: 4 }).then(res => setResources(res.data || [])),
+      bundleService.getPublicBundles().then(setBundles),
       tutorService.getTutors({ limit: 3 }).then(res => setTutors(res.data || [])),
     ]).finally(() => setLoading(false));
   }, []);
@@ -35,26 +35,26 @@ export function StudentDashboard() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   const metrics = [
-    { icon: <BookOpen size={20} />, label: 'Resources Available', value: resources.length.toString(), color: 'primary' },
+    { icon: <Package size={20} />, label: 'Bundles Available', value: bundles.length.toString(), color: 'primary' },
     { icon: <Flame size={20} />, label: 'Day Streak', value: '1', color: 'warning' },
     { icon: <Bookmark size={20} />, label: 'Saved', value: '0', color: 'success' },
-    { icon: <Users size={20} />, label: 'Active Tutors', value: tutors.length.toString(), color: 'ai' },
+    { icon: <Users size={20} />, label: 'Active Tutors', value: tutors.length.toString(), color: 'primary' },
   ];
 
   return (
     <div className={styles.page}>
-      {/* Welcome */}
+      {/* Welcome Header */}
       <div className={styles.welcome}>
         <div className={styles.welcomeText}>
           <h1 className={styles.greeting}>{greeting}, {firstName}! 👋</h1>
           <p className={styles.welcomeSubtitle}>Ready to learn something amazing today?</p>
         </div>
         <div className={styles.welcomeActions}>
-          <Link to={ROUTES.AI}>
-            <Button leftIcon={<Bot size={16} />} variant="secondary">Ask AI</Button>
+          <Link to={ROUTES.COURSES}>
+            <Button leftIcon={<BookOpen size={16} />} variant="secondary">Browse Courses</Button>
           </Link>
-          <Link to={ROUTES.EXPLORE}>
-            <Button rightIcon={<ArrowRight size={16} />}>Explore Resources</Button>
+          <Link to={ROUTES.BUNDLES}>
+            <Button rightIcon={<ArrowRight size={16} />}>Explore Bundles</Button>
           </Link>
         </div>
       </div>
@@ -78,7 +78,7 @@ export function StudentDashboard() {
         }
       </div>
 
-      {/* Continue Learning */}
+      {/* Continue Learning Playlists */}
       {playlists.length > 0 && (
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
@@ -123,37 +123,23 @@ export function StudentDashboard() {
         </section>
       )}
 
-      {/* Recommended Resources */}
+      {/* Curated Study Bundles */}
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>
-            <TrendingUp size={20} className={styles.sectionIcon} /> Recommended for You
+            <Package size={20} className={styles.sectionIcon} /> Curated Study Bundles
           </h2>
-          <Link to={ROUTES.RESOURCES} className={styles.seeAll}>Browse all</Link>
+          <Link to={ROUTES.BUNDLES} className={styles.seeAll}>Browse all bundles</Link>
         </div>
-        <div className={styles.resourceGrid}>
+        <div className={styles.bundlesGrid}>
           {loading
-            ? Array.from({ length: 4 }, (_, i) => <SkeletonCard key={i} />)
-            : resources.length > 0
-              ? resources.slice(0, 4).map(r => <ResourceCard key={r.id} resource={r} />)
-              : <p style={{ color: 'var(--color-gray-500)', gridColumn: '1 / -1' }}>No resources available yet.</p>
+            ? Array.from({ length: 3 }, (_, i) => <SkeletonCard key={i} />)
+            : bundles.length > 0
+              ? bundles.slice(0, 3).map(b => <BundleCard key={b.id || b.bundleId} bundle={b} />)
+              : <p style={{ color: 'var(--color-gray-500)', gridColumn: '1 / -1' }}>No study bundles available yet.</p>
           }
         </div>
       </section>
-
-      {/* AI Shortcut */}
-      <div className={styles.aiShortcut}>
-        <div className={styles.aiShortcutLeft}>
-          <div className={styles.aiIcon}><Bot size={24} /></div>
-          <div>
-            <h3 className={styles.aiTitle}>Need help? Ask the AI</h3>
-            <p className={styles.aiDesc}>Get instant answers, step-by-step explanations, and study guidance.</p>
-          </div>
-        </div>
-        <Link to={ROUTES.AI}>
-          <Button leftIcon={<Bot size={16} />} variant="primary">Open AI Assistant</Button>
-        </Link>
-      </div>
 
       {/* Recommended Tutors */}
       {tutors.length > 0 && (

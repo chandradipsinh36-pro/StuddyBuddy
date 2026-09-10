@@ -16,6 +16,9 @@ import {
   ChevronRight,
   Shield,
   X,
+  BookOpen,
+  Package,
+  FileText,
 } from 'lucide-react';
 import { ROUTES } from '../../constants';
 import { adminDashboardService } from '../../services/adminDashboardService';
@@ -445,7 +448,104 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
           </div>
 
-          {/* Coming Soon Modules */}
+          {/* Content Management Section */}
+          <div>
+            {!collapsed && (
+              <div
+                style={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: 'var(--color-gray-400)',
+                  padding: '0 var(--space-3) var(--space-2)',
+                }}
+              >
+                Content Management
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <NavLink
+                to={ROUTES.COURSES}
+                end
+                onClick={() => window.innerWidth <= 768 && onCloseMobile()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-3)',
+                  padding: '0.55rem var(--space-3)',
+                  borderRadius: 'var(--radius-md)',
+                  color: isLinkActive(ROUTES.COURSES, true)
+                    ? 'var(--color-primary-600)'
+                    : 'var(--color-gray-600)',
+                  backgroundColor: isLinkActive(ROUTES.COURSES, true)
+                    ? 'var(--color-primary-50)'
+                    : 'transparent',
+                  fontWeight: isLinkActive(ROUTES.COURSES, true) ? 600 : 500,
+                  fontSize: 'var(--font-size-sm)',
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                }}
+                title={collapsed ? 'All Courses' : undefined}
+              >
+                <BookOpen size={18} />
+                {!collapsed && <span>Courses</span>}
+              </NavLink>
+
+              <NavLink
+                to={ROUTES.BUNDLES}
+                end
+                onClick={() => window.innerWidth <= 768 && onCloseMobile()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-3)',
+                  padding: '0.55rem var(--space-3)',
+                  borderRadius: 'var(--radius-md)',
+                  color: isLinkActive(ROUTES.BUNDLES, true)
+                    ? 'var(--color-primary-600)'
+                    : 'var(--color-gray-600)',
+                  backgroundColor: isLinkActive(ROUTES.BUNDLES, true)
+                    ? 'var(--color-primary-50)'
+                    : 'transparent',
+                  fontWeight: isLinkActive(ROUTES.BUNDLES, true) ? 600 : 500,
+                  fontSize: 'var(--font-size-sm)',
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                }}
+                title={collapsed ? 'All Bundles' : undefined}
+              >
+                <Package size={18} />
+                {!collapsed && <span>Bundles</span>}
+              </NavLink>
+
+              <NavLink
+                to={ROUTES.RESOURCES}
+                end
+                onClick={() => window.innerWidth <= 768 && onCloseMobile()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-3)',
+                  padding: '0.55rem var(--space-3)',
+                  borderRadius: 'var(--radius-md)',
+                  color: isLinkActive(ROUTES.RESOURCES, true)
+                    ? 'var(--color-primary-600)'
+                    : 'var(--color-gray-600)',
+                  backgroundColor: isLinkActive(ROUTES.RESOURCES, true)
+                    ? 'var(--color-primary-50)'
+                    : 'transparent',
+                  fontWeight: isLinkActive(ROUTES.RESOURCES, true) ? 600 : 500,
+                  fontSize: 'var(--font-size-sm)',
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                }}
+                title={collapsed ? 'All Resources' : undefined}
+              >
+                <FileText size={18} />
+                {!collapsed && <span>Resources</span>}
+              </NavLink>
+            </div>
+          </div>
+
+          {/* System Settings & Planned */}
           <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-4)' }}>
             {!collapsed && (
               <div
@@ -458,10 +558,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   padding: '0 var(--space-3) var(--space-2)',
                 }}
               >
-                System (Planned)
+                Platform Config
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', opacity: 0.55 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', opacity: 0.65 }}>
               <div
                 style={{
                   display: 'flex',
@@ -470,37 +570,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   padding: '0.5rem var(--space-3)',
                   fontSize: 'var(--font-size-sm)',
                   color: 'var(--color-gray-500)',
-                  cursor: 'not-allowed',
                 }}
-                title="Categories moderation coming soon"
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                   <FolderTree size={18} />
                   {!collapsed && <span>Categories</span>}
                 </div>
                 {!collapsed && (
-                  <span style={{ fontSize: '0.65rem', color: 'var(--color-gray-400)' }}>Soon</span>
-                )}
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.5rem var(--space-3)',
-                  fontSize: 'var(--font-size-sm)',
-                  color: 'var(--color-gray-500)',
-                  cursor: 'not-allowed',
-                }}
-                title="Platform settings coming soon"
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  <Settings size={18} />
-                  {!collapsed && <span>Platform Config</span>}
-                </div>
-                {!collapsed && (
-                  <span style={{ fontSize: '0.65rem', color: 'var(--color-gray-400)' }}>Soon</span>
+                  <span className="badge badge-neutral" style={{ fontSize: '0.65rem' }}>Auto</span>
                 )}
               </div>
             </div>

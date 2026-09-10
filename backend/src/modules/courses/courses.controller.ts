@@ -13,7 +13,7 @@ export const coursesController = {
 
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      sendSuccess(res, await coursesService.getCourseById(Number(req.params.id)));
+      sendSuccess(res, await coursesService.getCourseById(Number(req.params.id), req.user));
     } catch (err) { next(err); }
   },
 

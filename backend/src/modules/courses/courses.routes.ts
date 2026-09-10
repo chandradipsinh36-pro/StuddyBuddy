@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { coursesController } from './courses.controller';
-import { authenticate } from '../../middleware/authenticate';
+import { authenticate, authenticateOptional } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { validate } from '../../middleware/validate';
 import { createCourseSchema, updateCourseSchema, courseQuerySchema } from './courses.schema';
@@ -9,7 +9,7 @@ const router = Router();
 
 // Public
 router.get('/', validate(courseQuerySchema, 'query'), coursesController.list);
-router.get('/:id', coursesController.getById);
+router.get('/:id', authenticateOptional, coursesController.getById);
 
 export default router;
 

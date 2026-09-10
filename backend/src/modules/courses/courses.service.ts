@@ -70,7 +70,7 @@ export const coursesService = {
     return { courses: courses.map(formatCoursePayload), total, page, limit };
   },
 
-  async getCourseById(courseId: number) {
+  async getCourseById(courseId: number, user?: { userId: number; role: string }) {
     const course = await prisma.course.findFirst({
       where: { courseId, isPublished: true },
       select: {
@@ -82,7 +82,61 @@ export const coursesService = {
       },
     });
     if (!course) throw new NotFoundError('Course');
-    return formatCoursePayload(course);
+
+    const formatted = formatCoursePayload(course);
+
+    const isAuthor = user?.userId === course.tutorId;
+    const isAdmin = user?.role === 'admin';
+
+    let isEnrolled = false;
+    if (user?.userId) {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: {
+            studentId: user.userId,
+            courseId,
+          },
+        },
+      });
+      isEnrolled = enrollment?.status === 'active';
+    }
+
+    const hasAccess = isAuthor || isAdmin || isEnrolled;
+
+    // If user has not enrolled in the course, protect video lectures and study materials
+    if (!hasAccess) {
+      if (formatted.lessons && Array.isArray(formatted.lessons)) {
+        formatted.lessons = formatted.lessons.map((lesson: any) => {
+          if (lesson.isFreePreview) {
+            return lesson;
+          }
+          const sanitizedMaterials = Array.isArray(lesson.materials)
+            ? lesson.materials.map((m: any) => ({ ...m, fileUrl: '', isLocked: true }))
+            : lesson.materials;
+
+          return {
+            ...lesson,
+            videoUrl: '',
+            isLocked: true,
+            ...(lesson.materials ? { materials: sanitizedMaterials } : {}),
+          };
+        });
+      }
+
+      if (formatted.resources && Array.isArray(formatted.resources)) {
+        formatted.resources = formatted.resources.map((r: any) => ({
+          ...r,
+          fileUrl: '',
+          isLocked: true,
+        }));
+      }
+    }
+
+    return {
+      ...formatted,
+      isEnrolled,
+      hasAccess,
+    };
   },
 
   // Tutor CRUD
@@ -147,21 +201,44 @@ export const coursesService = {
 
     const { resourceIds, lessons, ...courseData } = input;
 
-    // Compile description with lessons if lessons provided
-    let finalDescription = courseData.description;
-    if (lessons && Array.isArray(lessons)) {
-      finalDescription = JSON.stringify({
-        overview: courseData.description || '',
-        lessons,
+    // Collect all resource IDs across lessons + standalone resourceIds
+    const rawLessonResourceIds = (lessons || []).flatMap((l: any) => l.resourceIds || []);
+    const rawCombinedResourceIds = Array.from(new Set([
+      ...(resourceIds || []),
+      ...rawLessonResourceIds,
+    ]));
+
+    // Strictly enforce tutor resource isolation: only allow resources uploaded by this tutor
+    let allowedResourceIds = new Set<number>();
+    if (rawCombinedResourceIds.length > 0) {
+      const tutorResources = await prisma.resource.findMany({
+        where: {
+          resourceId: { in: rawCombinedResourceIds },
+          uploadedBy: tutorId,
+        },
+        select: { resourceId: true },
       });
+      allowedResourceIds = new Set(tutorResources.map(r => r.resourceId));
     }
 
-    // Collect all resource IDs across lessons + standalone resourceIds
-    const lessonResourceIds = (lessons || []).flatMap((l: any) => l.resourceIds || []);
-    const combinedResourceIds = Array.from(new Set([
-      ...(resourceIds || []),
-      ...lessonResourceIds,
-    ]));
+    // Sanitize lessons so any resource not belonging to this tutor is stripped
+    const sanitizedLessons = lessons && Array.isArray(lessons)
+      ? lessons.map((l: any) => ({
+          ...l,
+          resourceIds: Array.isArray(l.resourceIds)
+            ? l.resourceIds.filter((id: number) => allowedResourceIds.has(Number(id)))
+            : [],
+        }))
+      : lessons;
+
+    // Compile description with sanitized lessons
+    let finalDescription = courseData.description;
+    if (sanitizedLessons && Array.isArray(sanitizedLessons)) {
+      finalDescription = JSON.stringify({
+        overview: courseData.description || '',
+        lessons: sanitizedLessons,
+      });
+    }
 
     const course = await prisma.course.create({
       data: {
@@ -189,10 +266,10 @@ export const coursesService = {
       },
     });
 
-    if (combinedResourceIds.length > 0) {
+    if (allowedResourceIds.size > 0) {
       await prisma.resource.updateMany({
         where: {
-          resourceId: { in: combinedResourceIds },
+          resourceId: { in: Array.from(allowedResourceIds) },
           uploadedBy: tutorId,
         },
         data: {
@@ -233,8 +310,36 @@ export const coursesService = {
 
     const { resourceIds, lessons, ...courseData } = input;
 
+    // Strictly enforce tutor resource isolation for updates as well
+    const rawLessonResourceIds = (lessons || []).flatMap((l: any) => l.resourceIds || []);
+    const rawCombinedResourceIds = (resourceIds !== undefined || lessons !== undefined)
+      ? Array.from(new Set([...(resourceIds || []), ...rawLessonResourceIds]))
+      : [];
+
+    let allowedResourceIds = new Set<number>();
+    if (rawCombinedResourceIds.length > 0) {
+      const tutorResources = await prisma.resource.findMany({
+        where: {
+          resourceId: { in: rawCombinedResourceIds },
+          uploadedBy: tutorId,
+        },
+        select: { resourceId: true },
+      });
+      allowedResourceIds = new Set(tutorResources.map(r => r.resourceId));
+    }
+
+    // Sanitize lessons so any resource not belonging to this tutor is stripped
+    const sanitizedLessons = lessons !== undefined && Array.isArray(lessons)
+      ? lessons.map((l: any) => ({
+          ...l,
+          resourceIds: Array.isArray(l.resourceIds)
+            ? l.resourceIds.filter((id: number) => allowedResourceIds.has(Number(id)))
+            : [],
+        }))
+      : lessons;
+
     let finalDescription = courseData.description;
-    if (lessons !== undefined) {
+    if (sanitizedLessons !== undefined) {
       let currentOverview = '';
       if (course.description && course.description.trim().startsWith('{')) {
         try {
@@ -249,7 +354,7 @@ export const coursesService = {
 
       finalDescription = JSON.stringify({
         overview: courseData.description !== undefined ? courseData.description : currentOverview,
-        lessons: lessons || [],
+        lessons: sanitizedLessons || [],
       });
     }
 
@@ -261,18 +366,13 @@ export const coursesService = {
       },
     });
 
-    const lessonResourceIds = (lessons || []).flatMap((l: any) => l.resourceIds || []);
-    const combinedResourceIds = (resourceIds !== undefined || lessons !== undefined)
-      ? Array.from(new Set([...(resourceIds || []), ...lessonResourceIds]))
-      : undefined;
-
-    if (combinedResourceIds !== undefined) {
-      // Detach resources that are no longer in combinedResourceIds
+    if (resourceIds !== undefined || lessons !== undefined) {
+      // Detach resources that are no longer in allowedResourceIds
       await prisma.resource.updateMany({
         where: {
           courseId,
           uploadedBy: tutorId,
-          resourceId: { notIn: combinedResourceIds },
+          resourceId: { notIn: Array.from(allowedResourceIds) },
         },
         data: {
           courseId: null,
@@ -280,10 +380,10 @@ export const coursesService = {
       });
 
       // Attach newly selected resources
-      if (combinedResourceIds.length > 0) {
+      if (allowedResourceIds.size > 0) {
         await prisma.resource.updateMany({
           where: {
-            resourceId: { in: combinedResourceIds },
+            resourceId: { in: Array.from(allowedResourceIds) },
             uploadedBy: tutorId,
           },
           data: {

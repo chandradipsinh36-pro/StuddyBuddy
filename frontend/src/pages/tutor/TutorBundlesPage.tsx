@@ -20,6 +20,7 @@ import {
   ExternalLink,
   Tag,
   Calendar,
+  AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button/Button';
@@ -28,10 +29,8 @@ import { Modal } from '../../components/ui/Modal/Modal';
 import { Input } from '../../components/ui/Input/Input';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
-import apiClient from '../../api/client';
 import { resourceService } from '../../services/resourceService';
 import { bundleService } from '../../services/bundleService';
-import { normalizeResource } from '../../types';
 import { ROUTES } from '../../constants';
 import type { Bundle, Resource } from '../../types';
 import toast from 'react-hot-toast';
@@ -39,6 +38,8 @@ import styles from './TutorBundlesPage.module.css';
 
 export function TutorBundlesPage() {
   const { user } = useAuth();
+
+  // Bundles state
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [loadingBundles, setLoadingBundles] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -51,8 +52,15 @@ export function TutorBundlesPage() {
   // Form State
   const [bundleName, setBundleName] = useState('');
   const [bundleDesc, setBundleDesc] = useState('');
-  const [originalPrice, setOriginalPrice] = useState('499');
-  const [discount, setDiscount] = useState('25');
+  const [originalPrice, setOriginalPrice] = useState('600');
+  const [discount, setDiscount] = useState('30');
+  const [formErrors, setFormErrors] = useState<{
+    bundleName?: string;
+    bundleDesc?: string;
+    originalPrice?: string;
+    discount?: string;
+    resources?: string;
+  }>({});
 
   // Resource Selector State
   const [availableResources, setAvailableResources] = useState<Resource[]>([]);
@@ -80,31 +88,21 @@ export function TutorBundlesPage() {
     }
   };
 
-  // Fetch all resources from tutor & public resources
+  // Fetch only this tutor's own uploaded resources
   const fetchResources = async () => {
     try {
       setLoadingResources(true);
-      const [myRes, pubRes] = await Promise.allSettled([
-        resourceService.getMyResources({ limit: 100 }),
-        resourceService.getResources({ limit: 100 }),
-      ]);
-
-      const list1 = myRes.status === 'fulfilled' ? (myRes.value.data || []) : [];
-      const list2 = pubRes.status === 'fulfilled' ? (pubRes.value.data || []) : [];
-
-      const combinedMap = new Map<number, Resource>();
-      list1.forEach(r => {
-        const id = r.resourceId || r.id;
-        if (id) combinedMap.set(id, r);
+      const res = await resourceService.getMyResources({ limit: 100 });
+      const rawList = res.data || [];
+      // Strictly enforce tutor isolation
+      const myMaterials = rawList.filter(r => {
+        const uploaderId = Number(r.uploadedBy || (r.uploader as any)?.id || 0);
+        return !user?.id || !uploaderId || uploaderId === user.id;
       });
-      list2.forEach(r => {
-        const id = r.resourceId || r.id;
-        if (id && !combinedMap.has(id)) combinedMap.set(id, r);
-      });
-
-      setAvailableResources(Array.from(combinedMap.values()));
+      setAvailableResources(myMaterials);
     } catch (err) {
       console.error('Failed to load resources for bundle:', err);
+      setAvailableResources([]);
     } finally {
       setLoadingResources(false);
     }
@@ -112,10 +110,69 @@ export function TutorBundlesPage() {
 
 
 
+  // Validation according to field with logical checks
+  const validateBundleForm = (): boolean => {
+    const errors: typeof formErrors = {};
+    const trimmedName = bundleName.trim();
+    if (!trimmedName) {
+      errors.bundleName = 'Bundle name is required';
+    } else if (trimmedName.length < 3) {
+      errors.bundleName = 'Bundle name must be at least 3 characters';
+    } else if (trimmedName.length > 150) {
+      errors.bundleName = 'Bundle name cannot exceed 150 characters';
+    }
+
+    const trimmedDesc = bundleDesc.trim();
+    if (!trimmedDesc) {
+      errors.bundleDesc = 'Bundle overview description is required';
+    } else if (trimmedDesc.length < 10) {
+      errors.bundleDesc = 'Description must be at least 10 characters long';
+    } else if (trimmedDesc.length > 2000) {
+      errors.bundleDesc = 'Description cannot exceed 2000 characters';
+    }
+
+    if (!originalPrice || originalPrice.trim() === '') {
+      errors.originalPrice = 'Standard price is required';
+    } else {
+      const origNum = parseFloat(originalPrice);
+      if (isNaN(origNum)) {
+        errors.originalPrice = 'Please enter a valid price number';
+      } else if (origNum <= 0) {
+        errors.originalPrice = 'Standard price must be greater than ₹0';
+      } else if (origNum > 100000) {
+        errors.originalPrice = 'Standard price cannot exceed ₹1,00,000';
+      }
+    }
+
+    if (!discount || discount.trim() === '') {
+      errors.discount = 'Discount percent is required (enter 0 for no discount)';
+    } else {
+      const discNum = parseFloat(discount);
+      if (isNaN(discNum)) {
+        errors.discount = 'Please enter a valid discount percentage';
+      } else if (discNum < 0) {
+        errors.discount = 'Discount cannot be negative';
+      } else if (discNum > 99) {
+        errors.discount = 'Discount cannot exceed 99%';
+      }
+    }
+
+    if (selectedResourceIds.length === 0) {
+      errors.resources = 'Please select at least one study material from the library below';
+    }
+
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error('Please resolve form validation errors before proceeding.');
+    }
+    return Object.keys(errors).length === 0;
+  };
+
   // Open Create Modal
   const handleOpenCreateModal = () => {
     setEditingBundle(null);
     resetForm();
+    setFormErrors({});
     setModalOpen(true);
     if (availableResources.length === 0) {
       fetchResources();
@@ -127,8 +184,9 @@ export function TutorBundlesPage() {
     setEditingBundle(bundle);
     setBundleName(bundle.name || bundle.title || '');
     setBundleDesc(bundle.description || '');
-    setOriginalPrice(String(bundle.originalPrice || 499));
-    setDiscount(String(bundle.discountPercent ?? 25));
+    setOriginalPrice(String(bundle.originalPrice ?? bundle.price ?? 600));
+    setDiscount(String(bundle.discountPercent ?? 0));
+    setFormErrors({});
 
     // Extract already included resource IDs
     const existingIds: number[] = [];
@@ -162,9 +220,13 @@ export function TutorBundlesPage() {
 
   // Toggle resource selection in form
   const toggleResource = (id: number) => {
-    setSelectedResourceIds(prev =>
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+    setSelectedResourceIds(prev => {
+      const next = prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id];
+      if (next.length > 0) {
+        setFormErrors(fe => ({ ...fe, resources: undefined }));
+      }
+      return next;
+    });
   };
 
   const removeSelectedResource = (id: number) => {
@@ -174,6 +236,12 @@ export function TutorBundlesPage() {
   // Filtered resources list for the modal selector
   const filteredResources = useMemo(() => {
     return availableResources.filter(r => {
+      // Strictly enforce tutor isolation: never expose resources from another tutor
+      const uploaderId = Number(r.uploadedBy || (r.uploader as any)?.id || 0);
+      if (user?.id && uploaderId && uploaderId !== user.id) {
+        return false;
+      }
+
       const query = resourceSearch.toLowerCase().trim();
       const titleMatch = (r.title || r.filename || '').toLowerCase().includes(query);
       const subjectMatch = (r.subject || r.category || '').toLowerCase().includes(query);
@@ -181,10 +249,6 @@ export function TutorBundlesPage() {
 
       if (!matchesSearch) return false;
 
-      if (filterTab === 'my') {
-        const uploaderId = r.uploadedBy || (r.uploader as any)?.id;
-        return uploaderId === user?.id;
-      }
       if (filterTab === 'pdf') {
         const type = (r.fileType || r.type || '').toLowerCase();
         return type.includes('pdf');
@@ -213,27 +277,23 @@ export function TutorBundlesPage() {
   const handleAutoPrice = () => {
     if (totalCombinedValue > 0) {
       setOriginalPrice(String(totalCombinedValue));
+      setFormErrors(prev => ({ ...prev, originalPrice: undefined }));
       toast.success(`Standard price set to ₹${totalCombinedValue}`);
     } else {
-      setOriginalPrice('499');
+      setOriginalPrice('600');
     }
   };
 
   // Submit Bundle (Create or Update)
   const handleSubmitBundle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bundleName.trim()) {
-      toast.error('Please enter a bundle name.');
-      return;
-    }
-    if (selectedResourceIds.length === 0) {
-      toast.error('Please select at least one resource to include in the bundle.');
+    if (!validateBundleForm()) {
       return;
     }
 
-    const orig = parseFloat(originalPrice) || 400;
-    const disc = parseFloat(discount) || 20;
-    const finalP = Math.round(orig * (1 - disc / 100));
+    const orig = parseFloat(originalPrice) || 0;
+    const disc = parseFloat(discount) || 0;
+    const finalP = Math.max(0, Math.round(orig * (1 - disc / 100)));
 
     setSubmitting(true);
     try {
@@ -242,14 +302,20 @@ export function TutorBundlesPage() {
         const bundleId = editingBundle.bundleId || editingBundle.id || 0;
         const updated = await bundleService.updateBundle(bundleId, {
           title: bundleName.trim(),
-          description: bundleDesc.trim(),
+          description: bundleDesc.trim() || undefined,
           price: finalP,
+          originalPrice: orig,
+          discountPercent: disc,
           resourceIds: selectedResourceIds,
         });
 
         const fullUpdatedBundle: Bundle = {
           ...editingBundle,
           ...updated,
+          price: finalP,
+          originalPrice: orig,
+          discountPercent: disc,
+          finalPrice: finalP,
           resources: selectedResources,
         };
 
@@ -268,11 +334,17 @@ export function TutorBundlesPage() {
           title: bundleName.trim(),
           description: bundleDesc.trim() || 'Curated package of study materials at a special discounted price.',
           price: finalP,
+          originalPrice: orig,
+          discountPercent: disc,
           resourceIds: selectedResourceIds,
         });
 
         const fullCreatedBundle: Bundle = {
           ...created,
+          price: finalP,
+          originalPrice: orig,
+          discountPercent: disc,
+          finalPrice: finalP,
           resources: selectedResources,
         };
 
@@ -296,11 +368,12 @@ export function TutorBundlesPage() {
     setEditingBundle(null);
     setBundleName('');
     setBundleDesc('');
-    setOriginalPrice('499');
-    setDiscount('25');
+    setOriginalPrice('600');
+    setDiscount('30');
     setSelectedResourceIds([]);
     setResourceSearch('');
     setFilterTab('all');
+    setFormErrors({});
   };
 
   const handleDeleteBundle = async (bundleId: number, name: string) => {
@@ -374,11 +447,10 @@ export function TutorBundlesPage() {
         <EmptyState
           title="No bundles created yet"
           description="Group your high-yield resources together and offer a bundled discount to students."
-          action={
-            <Button variant="primary" leftIcon={<Plus size={16} />} onClick={handleOpenCreateModal}>
-              Create First Bundle
-            </Button>
-          }
+          action={{
+            label: 'Create First Bundle',
+            onClick: handleOpenCreateModal,
+          }}
         />
       ) : (
         <div className={styles.grid}>
@@ -506,39 +578,113 @@ export function TutorBundlesPage() {
         title={editingBundle ? 'Edit Teaching Bundle' : 'Create Teaching Bundle'}
         size="lg"
       >
-        <form onSubmit={handleSubmitBundle} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <form onSubmit={handleSubmitBundle} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }} noValidate>
           <Input
             label="Bundle Name *"
             placeholder="e.g. Complete JEE Physics & Chemistry Crash Course"
             value={bundleName}
-            onChange={(e) => setBundleName(e.target.value)}
+            onChange={(e) => {
+              setBundleName(e.target.value);
+              if (formErrors.bundleName) setFormErrors(fe => ({ ...fe, bundleName: undefined }));
+            }}
+            error={formErrors.bundleName}
             required
           />
 
           <Textarea
-            label="Bundle Description *"
-            placeholder="Highlight the benefits of buying these resources together..."
+            label="Bundle Description"
+            placeholder="Highlight the benefits of buying these resources together, topics covered, target exams..."
             value={bundleDesc}
-            onChange={(e) => setBundleDesc(e.target.value)}
+            onChange={(e) => {
+              setBundleDesc(e.target.value);
+              if (formErrors.bundleDesc) setFormErrors(fe => ({ ...fe, bundleDesc: undefined }));
+            }}
+            error={formErrors.bundleDesc}
             rows={3}
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
             <Input
-              label="Standard Price (₹) *"
+              label="Standard / Original Price (₹) *"
               type="number"
+              min="0"
+              placeholder="e.g. 600"
               value={originalPrice}
-              onChange={(e) => setOriginalPrice(e.target.value)}
+              onChange={(e) => {
+                setOriginalPrice(e.target.value);
+                if (formErrors.originalPrice) setFormErrors(fe => ({ ...fe, originalPrice: undefined }));
+              }}
+              error={formErrors.originalPrice}
               required
             />
             <Input
               label="Discount Percent (%) *"
               type="number"
+              min="0"
+              max="99"
+              placeholder="e.g. 30"
               value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
+              onChange={(e) => {
+                setDiscount(e.target.value);
+                if (formErrors.discount) setFormErrors(fe => ({ ...fe, discount: undefined }));
+              }}
+              error={formErrors.discount}
               required
             />
           </div>
+
+          {/* Live Calculated Price Breakdown */}
+          {(() => {
+            const orig = parseFloat(originalPrice) || 0;
+            const disc = parseFloat(discount) || 0;
+            const savings = Math.round(orig * (disc / 100));
+            const finalP = Math.max(0, orig - savings);
+            return (
+              <div style={{
+                backgroundColor: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: 'var(--radius-lg)',
+                padding: 'var(--space-3) var(--space-4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 'var(--space-2)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                  <div>
+                    <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>
+                      Standard Price
+                    </span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#334155', textDecoration: disc > 0 ? 'line-through' : 'none' }}>
+                      ₹{orig.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  {disc > 0 && (
+                    <>
+                      <span style={{ color: '#94A3B8' }}>→</span>
+                      <div>
+                        <span style={{ fontSize: '11px', color: '#16A34A', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>
+                          Discount ({disc}%)
+                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#16A34A' }}>
+                          -₹{savings.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '11px', color: '#4F46E5', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Student Selling Price
+                  </span>
+                  <span style={{ fontSize: '18px', fontWeight: 800, color: '#1E1B4B' }}>
+                    ₹{finalP.toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Section: Add / Edit Resources from Resource Library */}
           <div className={styles.resourceSection}>
@@ -556,6 +702,25 @@ export function TutorBundlesPage() {
                 {selectedResourceIds.length} Selected
               </Badge>
             </div>
+
+            {formErrors.resources && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                borderRadius: 'var(--radius-md)',
+                color: '#B91C1C',
+                fontSize: '12px',
+                fontWeight: 600,
+                marginTop: 'var(--space-2)'
+              }}>
+                <AlertCircle size={15} />
+                <span>{formErrors.resources}</span>
+              </div>
+            )}
 
             {/* Filter & Search Toolbar */}
             <div className={styles.filterControls}>
@@ -576,28 +741,21 @@ export function TutorBundlesPage() {
                   className={`${styles.tabPill} ${filterTab === 'all' ? styles.tabPillActive : ''}`}
                   onClick={() => setFilterTab('all')}
                 >
-                  All ({availableResources.length})
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.tabPill} ${filterTab === 'my' ? styles.tabPillActive : ''}`}
-                  onClick={() => setFilterTab('my')}
-                >
-                  My Uploads
+                  All My Materials ({availableResources.length})
                 </button>
                 <button
                   type="button"
                   className={`${styles.tabPill} ${filterTab === 'pdf' ? styles.tabPillActive : ''}`}
                   onClick={() => setFilterTab('pdf')}
                 >
-                  PDFs
+                  PDF Documents
                 </button>
                 <button
                   type="button"
                   className={`${styles.tabPill} ${filterTab === 'video' ? styles.tabPillActive : ''}`}
                   onClick={() => setFilterTab('video')}
                 >
-                  Videos
+                  Video Lectures
                 </button>
               </div>
             </div>
@@ -605,11 +763,25 @@ export function TutorBundlesPage() {
             {/* Resource Selection List */}
             {loadingResources ? (
               <div style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--color-gray-500)', fontSize: '13px' }}>
-                Fetching materials from resource library...
+                Fetching materials from your resource library...
+              </div>
+            ) : availableResources.length === 0 ? (
+              <div className={styles.emptyResourcesNotice} style={{ textAlign: 'center', padding: 'var(--space-6)' }}>
+                <p style={{ margin: '0 0 6px 0', fontWeight: 600, color: 'var(--color-gray-800)', fontSize: '14px' }}>
+                  No uploaded resources found in your account
+                </p>
+                <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: 'var(--color-gray-500)', lineHeight: 1.5 }}>
+                  Only teaching materials you have uploaded can be selected for this bundle. Please upload your lecture notes or videos in the Resources page first.
+                </p>
+                <Link to={ROUTES.TUTOR_RESOURCE_CREATE}>
+                  <Button size="sm" variant="secondary" leftIcon={<Plus size={14} />}>
+                    Upload New Resource
+                  </Button>
+                </Link>
               </div>
             ) : filteredResources.length === 0 ? (
               <div className={styles.emptyResourcesNotice}>
-                No resources found matching your search. Try adjusting keywords or switching to "All".
+                No materials found matching your search. Try adjusting keywords or selecting "All My Materials".
               </div>
             ) : (
               <div className={styles.resourceList}>
@@ -879,7 +1051,7 @@ export function TutorBundlesPage() {
             {/* Modal Actions */}
             <div className={styles.viewFooterActions}>
               <Button
-                variant="outline"
+                variant="secondary"
                 leftIcon={<Edit2 size={14} />}
                 onClick={() => {
                   const b = viewingBundle;

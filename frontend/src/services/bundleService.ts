@@ -22,8 +22,14 @@ export function normalizeBundle(raw: any): Bundle {
   });
 
   const priceNum = Number(b.price || b.finalPrice || 0);
-  const origPrice = Number(b.originalPrice || (priceNum > 0 ? Math.round(priceNum / 0.75) : 499));
-  const discPercent = b.discountPercent ?? (origPrice > priceNum ? Math.round(((origPrice - priceNum) / origPrice) * 100) : 25);
+  const origPrice = b.originalPrice != null 
+    ? Number(b.originalPrice) 
+    : (b.discountPercent && b.discountPercent > 0 && priceNum > 0
+        ? Math.round(priceNum / (1 - Number(b.discountPercent) / 100))
+        : priceNum);
+  const discPercent = b.discountPercent != null 
+    ? Number(b.discountPercent) 
+    : (origPrice > priceNum ? Math.round(((origPrice - priceNum) / origPrice) * 100) : 0);
 
   return {
     ...b,
@@ -35,7 +41,7 @@ export function normalizeBundle(raw: any): Bundle {
     price: priceNum,
     originalPrice: origPrice,
     discountPercent: discPercent,
-    finalPrice: priceNum > 0 ? priceNum : Math.round(origPrice * (1 - discPercent / 100)),
+    finalPrice: priceNum,
     resources,
     bundleItems: items,
     purchaseCount: b.purchaseCount ?? b.payments?.length ?? 0,
@@ -49,6 +55,8 @@ export interface CreateBundlePayload {
   title: string;
   description?: string;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
   resourceIds?: number[];
 }
 

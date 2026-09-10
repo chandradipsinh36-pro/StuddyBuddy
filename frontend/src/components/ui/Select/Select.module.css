@@ -20,11 +20,26 @@
 }
 .select:focus { outline: none; border-color: var(--color-primary-500); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
 
-.hasError .select { border-color: var(--color-error); }
+.hasError .select {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+}
+.hasError .select:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+}
 
 .icon {
   position: absolute; right: var(--space-3); top: 50%; transform: translateY(-50%);
   color: var(--color-gray-400); pointer-events: none;
 }
 
-.error { font-size: var(--font-size-xs); color: var(--color-error); }
+.error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: #dc2626;
+  margin-top: 4px;
+}

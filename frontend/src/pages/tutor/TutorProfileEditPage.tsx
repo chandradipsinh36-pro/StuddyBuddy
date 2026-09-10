@@ -22,6 +22,13 @@ export function TutorProfileEditPage() {
   const [isVerified, setIsVerified] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<{
+    name?: string;
+    bio?: string;
+    experience?: string;
+    trialVideoUrl?: string;
+    subjects?: string;
+  }>({});
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -62,15 +69,65 @@ export function TutorProfileEditPage() {
   }, [user]);
 
   const toggleSubject = (s: string) => {
-    setSubjects(prev =>
-      prev.includes(s)
+    setSubjects(prev => {
+      const next = prev.includes(s)
         ? prev.length > 1 ? prev.filter(x => x !== s) : prev
-        : [...prev, s]
-    );
+        : [...prev, s];
+      if (next.length > 0 && formErrors.subjects) {
+        setFormErrors(fe => ({ ...fe, subjects: undefined }));
+      }
+      return next;
+    });
+  };
+
+  const validateForm = (): boolean => {
+    const errors: typeof formErrors = {};
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      errors.name = 'Full name is required';
+    } else if (trimmedName.length < 2) {
+      errors.name = 'Name must be at least 2 characters long';
+    } else if (trimmedName.length > 100) {
+      errors.name = 'Name cannot exceed 100 characters';
+    }
+
+    const trimmedBio = bio.trim();
+    if (!trimmedBio) {
+      errors.bio = 'Instructor biography is required';
+    } else if (trimmedBio.length < 20) {
+      errors.bio = 'Biography must be at least 20 characters long to provide sufficient detail for students';
+    } else if (trimmedBio.length > 3000) {
+      errors.bio = 'Biography cannot exceed 3000 characters';
+    }
+
+    const expNum = parseInt(experience, 10);
+    if (isNaN(expNum) || expNum < 0) {
+      errors.experience = 'Experience cannot be negative';
+    } else if (expNum > 60) {
+      errors.experience = 'Please enter a valid number of years of experience (max 60)';
+    }
+
+    if (trialVideoUrl && trialVideoUrl.trim()) {
+      const trimmedUrl = trialVideoUrl.trim();
+      if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+        errors.trialVideoUrl = 'Video URL must begin with https:// or http://';
+      }
+    }
+
+    if (subjects.length === 0) {
+      errors.subjects = 'Please select at least one primary subject you teach';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
+
     setSaving(true);
     try {
       const allSkills = Array.from(new Set([
@@ -79,10 +136,10 @@ export function TutorProfileEditPage() {
       ]));
 
       const updated = await tutorService.updateProfile({
-        name,
-        bio,
+        name: name.trim(),
+        bio: bio.trim(),
         experience: parseInt(experience, 10) || 0,
-        trialVideoUrl,
+        trialVideoUrl: trialVideoUrl.trim() || undefined,
         skills: allSkills,
         subjects,
       });
@@ -211,18 +268,27 @@ export function TutorProfileEditPage() {
       )}
 
       <div className={styles.card}>
-        <form onSubmit={handleSave} className={styles.form}>
+        <form onSubmit={handleSave} className={styles.form} noValidate>
           <Input
-            label="Display Name"
+            label="Display Name *"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (formErrors.name) setFormErrors(fe => ({ ...fe, name: undefined }));
+            }}
+            error={formErrors.name}
             required
           />
 
           <Textarea
-            label="Instructor Biography & Teaching Philosophy"
+            label="Instructor Biography & Teaching Philosophy *"
+            placeholder="Share your teaching philosophy, educational background, methodology, and student successes..."
             value={bio}
-            onChange={(e) => setBio(e.target.value)}
+            onChange={(e) => {
+              setBio(e.target.value);
+              if (formErrors.bio) setFormErrors(fe => ({ ...fe, bio: undefined }));
+            }}
+            error={formErrors.bio}
             rows={4}
             required
           />
@@ -231,8 +297,14 @@ export function TutorProfileEditPage() {
             <Input
               label="Years of Teaching Experience"
               type="number"
+              min="0"
+              max="60"
               value={experience}
-              onChange={(e) => setExperience(e.target.value)}
+              onChange={(e) => {
+                setExperience(e.target.value);
+                if (formErrors.experience) setFormErrors(fe => ({ ...fe, experience: undefined }));
+              }}
+              error={formErrors.experience}
               leftIcon={<Briefcase size={16} />}
             />
 
@@ -241,7 +313,11 @@ export function TutorProfileEditPage() {
               type="url"
               value={trialVideoUrl}
               placeholder="https://www.youtube.com/watch?v=..."
-              onChange={(e) => setTrialVideoUrl(e.target.value)}
+              onChange={(e) => {
+                setTrialVideoUrl(e.target.value);
+                if (formErrors.trialVideoUrl) setFormErrors(fe => ({ ...fe, trialVideoUrl: undefined }));
+              }}
+              error={formErrors.trialVideoUrl}
               leftIcon={<Video size={16} />}
             />
           </div>
@@ -256,8 +332,13 @@ export function TutorProfileEditPage() {
 
           <div>
             <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-700)' }}>
-              Primary Subjects Taught (Click to select)
+              Primary Subjects Taught * (Click to select)
             </label>
+            {formErrors.subjects && (
+              <p style={{ color: '#dc2626', fontSize: '13px', fontWeight: 600, marginTop: 4, marginBottom: 6 }}>
+                {formErrors.subjects}
+              </p>
+            )}
             <div className={styles.subjectsGrid}>
               {SUBJECTS.map(subj => {
                 const active = subjects.includes(subj);

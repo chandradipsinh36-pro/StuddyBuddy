@@ -91,6 +91,13 @@ export const resourcesService = {
       throw new BadRequestError('Your tutor application is currently pending admin approval. You can only upload resources or playlists after your application is approved.');
     }
 
+    if (input.courseId) {
+      const targetCourse = await prisma.course.findUnique({ where: { courseId: input.courseId } });
+      if (!targetCourse || targetCourse.tutorId !== tutorId) {
+        throw new AuthorizationError('You can only attach resources to courses you created');
+      }
+    }
+
     const resource = await prisma.resource.create({
       data: {
         uploadedBy: tutorId,

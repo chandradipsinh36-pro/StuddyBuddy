@@ -241,6 +241,21 @@ export const TutorProfilePage: React.FC = () => {
     return `₹${num.toLocaleString('en-IN')}`;
   };
 
+  const formatCourseDescription = (desc?: string) => {
+    if (!desc) return '';
+    if (typeof desc === 'string' && desc.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(desc);
+        if (parsed && typeof parsed === 'object' && parsed.overview !== undefined) {
+          return parsed.overview;
+        }
+      } catch {
+        return desc;
+      }
+    }
+    return desc;
+  };
+
   const getFileTypeBadge = (type: string) => {
     const t = (type || '').toLowerCase();
     let bg = 'var(--color-primary-50)';
@@ -912,7 +927,7 @@ export const TutorProfilePage: React.FC = () => {
                           overflow: 'hidden',
                         }}
                       >
-                        {course.description}
+                        {formatCourseDescription(course.description)}
                       </p>
                     )}
                   </div>
@@ -927,10 +942,15 @@ export const TutorProfilePage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-600)', marginBottom: 'var(--space-3)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-600)', marginBottom: 'var(--space-3)', flexWrap: 'wrap', gap: 6 }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Users size={13} /> {course.enrollmentCount || 0} students
                       </span>
+                      {course.lessonsCount !== undefined && course.lessonsCount > 0 && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-primary-700)', fontWeight: 600 }}>
+                          <BookOpen size={13} /> {course.lessonsCount} {course.lessonsCount === 1 ? 'lesson' : 'lessons'}
+                        </span>
+                      )}
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Star size={13} fill="#f59e0b" color="#f59e0b" />
                         {course.ratingAverage ? Number(course.ratingAverage).toFixed(1) : 'New'} ({course.reviewCount || 0})

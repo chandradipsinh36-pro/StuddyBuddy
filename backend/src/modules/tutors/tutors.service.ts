@@ -6,6 +6,7 @@ import { getPagination } from '../../utils/pagination';
 import {
   CreateProfileInput, UpdateProfileInput, CreateSkillInput, UpdateSkillInput, TutorListQuery,
 } from './tutors.schema';
+import { formatCoursePayload } from '../courses/courses.service';
 
 export const tutorsService = {
   // ── Public ──────────────────────────────────────────
@@ -63,7 +64,10 @@ export const tutorsService = {
       },
     });
     if (!tutor) throw new NotFoundError('Tutor');
-    return tutor;
+    return {
+      ...tutor,
+      courses: tutor.courses.map(formatCoursePayload),
+    };
   },
 
   // ── Own profile ──────────────────────────────────────

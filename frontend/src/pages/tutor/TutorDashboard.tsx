@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Users, Eye, DollarSign, Star, TrendingUp, ArrowRight, Plus, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Users, Eye, IndianRupee, Star, TrendingUp, ArrowRight, Plus, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { earningsService } from '../../services/earningsService';
 import { resourceService } from '../../services/resourceService';
@@ -37,7 +37,7 @@ export function TutorDashboard() {
   const firstName = user?.name?.split(' ')[0] || 'there';
 
   const METRICS = [
-    { icon: <DollarSign size={20} />, label: 'Total Earnings', value: earnings ? `₹${earnings.totalEarnings?.toLocaleString() ?? 0}` : '₹0', color: 'success', link: ROUTES.TUTOR_EARNINGS },
+    { icon: <IndianRupee size={20} />, label: 'Total Earnings', value: earnings ? `₹${earnings.totalEarnings?.toLocaleString() ?? 0}` : '₹0', color: 'success', link: ROUTES.TUTOR_EARNINGS },
     { icon: <BookOpen size={20} />, label: 'Resources', value: resources.length.toString(), color: 'primary', link: ROUTES.TUTOR_RESOURCES },
     { icon: <Users size={20} />, label: 'Students Reached', value: '0', color: 'ai', link: ROUTES.TUTOR_ANALYTICS },
     { icon: <Eye size={20} />, label: 'Total Views', value: '0', color: 'warning', link: ROUTES.TUTOR_ANALYTICS },

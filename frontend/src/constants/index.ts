@@ -72,6 +72,8 @@ export const ROUTES = {
   TUTOR_PROFILE: (id: string | number) => `/tutors/${id}`,
   COURSES: '/courses',
   COURSE_DETAIL: (id: string | number) => `/courses/${id}`,
+  BUNDLES: '/bundles',
+  BUNDLE_DETAIL: (id: string | number) => `/bundles/${id}`,
   RESOURCES: '/resources',
   RESOURCE_DETAIL: (id: string | number) => `/resources/${id}`,
   PLAYLISTS: '/playlists',

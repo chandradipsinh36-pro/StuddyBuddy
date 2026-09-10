@@ -4,7 +4,7 @@ import { CreateBundleInput, UpdateBundleInput } from './bundles.schema';
 
 const bundleSelect = {
   bundleId: true, tutorId: true, title: true, description: true,
-  price: true, isPublished: true, createdAt: true,
+  price: true, originalPrice: true, discountPercent: true, isPublished: true, createdAt: true,
   tutor: { select: { id: true, name: true, profilePic: true } },
   bundleItems: {
     include: {
@@ -23,23 +23,63 @@ const bundleSelect = {
   },
 };
 
+function sanitizeBundle(bundle: any, hasAccess: boolean) {
+  if (!bundle) return bundle;
+  if (hasAccess) return bundle;
+  return {
+    ...bundle,
+    bundleItems: (bundle.bundleItems || []).map((bi: any) => ({
+      ...bi,
+      resource: bi.resource ? {
+        ...bi.resource,
+        fileUrl: '',
+        isLocked: true,
+      } : bi.resource,
+    })),
+  };
+}
+
 export const bundlesService = {
   // Public
-  async listBundles() {
-    return prisma.bundle.findMany({
+  async listBundles(userId?: number) {
+    const bundles = await prisma.bundle.findMany({
       where: { isPublished: true },
       select: bundleSelect,
       orderBy: { createdAt: 'desc' },
     });
+
+    let purchasedSet = new Set<number>();
+    if (userId) {
+      const purchases = await prisma.payment.findMany({
+        where: { studentId: userId, status: 'success', bundleId: { not: null } },
+        select: { bundleId: true },
+      });
+      purchasedSet = new Set(purchases.map(p => p.bundleId!).filter(Boolean));
+    }
+
+    return bundles.map(b => {
+      const hasAccess = Boolean(userId && (b.tutorId === userId || purchasedSet.has(b.bundleId)));
+      return sanitizeBundle(b, hasAccess);
+    });
   },
 
-  async getBundleById(bundleId: number) {
+  async getBundleById(bundleId: number, userId?: number) {
     const bundle = await prisma.bundle.findFirst({
       where: { bundleId, isPublished: true },
       select: bundleSelect,
     });
     if (!bundle) throw new NotFoundError('Bundle');
-    return bundle;
+
+    let hasPurchased = false;
+    if (userId) {
+      const payment = await prisma.payment.findFirst({
+        where: { studentId: userId, bundleId, status: 'success' },
+      });
+      hasPurchased = Boolean(payment);
+    }
+
+    const hasAccess = Boolean(userId && (bundle.tutorId === userId || hasPurchased));
+    return sanitizeBundle(bundle, hasAccess);
   },
 
   // Tutor CRUD
@@ -67,11 +107,14 @@ export const bundlesService = {
 
     const { resourceIds, ...data } = input;
 
-    // Filter only existing resource IDs to prevent foreign key errors
+    // Filter only existing resource IDs owned by this tutor to prevent cross-tutor leakage
     let validResourceIds: number[] = [];
     if (resourceIds && resourceIds.length > 0) {
       const existing = await prisma.resource.findMany({
-        where: { resourceId: { in: resourceIds } },
+        where: {
+          resourceId: { in: resourceIds },
+          ...(user.role !== 'admin' ? { uploadedBy: tutorId } : {}),
+        },
         select: { resourceId: true },
       });
       validResourceIds = existing.map(r => r.resourceId);
@@ -105,7 +148,10 @@ export const bundlesService = {
       await prisma.bundleItem.deleteMany({ where: { bundleId } });
       if (resourceIds.length > 0) {
         const existing = await prisma.resource.findMany({
-          where: { resourceId: { in: resourceIds } },
+          where: {
+            resourceId: { in: resourceIds },
+            ...(user?.role !== 'admin' ? { uploadedBy: tutorId } : {}),
+          },
           select: { resourceId: true },
         });
         const validIds = existing.map(r => r.resourceId);

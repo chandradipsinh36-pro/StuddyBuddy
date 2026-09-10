@@ -14,6 +14,9 @@ import { TutorApplicationsPage } from '../pages/tutors/TutorApplicationsPage';
 import { TutorApplicationReviewPage } from '../pages/tutors/TutorApplicationReviewPage';
 import { TutorProfilePage } from '../pages/tutors/TutorProfilePage';
 import { AdminProfilePage } from '../pages/profile/AdminProfilePage';
+import { AdminCoursesPage } from '../pages/courses/AdminCoursesPage';
+import { AdminBundlesPage } from '../pages/bundles/AdminBundlesPage';
+import { AdminResourcesPage } from '../pages/resources/AdminResourcesPage';
 import { ROUTES } from '../constants';
 
 export const router = createBrowserRouter([
@@ -59,6 +62,18 @@ export const router = createBrowserRouter([
       {
         path: 'tutors/:id',
         element: <TutorProfilePage />,
+      },
+      {
+        path: 'courses',
+        element: <AdminCoursesPage />,
+      },
+      {
+        path: 'bundles',
+        element: <AdminBundlesPage />,
+      },
+      {
+        path: 'resources',
+        element: <AdminResourcesPage />,
       },
       {
         path: 'profile',

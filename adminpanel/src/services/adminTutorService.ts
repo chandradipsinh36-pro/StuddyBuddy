@@ -81,18 +81,40 @@ function mapTutorProfile(t: Record<string, unknown>): TutorProfile {
 
   // Courses
   const rawCourses = (t.courses as Record<string, any>[]) ?? [];
-  const courses = rawCourses.map((c) => ({
-    courseId:        (c.courseId as number) ?? (c.id as number) ?? 0,
-    title:           (c.title as string) ?? 'Untitled Course',
-    description:     c.description as string | undefined,
-    price:           c.price ?? 0,
-    isPublished:     (c.isPublished as boolean) ?? true,
-    createdAt:       (c.createdAt as string) ?? '',
-    category:        c.category as { categoryId: number; name: string } | undefined,
-    enrollmentCount: (c._count?.enrollments as number) ?? (c.enrollments?.length as number) ?? 0,
-    ratingAverage:   (c.averageRating as number) ?? 0,
-    reviewCount:     (c._count?.reviews as number) ?? 0,
-  }));
+  const courses = rawCourses.map((c) => {
+    let description = c.description as string | undefined;
+    let lessonsCount = Array.isArray(c.lessons) ? c.lessons.length : undefined;
+
+    if (description && typeof description === 'string' && description.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(description);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.overview !== undefined) {
+            description = parsed.overview;
+          }
+          if (Array.isArray(parsed.lessons) && lessonsCount === undefined) {
+            lessonsCount = parsed.lessons.length;
+          }
+        }
+      } catch {
+        // keep description as is
+      }
+    }
+
+    return {
+      courseId:        (c.courseId as number) ?? (c.id as number) ?? 0,
+      title:           (c.title as string) ?? 'Untitled Course',
+      description,
+      lessonsCount,
+      price:           c.price ?? 0,
+      isPublished:     (c.isPublished as boolean) ?? true,
+      createdAt:       (c.createdAt as string) ?? '',
+      category:        c.category as { categoryId: number; name: string } | undefined,
+      enrollmentCount: (c._count?.enrollments as number) ?? (c.enrollments?.length as number) ?? 0,
+      ratingAverage:   (c.averageRating as number) ?? 0,
+      reviewCount:     (c._count?.reviews as number) ?? 0,
+    };
+  });
 
   // Resources
   const rawResources = (t.resources as Record<string, any>[]) ?? [];

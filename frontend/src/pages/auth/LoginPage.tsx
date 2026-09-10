@@ -12,8 +12,14 @@ import toast from 'react-hot-toast';
 import styles from './Auth.module.css';
 
 const schema = z.object({
-  email: z.string().email('Enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z
+    .string()
+    .min(1, 'Email address is required')
+    .email('Please enter a valid email address (e.g. you@example.com)'),
+  password: z
+    .string()
+    .min(1, 'Password is required')
+    .min(6, 'Password must be at least 6 characters'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -27,6 +33,7 @@ export function LoginPage() {
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    mode: 'onChange',
   });
 
   const onSubmit = async (data: FormData) => {

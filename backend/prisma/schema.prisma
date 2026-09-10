@@ -409,13 +409,15 @@ model Enrollment {
 // =============================================================
 
 model Bundle {
-  bundleId    Int      @id @default(autoincrement()) @map("bundle_id")
-  tutorId     Int      @map("tutor_id")
-  title       String
-  description String?
-  price       Decimal  @default(0) @db.Decimal(10, 2)
-  isPublished Boolean  @default(false) @map("is_published")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  bundleId        Int      @id @default(autoincrement()) @map("bundle_id")
+  tutorId         Int      @map("tutor_id")
+  title           String
+  description     String?
+  price           Decimal  @default(0) @db.Decimal(10, 2)
+  originalPrice   Decimal? @map("original_price") @db.Decimal(10, 2)
+  discountPercent Int?     @default(0) @map("discount_percent")
+  isPublished     Boolean  @default(false) @map("is_published")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   tutor User @relation(fields: [tutorId], references: [id], onDelete: Cascade)
 
@@ -453,9 +455,11 @@ model Payment {
   courseId  Int?          @map("course_id")
   resourceId Int?         @map("resource_id")
   bundleId  Int?          @map("bundle_id")
-  amount    Decimal       @db.Decimal(10, 2)
-  status    PaymentStatus @default(pending)
-  paidAt    DateTime      @default(now()) @map("paid_at") @db.Timestamptz
+  amount         Decimal       @db.Decimal(10, 2)
+  status         PaymentStatus @default(pending)
+  paymentMethod  String?       @default("card") @map("payment_method")
+  transactionRef String?       @map("transaction_ref")
+  paidAt         DateTime      @default(now()) @map("paid_at") @db.Timestamptz
 
   student  User      @relation(fields: [studentId], references: [id])
   course   Course?   @relation(fields: [courseId], references: [courseId])

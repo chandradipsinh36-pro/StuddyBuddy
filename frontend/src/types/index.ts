@@ -156,6 +156,8 @@ export interface CourseLesson {
   title: string;
   videoUrl: string;
   resourceIds: number[];
+  isFreePreview?: boolean;
+  isLocked?: boolean;
 }
 
 export interface Course {
@@ -284,6 +286,8 @@ export interface Payment {
   bundleId?: number | null;
   amount: number;
   status: PaymentStatus;
+  paymentMethod?: string | null;
+  transactionRef?: string | null;
   paidAt: string;
   course?: Pick<Course, 'courseId' | 'title'> | null;
   resource?: Pick<Resource, 'resourceId' | 'filename'> | null;
@@ -524,19 +528,38 @@ export function normalizeResource(r: any): Resource {
     rating: r.rating ?? (r.averageRating ?? 0),
     reviewCount: r.reviewCount ?? 0,
     viewCount: r.viewCount ?? 0,
-    downloadCount: r.downloadCount ?? 0,
+    uploadedBy: Number(r.uploadedBy ?? r.uploader?.id ?? (r as any).tutorId ?? 0),
+    tutorId: Number(r.uploadedBy ?? r.uploader?.id ?? (r as any).tutorId ?? 0),
     uploader: r.uploader ? { ...r.uploader, avatarUrl: r.uploader.profilePic ?? r.uploader.avatarUrl ?? undefined } : undefined,
     tutor: r.uploader ? { ...r.uploader, avatarUrl: r.uploader.profilePic ?? r.uploader.avatarUrl ?? undefined } : (r.tutor ?? undefined),
   };
 }
 
 export function normalizeCourse(c: any): Course {
+  let desc = c.description ?? '';
+  let lessons = c.lessons;
+
+  if (typeof desc === 'string' && desc.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(desc);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.overview !== undefined) {
+          desc = parsed.overview;
+        }
+        if (Array.isArray(parsed.lessons) && !lessons) {
+          lessons = parsed.lessons;
+        }
+      }
+    } catch {}
+  }
+
   return {
     ...c,
     courseId: c.courseId ?? c.id,
     id: c.id ?? c.courseId,
     title: c.title ?? 'Untitled Course',
-    description: c.description ?? '',
+    description: desc,
+    lessons: lessons ?? c.lessons,
     price: c.price ?? 0,
     isPublished: c.isPublished ?? true,
     tutor: c.tutor ? { ...c.tutor, avatarUrl: c.tutor.profilePic ?? c.tutor.avatarUrl ?? undefined } : undefined,

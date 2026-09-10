@@ -385,8 +385,13 @@ export const DynamicCourseLessonsEditor: React.FC<DynamicCourseLessonsEditorProp
                           Loading materials...
                         </div>
                       ) : availableResources.length === 0 ? (
-                        <div style={{ fontSize: 12, color: 'var(--color-gray-500)', textAlign: 'center', padding: 12 }}>
-                          No uploaded materials found in your library.
+                        <div style={{ fontSize: 12, color: 'var(--color-gray-500)', textAlign: 'center', padding: '14px 10px' }}>
+                          <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: 'var(--color-gray-700)' }}>
+                            No uploaded materials found in your library
+                          </p>
+                          <span style={{ fontSize: 11, color: 'var(--color-gray-500)' }}>
+                            Only teaching materials you upload can be attached. Upload study resources from your Resources dashboard to attach them here.
+                          </span>
                         </div>
                       ) : (
                         <div

@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database';
 import { NotFoundError, ConflictError, AuthorizationError, BadRequestError } from '../../utils/AppError';
+import { formatCoursePayload } from '../courses/courses.service';
 
 export const enrollmentsService = {
   async enroll(studentId: number, courseId: number) {
@@ -33,7 +34,7 @@ export const enrollmentsService = {
   },
 
   async listMyEnrollments(studentId: number) {
-    return prisma.enrollment.findMany({
+    const enrollments = await prisma.enrollment.findMany({
       where: { studentId },
       include: {
         course: {
@@ -45,6 +46,10 @@ export const enrollmentsService = {
       },
       orderBy: { enrolledAt: 'desc' },
     });
+    return enrollments.map((e) => ({
+      ...e,
+      course: e.course ? formatCoursePayload(e.course) : e.course,
+    }));
   },
 
   async getMyEnrollmentById(studentId: number, enrollmentId: number) {
@@ -54,6 +59,9 @@ export const enrollmentsService = {
     });
     if (!enrollment) throw new NotFoundError('Enrollment');
     if (enrollment.studentId !== studentId) throw new AuthorizationError();
-    return enrollment;
+    return {
+      ...enrollment,
+      course: enrollment.course ? formatCoursePayload(enrollment.course) : enrollment.course,
+    };
   },
 };

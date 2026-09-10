@@ -16,11 +16,13 @@ const h = (fn: (req: Request, res: Response, next: NextFunction) => Promise<void
 const router = Router();
 router.use(authenticate, authorize('student'));
 
-router.post('/course',   validate(payCourseSchema),   h(async (req, res) => sendSuccess(res, await paymentsService.payCourse(req.user!.userId, req.body), { statusCode: 201 })));
-router.post('/resource', validate(payResourceSchema),  h(async (req, res) => sendSuccess(res, await paymentsService.payResource(req.user!.userId, req.body), { statusCode: 201 })));
-router.post('/bundle',   validate(payBundleSchema),    h(async (req, res) => sendSuccess(res, await paymentsService.payBundle(req.user!.userId, req.body), { statusCode: 201 })));
-router.get('/me',        h(async (req, res) => sendSuccess(res, await paymentsService.listMyPayments(req.user!.userId))));
-router.get('/me/:id',    h(async (req, res) => sendSuccess(res, await paymentsService.getMyPaymentById(req.user!.userId, Number(req.params.id)))));
+router.post('/course',          validate(payCourseSchema),      h(async (req, res) => sendSuccess(res, await paymentsService.payCourse(req.user!.userId, req.body), { statusCode: 201 })));
+router.post('/resource',        validate(payResourceSchema),     h(async (req, res) => sendSuccess(res, await paymentsService.payResource(req.user!.userId, req.body), { statusCode: 201 })));
+router.post('/bundle',          validate(payBundleSchema),       h(async (req, res) => sendSuccess(res, await paymentsService.payBundle(req.user!.userId, req.body), { statusCode: 201 })));
+router.post('/validate-coupon',                                 h(async (req, res) => sendSuccess(res, await paymentsService.validateCoupon(req.body))));
+router.get('/me/bundles',                                       h(async (req, res) => sendSuccess(res, await paymentsService.listMyPurchasedBundles(req.user!.userId))));
+router.get('/me',                                               h(async (req, res) => sendSuccess(res, await paymentsService.listMyPayments(req.user!.userId))));
+router.get('/me/:id',                                           h(async (req, res) => sendSuccess(res, await paymentsService.getMyPaymentById(req.user!.userId, Number(req.params.id)))));
 
 export default router;
 

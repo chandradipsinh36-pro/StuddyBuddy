@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   BookOpen, Bell, Search, Menu, X, ChevronDown,
   LayoutDashboard, User, LogOut, Settings, ShoppingBag,
-  Bookmark, Star, Bot, Users
+  Bookmark, Star, Users, Package, FileText
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar } from '../ui/Avatar/Avatar';
@@ -16,24 +16,22 @@ import styles from './Navbar.module.css';
 const PUBLIC_NAV = [
   { label: 'Explore', to: ROUTES.EXPLORE },
   { label: 'Courses', to: ROUTES.COURSES },
+  { label: 'Bundles', to: ROUTES.BUNDLES },
   { label: 'Tutors', to: ROUTES.TUTORS },
-  { label: 'Resources', to: ROUTES.RESOURCES },
-  { label: 'Study Groups', to: ROUTES.STUDY_GROUPS },
 ];
 
 const STUDENT_NAV = [
   { label: 'Dashboard', to: ROUTES.STUDENT_DASHBOARD, icon: <LayoutDashboard size={16} /> },
   { label: 'Courses', to: ROUTES.COURSES, icon: <BookOpen size={16} /> },
-  { label: 'Resources', to: ROUTES.RESOURCES, icon: <BookOpen size={16} /> },
-  { label: 'Study Groups', to: ROUTES.STUDY_GROUPS, icon: <Users size={16} /> },
-  { label: 'AI Tutor', to: ROUTES.AI, icon: <Bot size={16} /> },
+  { label: 'Bundles', to: ROUTES.BUNDLES, icon: <Package size={16} /> },
+  { label: 'Tutors', to: ROUTES.TUTORS, icon: <Users size={16} /> },
 ];
 
 const TUTOR_NAV = [
   { label: 'Dashboard', to: ROUTES.TUTOR_DASHBOARD, icon: <LayoutDashboard size={16} /> },
   { label: 'My Courses', to: ROUTES.TUTOR_COURSES, icon: <BookOpen size={16} /> },
-  { label: 'Resources', to: ROUTES.TUTOR_RESOURCES, icon: <BookOpen size={16} /> },
-  { label: 'Bundles', to: ROUTES.TUTOR_BUNDLES, icon: <ShoppingBag size={16} /> },
+  { label: 'My Resources', to: ROUTES.TUTOR_RESOURCES, icon: <FileText size={16} /> },
+  { label: 'Bundles', to: ROUTES.TUTOR_BUNDLES, icon: <Package size={16} /> },
   { label: 'Earnings', to: ROUTES.TUTOR_EARNINGS, icon: <Star size={16} /> },
   { label: 'Analytics', to: ROUTES.TUTOR_ANALYTICS, icon: <Star size={16} /> },
 ];
@@ -201,9 +199,6 @@ export function Navbar() {
                         <Link to={ROUTES.STUDENT_SAVED} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
                           <Bookmark size={16} /> Saved
                         </Link>
-                        <Link to={ROUTES.AI} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
-                          <Bot size={16} /> AI Assistant
-                        </Link>
                         <Link to={ROUTES.STUDENT_SETTINGS} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
                           <Settings size={16} /> Settings
                         </Link>
@@ -213,6 +208,15 @@ export function Navbar() {
                       <>
                         <Link to={ROUTES.TUTOR_DASHBOARD} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
                           <LayoutDashboard size={16} /> Dashboard
+                        </Link>
+                        <Link to={ROUTES.TUTOR_COURSES} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
+                          <BookOpen size={16} /> My Courses
+                        </Link>
+                        <Link to={ROUTES.TUTOR_RESOURCES} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
+                          <FileText size={16} /> My Resources
+                        </Link>
+                        <Link to={ROUTES.TUTOR_BUNDLES} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
+                          <Package size={16} /> My Bundles
                         </Link>
                         <Link to={ROUTES.TUTOR_PROFILE_EDIT} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
                           <User size={16} /> My Profile

@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 import styles from './Input.module.css';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -29,7 +30,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(({
         />
         {rightIcon && <span className={styles.rightIcon}>{rightIcon}</span>}
       </div>
-      {error && <p id={`${inputId}-error`} className={styles.error} role="alert">{error}</p>}
+      {error && (
+        <p id={`${inputId}-error`} className={styles.error} role="alert">
+          <AlertCircle size={13} style={{ flexShrink: 0 }} />
+          <span>{error}</span>
+        </p>
+      )}
       {helper && !error && <p id={`${inputId}-helper`} className={styles.helper}>{helper}</p>}
     </div>
   );

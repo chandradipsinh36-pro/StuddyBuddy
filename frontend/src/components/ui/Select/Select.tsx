@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './Select.module.css';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, AlertCircle } from 'lucide-react';
 
 interface SelectOption { value: string; label: string; }
 
@@ -31,7 +31,12 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           </select>
           <ChevronDown size={16} className={styles.icon} />
         </div>
-        {error && <p className={styles.error} role="alert">{error}</p>}
+        {error && (
+          <p className={styles.error} role="alert">
+            <AlertCircle size={13} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
+          </p>
+        )}
       </div>
     );
   }
