@@ -219,8 +219,9 @@ export function TutorResourceEditPage() {
       await resourceService.updateResource(Number(id), fd);
       toast.success(newFile ? 'Resource and attachment updated (old file deleted)!' : 'Resource details updated successfully!');
       navigate(ROUTES.TUTOR_RESOURCES);
-    } catch {
-      toast.error('Failed to update resource.');
+    } catch (err: any) {
+      const msg = err?.response?.data?.error?.message || err?.message || 'Failed to update resource.';
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

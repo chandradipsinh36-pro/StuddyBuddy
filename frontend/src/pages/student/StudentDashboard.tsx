@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Flame, Bookmark, Users, Package, ArrowRight, Play, GraduationCap, Clock } from 'lucide-react';
+import { BookOpen, Flame, Users, Package, ArrowRight, Play, GraduationCap, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { playlistService } from '../../services/playlistService';
 import { bundleService } from '../../services/bundleService';
@@ -25,6 +25,7 @@ export function StudentDashboard() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [progressVersion, setProgressVersion] = useState(0);
+  void progressVersion;
 
   useEffect(() => {
     const handleProgressUpdate = () => setProgressVersion(v => v + 1);

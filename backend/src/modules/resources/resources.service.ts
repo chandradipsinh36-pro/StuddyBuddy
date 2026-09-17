@@ -4,6 +4,7 @@ import { prisma } from '../../config/database';
 import { NotFoundError, AuthorizationError, BadRequestError } from '../../utils/AppError';
 import { getPagination } from '../../utils/pagination';
 import { getResourcesDirectory } from '../../middleware/resourceUpload';
+import { uploadBufferToCloudinary, deleteFromCloudinary } from '../../utils/cloudinary';
 import {
   CreateResourceInput, UpdateResourceInput, ResourceQuery,
   AddModerationLogInput, AddExtractedContentInput, AddVideoMetadataInput,
@@ -236,33 +237,26 @@ export const resourcesService = {
     let originalFilename = existingMeta.originalFilename;
     let fileSize = existingMeta.fileSize;
 
-    // If new file is uploaded, automatically delete old resource file from local folder
+    let cloudinaryPublicId = existingMeta.cloudinaryPublicId;
+
+    // If new file is uploaded, upload to Cloudinary and delete old Cloudinary asset
     if (file) {
-      const resourcesDir = getResourcesDirectory();
-      const filesToDelete = new Set<string>();
-
-      if (resource.fileUrl) {
-        const oldBase = path.basename(resource.fileUrl);
-        if (oldBase && oldBase !== file.filename) {
-          filesToDelete.add(path.join(resourcesDir, oldBase));
-        }
-      }
-      if (existingMeta.savedFilename && existingMeta.savedFilename !== file.filename) {
-        filesToDelete.add(path.join(resourcesDir, existingMeta.savedFilename));
-      }
-
-      for (const filePath of filesToDelete) {
-        if (fs.existsSync(filePath)) {
-          try {
-            fs.unlinkSync(filePath);
-            console.log(`[Storage] Deleted old resource file: ${filePath}`);
-          } catch (e) {
-            console.error('Error deleting old resource file:', e);
-          }
+      if (cloudinaryPublicId) {
+        try {
+          await deleteFromCloudinary(cloudinaryPublicId);
+        } catch (err) {
+          console.error('[Storage] Error deleting old Cloudinary asset:', err);
         }
       }
 
-      fileUrl = `/resources/${file.filename}`;
+      if (file.buffer) {
+        const uploadRes = await uploadBufferToCloudinary(file.buffer, file.originalname, 'studybuddy/resources');
+        fileUrl = uploadRes.secure_url;
+        cloudinaryPublicId = uploadRes.public_id;
+      } else if (file.filename) {
+        fileUrl = `/resources/${file.filename}`;
+      }
+
       savedFilename = file.filename;
       originalFilename = file.originalname;
       fileSize = file.size;
@@ -286,6 +280,7 @@ export const resourcesService = {
       savedFilename,
       originalFilename,
       fileSize,
+      cloudinaryPublicId,
     };
 
     const updateData: any = {
@@ -331,29 +326,19 @@ export const resourcesService = {
     if (!resource) throw new NotFoundError('Resource');
     if (resource.uploadedBy !== tutorId) throw new AuthorizationError();
 
-    // Automatically delete local file from disk on resource deletion
+    // Delete asset from Cloudinary if stored there
     try {
-      const resourcesDir = getResourcesDirectory();
       let meta: any = {};
       try {
         if (resource.moderationNotes?.startsWith('{')) meta = JSON.parse(resource.moderationNotes);
       } catch {}
 
-      const filesToDelete = new Set<string>();
-      if (resource.fileUrl) {
-        filesToDelete.add(path.join(resourcesDir, path.basename(resource.fileUrl)));
-      }
-      if (meta.savedFilename) {
-        filesToDelete.add(path.join(resourcesDir, meta.savedFilename));
-      }
-      for (const p of filesToDelete) {
-        if (fs.existsSync(p)) {
-          fs.unlinkSync(p);
-          console.log(`[Storage] Deleted file on resource removal: ${p}`);
-        }
+      if (meta.cloudinaryPublicId) {
+        await deleteFromCloudinary(meta.cloudinaryPublicId);
+        console.log(`[Storage] Deleted Cloudinary asset: ${meta.cloudinaryPublicId}`);
       }
     } catch (e) {
-      console.error('Error deleting local file on resource deletion:', e);
+      console.error('Error deleting Cloudinary asset on resource deletion:', e);
     }
 
     await prisma.resource.delete({ where: { resourceId } });

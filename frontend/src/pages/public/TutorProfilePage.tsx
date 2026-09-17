@@ -125,7 +125,7 @@ export function TutorProfilePage() {
   const rawSkills = tutor.skills && tutor.skills.length > 0 ? tutor.skills : subjects;
   const parsedSkills = rawSkills.map((s: any) => typeof s === 'string' ? s : s.name || s.skillName || '').filter(Boolean);
   const skills = parsedSkills.length > 0 ? parsedSkills : subjects;
-  const trialVideoUrl = tutor.trialVideoUrl || (typeof tutor.trialVideo === 'string' ? tutor.trialVideo : tutor.trialVideo?.videoUrl);
+  const trialVideoUrl = (tutor as any).trialVideoUrl || (typeof tutor.trialVideo === 'string' ? tutor.trialVideo : tutor.trialVideo?.videoUrl);
   const reviewCount = reviews.length > 0 ? reviews.length : (tutor.reviewCount ?? tutor._count?.tutorReviewsReceived ?? 0);
   const avgRating =
     reviews.length > 0
@@ -133,7 +133,7 @@ export function TutorProfilePage() {
       : tutor.averageRating ?? 5;
   const studentCount = tutor.studentCount ?? tutor._count?.enrollments ?? 0;
   const exp = tutor.experience ?? (tutor as any).experienceYears ?? 5;
-  const institute = tutor.instituteName || (tutor as any).highestQualification || 'Accredited Educational Institution';
+  const institute = (tutor as any).instituteName || (tutor as any).highestQualification || 'Accredited Educational Institution';
 
   const tabs = [
     {

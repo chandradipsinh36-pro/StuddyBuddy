@@ -140,7 +140,7 @@ export function LandingPage() {
             </div>
             <div className={styles.categoriesGrid}>
               {categories.map(cat => (
-                <Link key={cat.id} to={`${ROUTES.EXPLORE}?subject=${cat.slug || cat.name.toLowerCase()}`} className={styles.categoryCard}>
+                <Link key={cat.id || (cat as any).categoryId || cat.name} to={`${ROUTES.EXPLORE}?subject=${cat.slug || cat.name.toLowerCase()}`} className={styles.categoryCard}>
                   <span className={styles.categoryIcon}>{cat.icon || '📚'}</span>
                   <span className={styles.categoryName}>{cat.name}</span>
                   {typeof cat.resourceCount === 'number' && (
@@ -169,7 +169,7 @@ export function LandingPage() {
             </div>
             <div className={styles.tutorGrid}>
               {tutors.slice(0, 3).map(tutor => (
-                <TutorCard key={tutor.id} tutor={tutor} />
+                <TutorCard key={tutor.id || (tutor as any).tutorId || (tutor as any).userId || tutor.name} tutor={tutor} />
               ))}
             </div>
           </div>
@@ -192,7 +192,7 @@ export function LandingPage() {
             </div>
             <div className={styles.resourceGrid}>
               {resources.slice(0, 4).map(resource => (
-                <ResourceCard key={resource.id} resource={resource} />
+                <ResourceCard key={resource.id || (resource as any).resourceId || resource.title} resource={resource} />
               ))}
             </div>
           </div>

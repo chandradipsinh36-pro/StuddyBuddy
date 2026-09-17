@@ -206,8 +206,9 @@ export function TutorResourceCreatePage() {
       clearInterval(interval);
       toast.success('Resource submitted for processing and safety validation!');
       navigate(ROUTES.TUTOR_RESOURCES);
-    } catch {
-      toast.error('Failed to upload resource. Please try again.');
+    } catch (err: any) {
+      const msg = err?.response?.data?.error?.message || err?.message || 'Failed to upload resource. Please try again.';
+      toast.error(msg);
     } finally {
       setUploading(false);
     }

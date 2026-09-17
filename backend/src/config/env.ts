@@ -11,6 +11,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
   ADMIN_URL: z.string().url().default('http://localhost:5174'),
+  CLOUDINARY_CLOUD_NAME: z.string().optional().default('dk5pi4iw'),
+  CLOUDINARY_API_KEY: z.string().optional().default(''),
+  CLOUDINARY_API_SECRET: z.string().optional().default('nIYF1QHzTyjNSvtJm8zpbGtjmxo'),
 });
 
 const parsed = envSchema.safeParse(process.env);

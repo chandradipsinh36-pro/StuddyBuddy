@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { resourcesService } from './resources.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
+import { uploadBufferToCloudinary } from '../../utils/cloudinary';
 
 export const resourcesController = {
   // Public
@@ -56,8 +57,15 @@ export const resourcesController = {
       const price = isLocked ? Number(body.price || 0) : 0;
 
       let fileUrl = body.fileUrl;
+      let cloudinaryPublicId: string | undefined;
       if (file) {
-        fileUrl = `/resources/${file.filename}`;
+        if (file.buffer) {
+          const uploadRes = await uploadBufferToCloudinary(file.buffer, file.originalname, 'studybuddy/resources');
+          fileUrl = uploadRes.secure_url;
+          cloudinaryPublicId = uploadRes.public_id;
+        } else if (file.filename) {
+          fileUrl = `/resources/${file.filename}`;
+        }
       }
 
       // Metadata object storing all details (title, description, subject, category, difficulty, etc.)
@@ -70,6 +78,7 @@ export const resourcesController = {
         originalFilename: file?.originalname || title,
         fileSize: file?.size,
         savedFilename: file?.filename,
+        cloudinaryPublicId,
       };
 
       const resource = await resourcesService.createResource(req.user!.userId, {

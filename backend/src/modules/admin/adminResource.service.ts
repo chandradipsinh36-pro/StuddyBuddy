@@ -5,6 +5,7 @@ import { prisma } from '../../config/database';
 import { NotFoundError } from '../../utils/AppError';
 import { getPagination } from '../../utils/pagination';
 import { getResourcesDirectory } from '../../middleware/resourceUpload';
+import { deleteFromCloudinary } from '../../utils/cloudinary';
 
 export function formatAdminResource(res: any) {
   if (!res) return res;
@@ -204,29 +205,19 @@ export const adminResourceService = {
     const resource = await prisma.resource.findUnique({ where: { resourceId } });
     if (!resource) throw new NotFoundError('Resource');
 
-    // Clean physical file from disk
+    // Clean Cloudinary asset if exists
     try {
-      const resourcesDir = getResourcesDirectory();
       let meta: any = {};
       try {
         if (resource.moderationNotes?.startsWith('{')) meta = JSON.parse(resource.moderationNotes);
       } catch {}
 
-      const filesToDelete = new Set<string>();
-      if (resource.fileUrl) {
-        filesToDelete.add(path.join(resourcesDir, path.basename(resource.fileUrl)));
-      }
-      if (meta.savedFilename) {
-        filesToDelete.add(path.join(resourcesDir, meta.savedFilename));
-      }
-      for (const p of filesToDelete) {
-        if (fs.existsSync(p)) {
-          fs.unlinkSync(p);
-          console.log(`[Storage] Deleted file on admin resource removal: ${p}`);
-        }
+      if (meta.cloudinaryPublicId) {
+        await deleteFromCloudinary(meta.cloudinaryPublicId);
+        console.log(`[Storage] Deleted Cloudinary asset: ${meta.cloudinaryPublicId}`);
       }
     } catch (e) {
-      console.error('Error deleting physical file:', e);
+      console.error('Error deleting Cloudinary asset on admin resource removal:', e);
     }
 
     await prisma.$transaction(async (tx) => {

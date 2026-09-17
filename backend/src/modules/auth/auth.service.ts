@@ -17,6 +17,7 @@ export const authService = {
 
     const passwordHash = await hashPassword(input.password);
     const isTutor = input.role === 'tutor';
+    const uploadedDocUrl = isTutor && input.documentUrl ? await saveBase64ToFile(input.documentUrl, 'cert') : null;
 
     const user = await prisma.user.create({
       data: {
@@ -45,10 +46,10 @@ export const authService = {
             create: {
               trialVideoUrl: input.trialVideoUrl || null,
               status: 'pending',
-              ...(input.documentUrl && {
+              ...(uploadedDocUrl && {
                 documents: {
                   create: {
-                    documentUrl: saveBase64ToFile(input.documentUrl, 'cert'),
+                    documentUrl: uploadedDocUrl,
                     documentType: 'qualification_certificate',
                   },
                 },

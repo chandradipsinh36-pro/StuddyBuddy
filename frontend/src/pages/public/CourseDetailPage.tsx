@@ -14,7 +14,7 @@ import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
 import { ProgressBar } from '../../components/ui/ProgressBar/ProgressBar';
 import { PaymentCheckoutModal } from '../../components/shared/PaymentCheckoutModal';
 import { DocumentViewerModal } from '../../components/shared/DocumentViewerModal';
-import { getCourseProgress, toggleLessonProgress, markLessonAsCompleted } from '../../utils/courseProgress';
+import { getCourseProgress, toggleLessonProgress } from '../../utils/courseProgress';
 import { ROUTES } from '../../constants';
 import type { Course, CourseReview } from '../../types';
 import toast from 'react-hot-toast';
@@ -74,7 +74,7 @@ export function CourseDetailPage() {
       setReviews(r);
 
       // Check if student is already enrolled
-      if (c?.isEnrolled || c?.hasAccess) {
+      if ((c as any)?.isEnrolled || (c as any)?.hasAccess) {
         setIsEnrolled(true);
       } else if (user?.role === 'student') {
         try {
@@ -438,7 +438,7 @@ export function CourseDetailPage() {
                                   className={styles.resourceItem}
                                   style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer', width: '100%', textAlign: 'left' }}
                                   onClick={() => {
-                                    const rawFile = r.fileUrl || r.url;
+                                    const rawFile = r.fileUrl || (r as any).url;
                                     if (rawFile) {
                                       const url = rawFile.startsWith('http') ? rawFile : `http://localhost:5000${rawFile.startsWith('/') ? '' : '/'}${rawFile}`;
                                       setPdfViewerUrl(url);
@@ -526,7 +526,7 @@ export function CourseDetailPage() {
                               className={styles.resourceItem}
                               style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer', width: '100%', textAlign: 'left' }}
                               onClick={() => {
-                                const rawFile = r.fileUrl || r.url;
+                                const rawFile = r.fileUrl || (r as any).url;
                                 if (rawFile) {
                                   const url = rawFile.startsWith('http') ? rawFile : `http://localhost:5000${rawFile.startsWith('/') ? '' : '/'}${rawFile}`;
                                   setPdfViewerUrl(url);
