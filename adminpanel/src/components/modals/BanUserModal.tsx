@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ConfirmModal } from '../common/ConfirmModal';
+import { Avatar } from '../common/Avatar';
 import type { User } from '../../types/admin';
 
 interface BanUserModalProps {
@@ -86,11 +87,7 @@ export const BanUserModal: React.FC<BanUserModalProps> = ({
             gap: 'var(--space-3)',
           }}
         >
-          <img
-            src={user.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
-            alt={user.name}
-            style={{ width: 40, height: 40, borderRadius: '50%' }}
-          />
+          <Avatar name={user.name} size="md" />
           <div>
             <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-900)' }}>
               {user.name}

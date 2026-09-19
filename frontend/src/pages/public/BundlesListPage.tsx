@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Search, Package, X, Layers, FileText,
-  Image as ImageIcon, Video, ShoppingBag, Sparkles, ArrowRight, Lock, Eye, Check
+  Image as ImageIcon, Video, ShoppingBag, Sparkles, ArrowRight, Lock, Eye, Check,
+  Star, Clock, CheckCircle
 } from 'lucide-react';
 import { bundleService } from '../../services/bundleService';
 import { paymentService } from '../../services/paymentService';
@@ -10,9 +11,19 @@ import { BundleCard } from '../../components/shared/BundleCard';
 import { PaymentCheckoutModal } from '../../components/shared/PaymentCheckoutModal';
 import { DocumentViewerModal } from '../../components/shared/DocumentViewerModal';
 import { Avatar } from '../../components/ui/Avatar/Avatar';
+import { ProgressBar } from '../../components/ui/ProgressBar/ProgressBar';
 import { SkeletonCard } from '../../components/ui/Skeleton/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
 import { useAuth } from '../../contexts/AuthContext';
+import {
+  getBundleProgress,
+  recordBundleEngagement,
+  isMaterialStudied,
+  getBundleReviews,
+  saveBundleReview,
+  getUserBundleReview,
+  type BundleReviewItem,
+} from '../../utils/bundleProgress';
 import type { Bundle } from '../../types';
 import toast from 'react-hot-toast';
 import styles from './BundlesListPage.module.css';
@@ -34,6 +45,39 @@ export const BundlesListPage: React.FC = () => {
   const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
   const [checkoutBundle, setCheckoutBundle] = useState<Bundle | null>(null);
   const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
+
+  // Bundle reviews & progressive learning state
+  const [bundleReviews, setBundleReviews] = useState<BundleReviewItem[]>([]);
+  const [progressVersion, setProgressVersion] = useState(0);
+  const [ratingStars, setRatingStars] = useState(5);
+  const [ratingHover, setRatingHover] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  useEffect(() => {
+    const handleProgress = () => setProgressVersion(v => v + 1);
+    window.addEventListener('bundle-progress-updated', handleProgress);
+    window.addEventListener('bundle-review-updated', handleProgress);
+    return () => {
+      window.removeEventListener('bundle-progress-updated', handleProgress);
+      window.removeEventListener('bundle-review-updated', handleProgress);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedBundle) {
+      const bId = Number(selectedBundle.id || selectedBundle.bundleId || 0);
+      setBundleReviews(getBundleReviews(bId));
+      const myRev = getUserBundleReview(bId, user?.id);
+      if (myRev) {
+        setRatingStars(myRev.rating);
+        setReviewComment(myRev.comment || '');
+      } else {
+        setRatingStars(5);
+        setReviewComment('');
+      }
+    }
+  }, [selectedBundle, user?.id, progressVersion]);
 
   useEffect(() => {
     async function loadBundles() {
@@ -249,6 +293,7 @@ export const BundlesListPage: React.FC = () => {
         const origPrice = Number(b.originalPrice || (priceNum > 0 ? Math.round(priceNum / 0.75) : 0));
         const hasDiscount = origPrice > priceNum && priceNum > 0;
         const discountPercent = b.discountPercent ?? (hasDiscount ? Math.round(((origPrice - priceNum) / origPrice) * 100) : 0);
+        const bundleProgress = getBundleProgress(user?.id, bId, rawItems.length);
 
         return (
           <div className={styles.modalOverlay} onClick={handleCloseModal}>
@@ -256,31 +301,11 @@ export const BundlesListPage: React.FC = () => {
               <div className={styles.modalHeader}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      background: 'var(--color-primary-50, #eff6ff)',
-                      color: 'var(--color-primary-700, #1d4ed8)',
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: 9999,
-                      border: '1px solid var(--color-primary-200, #bfdbfe)',
-                      textTransform: 'uppercase',
-                    }}>
+                    <span className={styles.modalBundleBadge}>
                       <Package size={12} /> Bundle Pack
                     </span>
                     {hasDiscount && (
-                      <span style={{
-                        background: '#fef2f2',
-                        color: '#dc2626',
-                        fontSize: '0.72rem',
-                        fontWeight: 800,
-                        padding: '2px 8px',
-                        borderRadius: 9999,
-                        border: '1px solid #fecaca',
-                      }}>
+                      <span className={styles.modalDiscountBadge}>
                         {discountPercent}% OFF
                       </span>
                     )}
@@ -308,6 +333,27 @@ export const BundlesListPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Bundle Learning Progress for Owned Pack */}
+                {isOwned && rawItems.length > 0 && (
+                  <div className={styles.bundleProgressCard}>
+                    <div className={styles.bundleProgressHeader}>
+                      <div className={styles.bundleProgressTitle}>
+                        <CheckCircle size={16} color={bundleProgress.isCompleted ? '#059669' : '#0284c7'} />
+                        <span>{bundleProgress.isCompleted ? 'Study Pack Mastered! 🎉' : 'Your Learning Progress'}</span>
+                      </div>
+                      <div className={styles.bundleProgressSub}>
+                        {bundleProgress.completedCount} of {rawItems.length} materials studied ({bundleProgress.percent}%)
+                      </div>
+                    </div>
+                    <ProgressBar
+                      value={bundleProgress.percent}
+                      showValue
+                      variant={bundleProgress.isCompleted ? 'success' : 'default'}
+                      label={bundleProgress.isCompleted ? '✓ Completed' : `${bundleProgress.completedCount}/${rawItems.length} studied`}
+                    />
+                  </div>
+                )}
+
                 {/* Description */}
                 <div>
                   <div className={styles.modalSectionTitle}>About this bundle</div>
@@ -330,6 +376,7 @@ export const BundlesListPage: React.FC = () => {
                       const rawFile = res?.fileUrl;
                       const fileUrl = rawFile ? (rawFile.startsWith('http') ? rawFile : `http://localhost:5000${rawFile.startsWith('/') ? '' : '/'}${rawFile}`) : '';
                       const resId = res?.id || res?.resourceId;
+                      const studied = isMaterialStudied(user?.id, bId, resId);
 
                       return (
                         <div key={resId || idx} className={styles.materialRow}>
@@ -343,48 +390,62 @@ export const BundlesListPage: React.FC = () => {
                             </div>
                           </div>
                           {isOwned ? (
-                            fileUrl ? (
-                              <button
-                                type="button"
-                                onClick={() => setPdfViewerUrl(fileUrl)}
-                                style={{
-                                  fontSize: '0.75rem',
-                                  color: '#059669',
-                                  backgroundColor: '#ECFDF5',
-                                  padding: '4px 10px',
-                                  borderRadius: '6px',
-                                  fontWeight: 700,
-                                  whiteSpace: 'nowrap',
-                                  border: '1px solid #A7F3D0',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                <Eye size={12} />
-                                <span>View</span>
-                              </button>
-                            ) : (
-                              <span
-                                style={{
-                                  fontSize: '0.75rem',
-                                  color: '#059669',
-                                  backgroundColor: '#ECFDF5',
-                                  padding: '4px 10px',
-                                  borderRadius: '6px',
-                                  fontWeight: 700,
-                                  whiteSpace: 'nowrap',
-                                  border: '1px solid #A7F3D0',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                }}
-                              >
-                                <Check size={12} />
-                                <span>Unlocked</span>
-                              </span>
-                            )
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {studied ? (
+                                <span className={styles.bundleStudiedBadge}>
+                                  <Check size={12} /> Studied
+                                </span>
+                              ) : (
+                                <span className={styles.bundlePendingBadge}>
+                                  <Clock size={12} /> Pending
+                                </span>
+                              )}
+                              {fileUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    recordBundleEngagement(user?.id, bId, resId);
+                                    setPdfViewerUrl(fileUrl);
+                                  }}
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    color: '#059669',
+                                    backgroundColor: '#ECFDF5',
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    fontWeight: 700,
+                                    whiteSpace: 'nowrap',
+                                    border: '1px solid #A7F3D0',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <Eye size={12} />
+                                  <span>View</span>
+                                </button>
+                              ) : (
+                                <span
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    color: '#059669',
+                                    backgroundColor: '#ECFDF5',
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    fontWeight: 700,
+                                    whiteSpace: 'nowrap',
+                                    border: '1px solid #A7F3D0',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                  }}
+                                >
+                                  <Check size={12} />
+                                  <span>Unlocked</span>
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <button
                               type="button"
@@ -412,6 +473,164 @@ export const BundlesListPage: React.FC = () => {
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+
+                {/* Ratings & Reviews Section with Verified Completion Gating */}
+                <div className={styles.bundleReviewsSection}>
+                  <div className={styles.modalSectionTitle}>
+                    <Star size={15} fill="#f59e0b" color="#f59e0b" />
+                    <span>Ratings & Reviews ({bundleReviews.length})</span>
+                  </div>
+
+                  {!isAuthenticated ? (
+                    <div className={styles.lockedReviewCard}>
+                      <Lock size={18} color="#d97706" style={{ flexShrink: 0 }} />
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#92400e', fontSize: '0.85rem' }}>Log in to write a review</div>
+                        <div style={{ fontSize: '0.78rem', color: '#b45309', marginTop: 2 }}>
+                          Students must log in to access materials and submit ratings.
+                        </div>
+                      </div>
+                    </div>
+                  ) : !isOwned ? (
+                    <div className={styles.lockedReviewCard}>
+                      <Lock size={18} color="#d97706" style={{ flexShrink: 0 }} />
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#92400e', fontSize: '0.85rem' }}>Enrolled Students Only</div>
+                        <div style={{ fontSize: '0.78rem', color: '#b45309', marginTop: 2 }}>
+                          Purchase this study pack to access materials and unlock student rating.
+                        </div>
+                      </div>
+                    </div>
+                  ) : !bundleProgress.isCompleted ? (
+                    <div className={styles.lockedReviewCard}>
+                      <Lock size={20} color="#d97706" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        <div style={{ fontWeight: 800, color: '#92400e', fontSize: '0.9rem' }}>
+                          Bundle Rating & Review Locked
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 3, lineHeight: 1.4 }}>
+                          To ensure verified, genuine feedback, ratings are unlocked only after studying 100% of the materials in this pack.
+                        </div>
+                        <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#d97706', marginTop: 5 }}>
+                          Progress: {bundleProgress.completedCount} of {rawItems.length} materials studied ({bundleProgress.percent}%). Complete all items to unlock!
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.unlockedReviewCard}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontWeight: 800, color: '#1e293b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Star size={16} fill="#f59e0b" color="#f59e0b" />
+                          <span>{getUserBundleReview(bId, user?.id) ? 'Your Rating & Review' : 'Rate this Study Pack'}</span>
+                        </div>
+                        <span className={styles.verifiedBadge}>
+                          <Check size={11} /> Verified Graduate
+                        </span>
+                      </div>
+
+                      <div className={styles.reviewStarsRow}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginRight: 4 }}>Rating:</span>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            className={styles.starBtn}
+                            onClick={() => setRatingStars(star)}
+                            onMouseEnter={() => setRatingHover(star)}
+                            onMouseLeave={() => setRatingHover(0)}
+                          >
+                            <Star
+                              size={20}
+                              fill={(ratingHover || ratingStars) >= star ? '#f59e0b' : 'none'}
+                              color={(ratingHover || ratingStars) >= star ? '#f59e0b' : '#cbd5e1'}
+                            />
+                          </button>
+                        ))}
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#d97706', marginLeft: 4 }}>
+                          {ratingStars} / 5 Stars
+                        </span>
+                      </div>
+
+                      <textarea
+                        className={styles.reviewTextarea}
+                        placeholder="Share how this study pack helped your preparation and understanding..."
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                      />
+
+                      <button
+                        type="button"
+                        className={styles.submitReviewBtn}
+                        disabled={submittingReview}
+                        onClick={() => {
+                          if (!reviewComment.trim()) {
+                            toast.error('Please write a short comment about this bundle.');
+                            return;
+                          }
+                          setSubmittingReview(true);
+                          try {
+                            saveBundleReview(bId, {
+                              studentId: user?.id || 0,
+                              studentName: user?.name || 'Student',
+                              studentAvatar: user?.profilePic || undefined,
+                              rating: ratingStars,
+                              comment: reviewComment.trim(),
+                            });
+                            setBundleReviews(getBundleReviews(bId));
+                            toast.success('Thank you! Your verified bundle review has been submitted. ⭐');
+                          } catch {
+                            toast.error('Failed to save review.');
+                          } finally {
+                            setSubmittingReview(false);
+                          }
+                        }}
+                      >
+                        <Star size={14} fill="#ffffff" />
+                        <span>{getUserBundleReview(bId, user?.id) ? 'Update Review' : 'Submit Verified Review'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Reviews List */}
+                  <div className={styles.reviewList}>
+                    {bundleReviews.length === 0 ? (
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-gray-500)', fontStyle: 'italic', padding: '4px 0' }}>
+                        No reviews yet. Complete this pack to be the first verified reviewer!
+                      </div>
+                    ) : (
+                      bundleReviews.map((rev) => (
+                        <div key={rev.id} className={styles.reviewItem}>
+                          <div className={styles.reviewItemHeader}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <Avatar src={rev.studentAvatar} name={rev.studentName} size="xs" />
+                              <span style={{ fontWeight: 700, fontSize: '0.82rem', color: '#1e293b' }}>
+                                {rev.studentName}
+                              </span>
+                              {rev.isVerifiedGraduate && (
+                                <span className={styles.verifiedBadge}>
+                                  <Check size={10} /> Verified Learner
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  size={12}
+                                  fill={rev.rating >= s ? '#f59e0b' : 'none'}
+                                  color={rev.rating >= s ? '#f59e0b' : '#cbd5e1'}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p style={{ fontSize: '0.82rem', color: '#475569', margin: '4px 0 0', lineHeight: 1.45 }}>
+                            {rev.comment}
+                          </p>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>

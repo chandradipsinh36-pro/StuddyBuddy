@@ -67,6 +67,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       )}
 
       <aside
+        className={`admin-sidebar ${mobileOpen ? 'admin-sidebar-mobile-open' : ''}`}
         style={{
           position: 'fixed',
           top: 0,
@@ -79,11 +80,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           flexDirection: 'column',
           zIndex: 'calc(var(--z-sidebar) + 1)',
           transition: 'width var(--transition-base), transform var(--transition-base)',
-          transform: mobileOpen
-            ? 'translateX(0)'
-            : window.innerWidth <= 768
-            ? 'translateX(-100%)'
-            : 'translateX(0)',
           overflow: 'hidden',
         }}
       >

@@ -7,7 +7,6 @@ import {
   Users,
   Search,
   RotateCcw,
-  MoreVertical,
   Eye,
   Edit2,
   Globe,
@@ -25,8 +24,11 @@ import { StatusBadge } from '../../components/common/StatusBadge';
 import { Pagination } from '../../components/common/Pagination';
 import { TableSkeleton } from '../../components/common/LoadingSkeleton';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Avatar } from '../../components/common/Avatar';
+import { RowActionsMenu } from '../../components/common/RowActionsMenu';
 
 export const AdminCoursesPage: React.FC = () => {
+  // Data State
   const [courses, setCourses] = useState<AdminCourse[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -38,9 +40,6 @@ export const AdminCoursesPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'createdAt' | 'title' | 'price'>('createdAt');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-
-  // Action Menu
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
 
   // Modals
   const [viewCourse, setViewCourse] = useState<AdminCourse | null>(null);
@@ -295,7 +294,6 @@ export const AdminCoursesPage: React.FC = () => {
               </thead>
               <tbody>
                 {courses.map((course) => {
-                  const isMenuOpen = activeMenuId === course.courseId;
                   const priceNum = Number(course.price);
 
                   return (
@@ -328,11 +326,7 @@ export const AdminCoursesPage: React.FC = () => {
 
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                          <img
-                            src={course.tutor?.profilePic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tutor'}
-                            alt={course.tutor?.name || 'Tutor'}
-                            style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover' }}
-                          />
+                          <Avatar name={course.tutor?.name || 'Instructor'} size={26} />
                           <div>
                             <div style={{ fontWeight: 600, color: 'var(--color-gray-800)', fontSize: 'var(--font-size-xs)' }}>
                               {course.tutor?.name || 'Instructor'}
@@ -366,38 +360,18 @@ export const AdminCoursesPage: React.FC = () => {
                         </span>
                       </td>
 
-                      <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right', position: 'relative' }}>
-                        <button
-                          onClick={() => setActiveMenuId(isMenuOpen ? null : course.courseId)}
-                          className="btn btn-ghost btn-icon-only"
-                          aria-label="Course actions"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {isMenuOpen && (
-                          <>
-                            <div onClick={() => setActiveMenuId(null)} style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-dropdown)' }} />
-                            <div
-                              className="admin-card animate-fade-in"
-                              style={{
-                                position: 'absolute',
-                                right: 16,
-                                top: 'calc(100% - 4px)',
-                                width: 190,
-                                padding: 'var(--space-1)',
-                                zIndex: 'calc(var(--z-dropdown) + 1)',
-                                boxShadow: 'var(--shadow-xl)',
-                                textAlign: 'left',
-                              }}
-                            >
+                      <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right' }}>
+                        <RowActionsMenu width={190}>
+                          {(close) => (
+                            <>
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   setViewCourse(course);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)' }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Eye size={14} />
@@ -405,11 +379,12 @@ export const AdminCoursesPage: React.FC = () => {
                               </button>
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   handleTogglePublish(course);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: course.isPublished ? 'var(--color-warning-dark)' : 'var(--color-success-dark)', borderRadius: 'var(--radius-md)' }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: course.isPublished ? 'var(--color-warning-dark)' : 'var(--color-success-dark)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = course.isPublished ? 'var(--color-warning-light)' : 'var(--color-success-light)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
@@ -418,12 +393,13 @@ export const AdminCoursesPage: React.FC = () => {
                               </button>
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   handleOpenEdit(course);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)' }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Edit2 size={14} />
@@ -433,20 +409,21 @@ export const AdminCoursesPage: React.FC = () => {
                               <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   setDeleteCourse(course);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-danger)', fontWeight: 600, borderRadius: 'var(--radius-md)' }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-danger)', fontWeight: 600, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Trash2 size={14} />
                                 <span>Delete Course</span>
                               </button>
-                            </div>
-                          </>
-                        )}
+                            </>
+                          )}
+                        </RowActionsMenu>
                       </td>
                     </tr>
                   );

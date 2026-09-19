@@ -19,6 +19,7 @@ export const AdminLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <div
+        className="admin-main-content"
         style={{
           flex: 1,
           display: 'flex',

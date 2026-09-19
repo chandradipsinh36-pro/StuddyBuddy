@@ -32,6 +32,7 @@ import {
   Legend,
 } from 'recharts';
 import { adminDashboardService } from '../../services/adminDashboardService';
+import { Avatar } from '../../components/common/Avatar';
 import type {
   DashboardKPICard,
   UserGrowthDataPoint,
@@ -514,11 +515,7 @@ export const AdminDashboardPage: React.FC = () => {
               >
                 {/* Applicant info */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 220 }}>
-                  <img
-                    src={app.user.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tutor'}
-                    alt={app.user.name}
-                    style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }}
-                  />
+                  <Avatar name={app.user.name} size="md" />
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-900)' }}>
                       {app.user.name}
@@ -588,11 +585,7 @@ export const AdminDashboardPage: React.FC = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                <img
-                  src={act.user_avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Activity'}
-                  alt={act.user_name}
-                  style={{ width: 34, height: 34, borderRadius: '50%' }}
-                />
+                <Avatar name={act.user_name} size="sm" />
                 <div>
                   <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-800)' }}>
                     <strong style={{ color: 'var(--color-gray-900)' }}>{act.user_name}</strong>{' '}

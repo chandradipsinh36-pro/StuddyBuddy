@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Flame, Users, Package, ArrowRight, Play, GraduationCap, Clock } from 'lucide-react';
+import { BookOpen, Flame, Users, Package, ArrowRight, Play, GraduationCap, Clock, Video } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { playlistService } from '../../services/playlistService';
 import { bundleService } from '../../services/bundleService';
 import { tutorService } from '../../services/tutorService';
 import { enrollmentService } from '../../services/enrollmentService';
@@ -13,14 +12,14 @@ import { Badge } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
 import { SkeletonCard, Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { getCourseProgress } from '../../utils/courseProgress';
+import { getCourseThumbnail } from '../../utils/videoUtils';
 import { ROUTES } from '../../constants';
-import type { Playlist, Bundle, Tutor } from '../../types';
+import type { Bundle, Tutor } from '../../types';
 import styles from './StudentDashboard.module.css';
 
 export function StudentDashboard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [enrollments, setEnrollments] = useState<any[]>([]);
@@ -35,7 +34,6 @@ export function StudentDashboard() {
 
   useEffect(() => {
     Promise.allSettled([
-      playlistService.getPlaylists().then(setPlaylists),
       bundleService.getPublicBundles().then(setBundles),
       tutorService.getTutors({ limit: 3 }).then(res => setTutors(res.data || [])),
       enrollmentService.getMyEnrollments().then(setEnrollments).catch(() => {}),
@@ -127,6 +125,8 @@ export function StudentDashboard() {
               const progress = totalLessons > 0
                 ? Math.min(100, Math.round((completedLessons / totalLessons) * 100))
                 : Number(enrollment.progress ?? enrollment.progressPercent ?? 0);
+              const thumbnail = getCourseThumbnail(course) || course.thumbnailUrl;
+              const lessonCount = totalLessons || course.lessons?.length || 0;
 
               return (
                 <Link
@@ -135,7 +135,40 @@ export function StudentDashboard() {
                   className={styles.enrolledCard}
                 >
                   <div className={styles.enrolledCardBanner}>
-                    <GraduationCap size={28} />
+                    {thumbnail ? (
+                      <div className={styles.thumbnailContainer}>
+                        <img
+                          src={thumbnail}
+                          alt={course.title || 'Course thumbnail'}
+                          className={styles.thumbnailImg}
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        <div className={styles.thumbnailOverlay}>
+                          <div className={styles.playButtonCircle}>
+                            <Play size={16} fill="#ffffff" color="#ffffff" style={{ marginLeft: 2 }} />
+                          </div>
+                        </div>
+                        {lessonCount > 0 && (
+                          <div className={styles.lessonPill}>
+                            <Video size={11} />
+                            <span>{lessonCount} {lessonCount === 1 ? 'Lecture' : 'Lectures'}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className={styles.placeholderBanner}>
+                        <GraduationCap size={36} />
+                        {lessonCount > 0 && (
+                          <div className={styles.lessonPill}>
+                            <Video size={11} />
+                            <span>{lessonCount} {lessonCount === 1 ? 'Lecture' : 'Lectures'}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className={styles.enrolledCardBody}>
                     <div className={styles.enrolledCardTitle}>
@@ -168,51 +201,6 @@ export function StudentDashboard() {
           </div>
         )}
       </section>
-
-      {/* Continue Learning Playlists */}
-      {playlists.length > 0 && (
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>
-              <Play size={20} className={styles.sectionIcon} /> Continue Learning
-            </h2>
-            <Link to={ROUTES.PLAYLISTS} className={styles.seeAll}>See all</Link>
-          </div>
-          <div className={styles.playlistGrid}>
-            {loading
-              ? Array.from({ length: 3 }, (_, i) => <SkeletonCard key={i} />)
-              : playlists.map(playlist => {
-                  const progress = typeof playlist.userProgress === 'number'
-                    ? playlist.userProgress
-                    : (playlist.userProgress?.percentage ?? 0);
-                  return (
-                    <Link key={playlist.id} to={ROUTES.PLAYLIST_DETAIL(playlist.id)} className={styles.playlistCard}>
-                      <div className={styles.playlistThumbnail}>
-                        {playlist.coverUrl && <img src={playlist.coverUrl} alt={playlist.name || playlist.title} className={styles.playlistImg} />}
-                        <div className={styles.playlistOverlay}>
-                          <Play size={24} />
-                        </div>
-                      </div>
-                      <div className={styles.playlistBody}>
-                        <Badge variant={playlist.difficulty === 'beginner' ? 'success' : playlist.difficulty === 'advanced' ? 'error' : 'warning'}>
-                          {playlist.difficulty || 'All Levels'}
-                        </Badge>
-                        <h3 className={styles.playlistName}>{playlist.name || playlist.title}</h3>
-                        <p className={styles.playlistTutor}>by {playlist.tutor?.name}</p>
-                        <ProgressBar
-                          value={progress}
-                          label={`${playlist.resourceCount ?? playlist.resources?.length ?? 0} resources`}
-                          showValue
-                          variant={progress === 100 ? 'success' : 'default'}
-                        />
-                      </div>
-                    </Link>
-                  );
-                })
-            }
-          </div>
-        </section>
-      )}
 
       {/* Curated Study Bundles */}
       <section className={styles.section}>

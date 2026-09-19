@@ -52,12 +52,11 @@ export const AdminLoginPage: React.FC = () => {
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: '#0F172A',
+        backgroundColor: 'var(--color-bg, #000000)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 'var(--space-4)',
-        backgroundImage: 'radial-gradient(circle at 50% 10%, #1E293B 0%, #0F172A 100%)',
       }}
     >
       <div
@@ -65,10 +64,11 @@ export const AdminLoginPage: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: 440,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 'var(--color-surface, #0a0a0a)',
+          border: '1px solid var(--color-border, #222222)',
           borderRadius: 'var(--radius-2xl)',
           padding: 'var(--space-8)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
         }}
       >
         {/* Logo & Header */}

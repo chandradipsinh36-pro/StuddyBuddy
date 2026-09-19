@@ -45,8 +45,8 @@
 
 .statCardPrimary {
   background: linear-gradient(135deg, var(--color-primary-800) 0%, var(--color-primary-900) 100%);
-  color: var(--color-white);
-  border: none;
+  color: #ffffff;
+  border: 1px solid transparent;
 }
 
 .cardLabel {
@@ -67,7 +67,7 @@
 }
 
 .cardValLight {
-  color: var(--color-white);
+  color: #ffffff;
 }
 
 .cardSub {
@@ -118,3 +118,42 @@
   flex-direction: column;
   gap: var(--space-4);
 }
+
+/* =====================================================
+   Dark Mode Overrides — AMOLED Black
+   ===================================================== */
+:global([data-theme="dark"]) .statCard {
+  background: #0d0d0d;
+  border-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .statCardPrimary {
+  background: #0d0d0d;
+  border-color: #222222;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .cardLabelLight {
+  color: var(--color-gray-400);
+}
+
+:global([data-theme="dark"]) .cardSubLight {
+  color: var(--color-gray-400);
+}
+
+:global([data-theme="dark"]) .tableCard {
+  background: #0d0d0d;
+  border-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .table th {
+  background: #121212;
+  color: #a3a3a3;
+  border-bottom-color: #222222;
+}
+
+:global([data-theme="dark"]) .table td {
+  color: #e5e5e5;
+  border-bottom-color: #222222;
+}
+

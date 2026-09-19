@@ -21,6 +21,7 @@ import {
 import { adminUserService } from '../../services/adminUserService';
 import type { User } from '../../types/admin';
 import { StatusBadge } from '../../components/common/StatusBadge';
+import { Avatar } from '../../components/common/Avatar';
 import { SuspendUserModal } from '../../components/modals/SuspendUserModal';
 import { BanUserModal } from '../../components/modals/BanUserModal';
 import { ReactivateUserModal } from '../../components/modals/ReactivateUserModal';
@@ -133,17 +134,7 @@ export const UserDetailPage: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
-          <img
-            src={user.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
-            alt={user.name}
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '3px solid var(--color-primary-100)',
-            }}
-          />
+          <Avatar name={user.name} size="xl" />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 800, color: 'var(--color-gray-900)' }}>

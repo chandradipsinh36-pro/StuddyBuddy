@@ -19,40 +19,25 @@ async function main() {
   console.log(`✅ ${categories.length} categories seeded`);
 
   // ── Admin user (bootstrap mechanism) ─────────────────────────
-  const passwordHash = await bcrypt.hash('Password123!', 12);
-  const passwordHash2 = await bcrypt.hash('Admin@123456', 12);
+  const adminPasswordHash = await bcrypt.hash('Admin@123456', 12);
 
   const admin = await prisma.user.upsert({
-    where:  { email: 'admin@dev.studybuddy.test' },
-    update: {},
-    create: {
-      name:        'Platform Admin',
-      email:       'admin@dev.studybuddy.test',
-      passwordHash,
-      role:        'admin',
-      status:      'active',
-      isVerified:  true,
-    },
-  });
-
-  const admin2 = await prisma.user.upsert({
     where:  { email: 'admin@studybuddy.com' },
     update: {},
     create: {
       name:        'StudyBuddy Admin',
       email:       'admin@studybuddy.com',
-      passwordHash: passwordHash2,
+      passwordHash: adminPasswordHash,
       role:        'admin',
       status:      'active',
       isVerified:  true,
     },
   });
-  console.log('✅ Admin users seeded:', admin.email, admin2.email);
+  console.log('✅ Admin user seeded:', admin.email);
 
   console.log('');
   console.log('📋 Credentials:');
-  console.log('  Admin 1:  admin@studybuddy.com       |  Admin@123456');
-  console.log('  Admin 2:  admin@dev.studybuddy.test  |  Password123!');
+  console.log('  Admin:  admin@studybuddy.com  |  Admin@123456');
   console.log('');
   console.log('🎉 Seed complete!');
 }

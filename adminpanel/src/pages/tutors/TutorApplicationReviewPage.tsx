@@ -19,6 +19,7 @@ import type { TutorApplication, TutorDocument } from '../../types/admin';
 import { VideoPlayer } from '../../components/common/VideoPlayer';
 import { DocumentViewerModal } from '../../components/common/DocumentViewerModal';
 import { StatusBadge } from '../../components/common/StatusBadge';
+import { Avatar } from '../../components/common/Avatar';
 import { ApproveTutorModal } from '../../components/modals/ApproveTutorModal';
 import { RejectTutorModal } from '../../components/modals/RejectTutorModal';
 import { ROUTES } from '../../constants';
@@ -154,18 +155,7 @@ export const TutorApplicationReviewPage: React.FC = () => {
               flexWrap: 'wrap',
             }}
           >
-            <img
-              src={application.user.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tutor'}
-              alt={application.user.name}
-              style={{
-                width: 74,
-                height: 74,
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '3px solid var(--color-primary-100)',
-                flexShrink: 0,
-              }}
-            />
+            <Avatar name={application.user.name} size="xl" />
             <div style={{ flex: 1, minWidth: 260 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                 <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, color: 'var(--color-gray-900)' }}>

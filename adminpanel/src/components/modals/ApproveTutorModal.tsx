@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ConfirmModal } from '../common/ConfirmModal';
+import { Avatar } from '../common/Avatar';
 import type { TutorApplication } from '../../types/admin';
 
 interface ApproveTutorModalProps {
@@ -60,11 +61,7 @@ export const ApproveTutorModal: React.FC<ApproveTutorModalProps> = ({
             gap: 'var(--space-3)',
           }}
         >
-          <img
-            src={application.user.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tutor'}
-            alt={application.user.name}
-            style={{ width: 44, height: 44, borderRadius: '50%' }}
-          />
+          <Avatar name={application.user.name} size="md" />
           <div>
             <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-900)' }}>
               {application.user.name}

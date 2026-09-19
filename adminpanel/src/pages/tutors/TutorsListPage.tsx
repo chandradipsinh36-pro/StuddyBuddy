@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   XCircle,
   ShieldCheck,
-  MoreVertical,
   Eye,
   FileCheck,
   UserMinus,
@@ -26,6 +25,8 @@ import { StatusBadge } from '../../components/common/StatusBadge';
 import { Pagination } from '../../components/common/Pagination';
 import { TableSkeleton } from '../../components/common/LoadingSkeleton';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Avatar } from '../../components/common/Avatar';
+import { RowActionsMenu } from '../../components/common/RowActionsMenu';
 import { SuspendUserModal } from '../../components/modals/SuspendUserModal';
 import { BanUserModal } from '../../components/modals/BanUserModal';
 import { ReactivateUserModal } from '../../components/modals/ReactivateUserModal';
@@ -47,9 +48,6 @@ export const TutorsListPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Dropdown menu state
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
 
   // Modals for suspension/ban/reactivate/delete
   const [modalUser, setModalUser] = useState<any>(null);
@@ -356,8 +354,6 @@ export const TutorsListPage: React.FC = () => {
               </thead>
               <tbody>
                 {tutors.map((tutor) => {
-                  const isMenuOpen = activeMenuId === tutor.tutor_id;
-
                   return (
                     <tr
                       key={tutor.tutor_id || tutor.user.id || tutor.profile_id}
@@ -371,17 +367,7 @@ export const TutorsListPage: React.FC = () => {
                       {/* Tutor Cell */}
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                          <img
-                            src={tutor.user.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tutor'}
-                            alt={tutor.user.name}
-                            style={{
-                              width: 38,
-                              height: 38,
-                              borderRadius: '50%',
-                              objectFit: 'cover',
-                              border: '1px solid var(--color-border)',
-                            }}
-                          />
+                          <Avatar name={tutor.user.name} size="sm" />
                           <div>
                             <div
                               onClick={() => navigate(ROUTES.TUTOR_PROFILE(tutor.tutor_id))}
@@ -453,38 +439,14 @@ export const TutorsListPage: React.FC = () => {
                       </td>
 
                       {/* Actions Menu */}
-                      <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right', position: 'relative' }}>
-                        <button
-                          onClick={() => setActiveMenuId(isMenuOpen ? null : tutor.tutor_id)}
-                          className="btn btn-ghost btn-icon-only"
-                          aria-label="Tutor actions menu"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {isMenuOpen && (
-                          <>
-                            <div
-                              onClick={() => setActiveMenuId(null)}
-                              style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-dropdown)' }}
-                            />
-
-                            <div
-                              className="admin-card animate-fade-in"
-                              style={{
-                                position: 'absolute',
-                                right: 16,
-                                top: 'calc(100% - 4px)',
-                                width: 190,
-                                padding: 'var(--space-1)',
-                                zIndex: 'calc(var(--z-dropdown) + 1)',
-                                boxShadow: 'var(--shadow-xl)',
-                                textAlign: 'left',
-                              }}
-                            >
+                      <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right' }}>
+                        <RowActionsMenu width={190}>
+                          {(close) => (
+                            <>
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   navigate(ROUTES.TUTOR_PROFILE(tutor.tutor_id));
                                 }}
                                 style={{
@@ -496,8 +458,13 @@ export const TutorsListPage: React.FC = () => {
                                   fontSize: 'var(--font-size-xs)',
                                   color: 'var(--color-gray-700)',
                                   borderRadius: 'var(--radius-md)',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  transition: 'background-color var(--transition-fast)',
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Eye size={14} />
@@ -505,8 +472,9 @@ export const TutorsListPage: React.FC = () => {
                               </button>
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   navigate(ROUTES.TUTOR_APPLICATION_REVIEW(tutor.application_id));
                                 }}
                                 style={{
@@ -518,6 +486,11 @@ export const TutorsListPage: React.FC = () => {
                                   fontSize: 'var(--font-size-xs)',
                                   color: 'var(--color-primary-600)',
                                   borderRadius: 'var(--radius-md)',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  transition: 'background-color var(--transition-fast)',
                                 }}
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-primary-50)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -530,8 +503,9 @@ export const TutorsListPage: React.FC = () => {
 
                               {tutor.user.status === 'active' && (
                                 <button
+                                  type="button"
                                   onClick={() => {
-                                    setActiveMenuId(null);
+                                    close();
                                     setModalUser(tutor.user);
                                     setIsSuspendOpen(true);
                                   }}
@@ -544,6 +518,11 @@ export const TutorsListPage: React.FC = () => {
                                     fontSize: 'var(--font-size-xs)',
                                     color: 'var(--color-suspended-dark)',
                                     borderRadius: 'var(--radius-md)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    textAlign: 'left',
+                                    transition: 'background-color var(--transition-fast)',
                                   }}
                                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-suspended-light)'; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -555,8 +534,9 @@ export const TutorsListPage: React.FC = () => {
 
                               {(tutor.user.status === 'suspended' || tutor.user.status === 'banned') && (
                                 <button
+                                  type="button"
                                   onClick={() => {
-                                    setActiveMenuId(null);
+                                    close();
                                     setModalUser(tutor.user);
                                     setIsReactivateOpen(true);
                                   }}
@@ -569,6 +549,11 @@ export const TutorsListPage: React.FC = () => {
                                     fontSize: 'var(--font-size-xs)',
                                     color: 'var(--color-success-dark)',
                                     borderRadius: 'var(--radius-md)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    textAlign: 'left',
+                                    transition: 'background-color var(--transition-fast)',
                                   }}
                                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-success-light)'; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -580,8 +565,9 @@ export const TutorsListPage: React.FC = () => {
 
                               {tutor.user.status !== 'banned' && (
                                 <button
+                                  type="button"
                                   onClick={() => {
-                                    setActiveMenuId(null);
+                                    close();
                                     setModalUser(tutor.user);
                                     setIsBanOpen(true);
                                   }}
@@ -594,6 +580,11 @@ export const TutorsListPage: React.FC = () => {
                                     fontSize: 'var(--font-size-xs)',
                                     color: 'var(--color-danger)',
                                     borderRadius: 'var(--radius-md)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    textAlign: 'left',
+                                    transition: 'background-color var(--transition-fast)',
                                   }}
                                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -606,8 +597,9 @@ export const TutorsListPage: React.FC = () => {
                               <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   setModalUser(tutor.user);
                                   setIsDeleteOpen(true);
                                 }}
@@ -621,6 +613,11 @@ export const TutorsListPage: React.FC = () => {
                                   color: 'var(--color-danger)',
                                   fontWeight: 600,
                                   borderRadius: 'var(--radius-md)',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  transition: 'background-color var(--transition-fast)',
                                 }}
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -628,9 +625,9 @@ export const TutorsListPage: React.FC = () => {
                                 <Trash2 size={14} />
                                 <span>Delete Tutor</span>
                               </button>
-                            </div>
-                          </>
-                        )}
+                            </>
+                          )}
+                        </RowActionsMenu>
                       </td>
                     </tr>
                   );

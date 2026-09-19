@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, ArrowRight } from 'lucide-react';
+import { BookOpen, ArrowRight, Play, Video } from 'lucide-react';
+import { getCourseThumbnail } from '../../utils/videoUtils';
 import { courseService } from '../../services/courseService';
 import { categoryService } from '../../services/categoryService';
 import { SearchBar } from '../../components/ui/SearchBar/SearchBar';
@@ -102,11 +103,47 @@ export function CoursesListPage() {
         <div className={styles.grid}>
           {courses.map((c) => {
             const courseId = c.courseId || (c as any).id;
+            const thumbnail = getCourseThumbnail(c) || c.thumbnailUrl;
+            const lessonCount = c.lessons?.length || 0;
+
             return (
               <div key={courseId} className={styles.courseCard}>
-                <div className={styles.banner}>
-                  <BookOpen size={48} />
-                </div>
+                <Link to={`/courses/${courseId}`} className={styles.banner}>
+                  {thumbnail ? (
+                    <div className={styles.thumbnailContainer}>
+                      <img
+                        src={thumbnail}
+                        alt={c.title}
+                        className={styles.thumbnailImg}
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                      <div className={styles.thumbnailOverlay}>
+                        <div className={styles.playButtonCircle}>
+                          <Play size={18} fill="#ffffff" color="#ffffff" style={{ marginLeft: 2 }} />
+                        </div>
+                      </div>
+                      {lessonCount > 0 && (
+                        <div className={styles.lessonPill}>
+                          <Video size={12} />
+                          <span>{lessonCount} {lessonCount === 1 ? 'Lecture' : 'Lectures'}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={styles.placeholderBanner}>
+                      <BookOpen size={44} />
+                      {lessonCount > 0 && (
+                        <div className={styles.lessonPill}>
+                          <Video size={12} />
+                          <span>{lessonCount} {lessonCount === 1 ? 'Lecture' : 'Lectures'}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Link>
 
                 <div className={styles.cardBody}>
                   <Link to={`/courses/${courseId}`} className={styles.cardTitle}>

@@ -18,6 +18,7 @@ import { SearchInput } from '../../components/common/SearchInput';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { TableSkeleton } from '../../components/common/LoadingSkeleton';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Avatar } from '../../components/common/Avatar';
 import { ROUTES } from '../../constants';
 
 export const TutorApplicationsPage: React.FC = () => {
@@ -270,17 +271,7 @@ export const TutorApplicationsPage: React.FC = () => {
             >
               {/* Tutor summary */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)', flex: '1 1 300px' }}>
-                <img
-                  src={app.user.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tutor'}
-                  alt={app.user.name}
-                  style={{
-                    width: 54,
-                    height: 54,
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '2px solid var(--color-border)',
-                  }}
-                />
+                <Avatar name={app.user.name} size="lg" />
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                     <h3 style={{ fontSize: 'var(--font-size-base)', fontWeight: 800, color: 'var(--color-gray-900)' }}>

@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
+import { AdminThemeProvider } from './contexts/AdminThemeContext';
 import { router } from './routes';
 
 const LoadingFallback = () => (
@@ -29,38 +30,40 @@ const LoadingFallback = () => (
 
 export const App: React.FC = () => {
   return (
-    <AdminAuthProvider>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3500,
-          style: {
-            fontFamily: 'var(--font-family-base)',
-            fontSize: 'var(--font-size-sm)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-lg)',
-            padding: '12px 16px',
-            color: 'var(--color-gray-900)',
-            background: '#FFFFFF',
-            border: '1px solid var(--color-border)',
-          },
-          success: {
-            iconTheme: {
-              primary: 'var(--color-success)',
-              secondary: '#FFFFFF',
+    <AdminThemeProvider>
+      <AdminAuthProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3500,
+            style: {
+              fontFamily: 'var(--font-family-base)',
+              fontSize: 'var(--font-size-sm)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '12px 16px',
+              color: 'var(--color-gray-900)',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
             },
-          },
-          error: {
-            iconTheme: {
-              primary: 'var(--color-danger)',
-              secondary: '#FFFFFF',
+            success: {
+              iconTheme: {
+                primary: 'var(--color-success)',
+                secondary: '#FFFFFF',
+              },
             },
-          },
-        }}
-      />
-      <Suspense fallback={<LoadingFallback />}>
-        <RouterProvider router={router} />
-      </Suspense>
-    </AdminAuthProvider>
+            error: {
+              iconTheme: {
+                primary: 'var(--color-danger)',
+                secondary: '#FFFFFF',
+              },
+            },
+          }}
+        />
+        <Suspense fallback={<LoadingFallback />}>
+          <RouterProvider router={router} />
+        </Suspense>
+      </AdminAuthProvider>
+    </AdminThemeProvider>
   );
 };

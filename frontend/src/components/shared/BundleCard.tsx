@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { Package, FileText, Image as ImageIcon, Video, ArrowRight, Tag, Layers, CheckCircle, Lock } from 'lucide-react';
 import type { Bundle } from '../../types';
 import { Avatar } from '../ui/Avatar/Avatar';
+import { ProgressBar } from '../ui/ProgressBar/ProgressBar';
+import { useAuth } from '../../contexts/AuthContext';
+import { getBundleProgress } from '../../utils/bundleProgress';
 import styles from './BundleCard.module.css';
 
 interface BundleCardProps {
@@ -12,6 +15,7 @@ interface BundleCardProps {
 }
 
 export const BundleCard: React.FC<BundleCardProps> = ({ bundle, isOwned, onViewDetails }) => {
+  const { user } = useAuth();
   const bundleId = bundle.id || bundle.bundleId || 0;
   const title = bundle.name || bundle.title || 'Curated Study Bundle';
   const desc = bundle.description || 'Comprehensive learning package with curated notes and materials.';
@@ -123,6 +127,20 @@ export const BundleCard: React.FC<BundleCardProps> = ({ bundle, isOwned, onViewD
             </div>
           </div>
         )}
+
+        {isOwned && itemCount > 0 && (() => {
+          const progress = getBundleProgress(user?.id, bundleId, itemCount);
+          return (
+            <div style={{ marginTop: 12 }}>
+              <ProgressBar
+                value={progress.percent}
+                showValue
+                variant={progress.isCompleted ? 'success' : 'default'}
+                label={progress.isCompleted ? '✓ Completed' : `${progress.completedCount}/${itemCount} studied`}
+              />
+            </div>
+          );
+        })()}
       </div>
 
       <div className={styles.cardFooter}>

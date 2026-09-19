@@ -26,7 +26,7 @@
 /* Variants */
 .primary {
   background: var(--color-primary-500);
-  color: var(--color-white);
+  color: #ffffff;
   border-color: var(--color-primary-500);
 }
 .primary:hover:not(:disabled) {
@@ -47,6 +47,17 @@
   border-color: var(--color-primary-500);
 }
 
+:global([data-theme="dark"]) .secondary {
+  background: #171717;
+  color: #60a5fa;
+  border-color: #3b82f6;
+}
+:global([data-theme="dark"]) .secondary:hover:not(:disabled) {
+  background: #1e293b;
+  color: #93c5fd;
+  border-color: #60a5fa;
+}
+
 .ghost {
   background: transparent;
   color: var(--color-gray-700);
@@ -57,16 +68,21 @@
   color: var(--color-gray-900);
 }
 
+:global([data-theme="dark"]) .ghost:hover:not(:disabled) {
+  background: #1c1c1c;
+  color: #ffffff;
+}
+
 .danger {
   background: var(--color-error);
-  color: var(--color-white);
+  color: #ffffff;
   border-color: var(--color-error);
 }
 .danger:hover:not(:disabled) { filter: brightness(1.1); }
 
 .premium {
   background: linear-gradient(135deg, var(--color-premium), #9F67FF);
-  color: var(--color-white);
+  color: #ffffff;
   border-color: var(--color-premium);
 }
 .premium:hover:not(:disabled) {

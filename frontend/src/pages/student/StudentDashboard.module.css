@@ -57,9 +57,89 @@
 }
 .enrolledCard:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
 .enrolledCardBanner {
-  background: linear-gradient(135deg, var(--color-primary-700), var(--color-primary-500));
-  padding: var(--space-6); display: flex; align-items: center; justify-content: center;
-  color: white; min-height: 80px;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(135deg, var(--color-primary-800, #1e3a8a), var(--color-primary-600, #2563eb));
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.thumbnailContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0f172a;
+}
+.thumbnailImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease, filter 0.35s ease;
+  display: block;
+}
+.enrolledCard:hover .thumbnailImg {
+  transform: scale(1.05);
+  filter: brightness(1.04);
+}
+.thumbnailOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.45) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.25s ease;
+}
+.enrolledCard:hover .thumbnailOverlay {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.6) 100%);
+}
+.playButtonCircle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.9);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+.enrolledCard:hover .playButtonCircle {
+  transform: scale(1.12);
+  background: #2563eb;
+}
+.placeholderBanner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.9);
+  position: relative;
+}
+.lessonPill {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(6px);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 2;
 }
 .enrolledCardBody { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); flex: 1; }
 .enrolledCardTitle { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); color: var(--color-gray-900); line-height: 1.4; }
@@ -118,12 +198,16 @@
   .tutorGrid { grid-template-columns: repeat(2, 1fr); }
   .enrolledGrid { grid-template-columns: repeat(2, 1fr); }
 }
+
 @media (max-width: 640px) {
-  .metricsGrid { grid-template-columns: repeat(2, 1fr); }
+  .metricsGrid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-3); }
   .playlistGrid { grid-template-columns: 1fr; }
   .resourceGrid { grid-template-columns: 1fr; }
   .tutorGrid { grid-template-columns: 1fr; }
   .enrolledGrid { grid-template-columns: 1fr; }
-  .welcome { flex-direction: column; }
+  .welcome { flex-direction: column; align-items: flex-start; padding: var(--space-5); }
+  .welcomeActions { flex-direction: column; width: 100%; }
+  .welcomeActions > a { width: 100%; }
+  .welcomeActions button { width: 100%; }
   .aiShortcut { flex-direction: column; }
 }

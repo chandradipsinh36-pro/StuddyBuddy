@@ -178,6 +178,7 @@ export interface Course {
   };
   resources?: Resource[];
   lessons?: CourseLesson[];
+  thumbnailUrl?: string | null;
 }
 
 // ---- Resource ----

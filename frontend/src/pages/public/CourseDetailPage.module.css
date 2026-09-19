@@ -288,3 +288,544 @@
   margin: 0 0 18px;
   line-height: 1.5;
 }
+
+/* Sidebar Video Preview Thumbnail */
+.sidebarThumbnailWrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+  margin-bottom: var(--space-4);
+  background-color: #0f172a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sidebarThumbnailImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sidebarThumbnailOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.6) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.sidebarPlayBtn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.92);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.sidebarPreviewTag {
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* Background image for locked lecture player */
+.lockedVideoBgImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(8px) brightness(0.35);
+  transform: scale(1.08);
+}
+
+.lockedVideoBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(3px);
+}
+
+/* Progress Dashboard Card */
+.progressDashboardCard {
+  margin-bottom: 24px;
+  background: #ffffff;
+  border-radius: var(--radius-xl);
+  padding: 18px 20px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.progressTitleArea {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progressActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progressStatsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--color-gray-600);
+}
+
+/* Completion Celebration Card */
+.completionCelebrationCard {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1.5px solid #6ee7b7;
+  border-radius: var(--radius-xl);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+  flex-wrap: wrap;
+}
+
+.completionLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.trophyCircle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+  flex-shrink: 0;
+}
+
+.completionTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #065f46;
+  margin: 0 0 4px;
+}
+
+.completionDesc {
+  font-size: 0.85rem;
+  color: #047857;
+  margin: 0;
+  line-height: 1.4;
+  max-width: 540px;
+}
+
+/* Lesson Action Bar */
+.lessonActionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+/* Locked Review Card */
+.lockedReviewCard {
+  background: #fffbeb;
+  border: 1.5px dashed #fcd34d;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lockedReviewHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.lockedReviewIconWrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fef3c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lockedReviewTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #92400e;
+  margin: 0 0 6px;
+}
+
+.lockedReviewSubtitle {
+  font-size: 0.88rem;
+  color: #b45309;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lockedReviewProgressBox {
+  background: #ffffff;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lockedReviewProgressStats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: #78350f;
+  font-weight: 600;
+}
+
+/* Unlocked Graduate Review Card */
+.unlockedReviewCard {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.08);
+}
+
+.unlockedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.graduateBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #dcfce7;
+  color: #15803d;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid #bbf7d0;
+}
+
+.starRatingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.starBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px;
+  transition: transform 0.15s ease;
+  display: flex;
+  align-items: center;
+}
+
+.starBtn:hover {
+  transform: scale(1.18);
+}
+
+.ratingDescriptor {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #d97706;
+  background: #fef3c7;
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+
+.myReviewCard {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--radius-xl);
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+
+/* =====================================================
+   Dark Mode Overrides — AMOLED Black
+   ===================================================== */
+:global([data-theme="dark"]) .headerCard {
+  background: #000000;
+  border-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .sectionCard {
+  background: #000000;
+  border-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .sidebarCard {
+  background: #000000;
+  border-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .progressDashboardCard {
+  background: #0d0d0d;
+  border-color: var(--color-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+:global([data-theme="dark"]) .completionCelebrationCard {
+  background: #061f12;
+  border-color: #059669;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.15);
+}
+
+:global([data-theme="dark"]) .trophyCircle {
+  background: #064e3b;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="dark"]) .completionTitle {
+  color: #34d399;
+}
+
+:global([data-theme="dark"]) .completionDesc {
+  color: #a7f3d0;
+}
+
+:global([data-theme="dark"]) .lessonCard {
+  background: #0d0d0d;
+  border-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .lessonMaterials {
+  background: #121212;
+  border-color: #222222;
+}
+
+:global([data-theme="dark"]) .lessonActionBar {
+  background: #121212;
+  border-color: #222222;
+}
+
+:global([data-theme="dark"]) .myReviewCard {
+  background: #0d0d0d;
+  border-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .lockedReviewCard {
+  background: #1a1408;
+  border-color: #78350f;
+}
+
+:global([data-theme="dark"]) .lockedReviewTitle {
+  color: #fbbf24;
+}
+
+:global([data-theme="dark"]) .lockedReviewSubtitle {
+  color: #fde68a;
+}
+
+:global([data-theme="dark"]) .lockedReviewProgressBox {
+  background: #141414;
+  border-color: #262626;
+}
+
+:global([data-theme="dark"]) .lockedReviewProgressStats {
+  color: #fde68a;
+}
+
+:global([data-theme="dark"]) .unlockedReviewCard {
+  background: #081a10;
+  border-color: #065f46;
+}
+
+/* Video Engagement Strip */
+.engagementStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  border: 1px solid var(--color-border);
+}
+
+.engagementWatched {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.engagementPending {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+:global([data-theme="dark"]) .engagementWatched {
+  background: #062817;
+  border-color: #065f46;
+  color: #34d399;
+}
+
+:global([data-theme="dark"]) .engagementPending {
+  background: #141414;
+  border-color: #262626;
+  color: #94a3b8;
+}
+
+/* Lesson Completion Button */
+.lessonToggleBtn {
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.lessonBtnCompleted {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.lessonBtnEngaged {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.lessonBtnLocked {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+}
+
+:global([data-theme="dark"]) .lessonBtnCompleted {
+  background: #280a0a;
+  border-color: #7f1d1d;
+  color: #f87171;
+}
+
+:global([data-theme="dark"]) .lessonBtnEngaged {
+  background: #062817;
+  border-color: #065f46;
+  color: #34d399;
+}
+
+:global([data-theme="dark"]) .lessonBtnLocked {
+  background: #171717;
+  border-color: #262626;
+  color: #a3a3a3;
+}
+
+/* Auth / Guest Review Notice Box */
+.authReviewNotice {
+  padding: 16px 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+:global([data-theme="dark"]) .authReviewNotice {
+  background: #0d0d0d;
+  border-color: var(--color-border);
+}
+
+.authReviewNoticeTitle {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.92rem;
+  margin-bottom: 2px;
+}
+
+:global([data-theme="dark"]) .authReviewNoticeTitle {
+  color: #fafafa;
+}
+
+.authReviewNoticeSub {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+:global([data-theme="dark"]) .authReviewNoticeSub {
+  color: #a3a3a3;
+}
+
+/* User Review Card Text */
+.myReviewTitle {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+:global([data-theme="dark"]) .myReviewTitle {
+  color: #fafafa;
+}
+
+.myReviewComment {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+:global([data-theme="dark"]) .myReviewComment {
+  color: #e5e5e5;
+}
+

@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { Shield, Key, Save, Lock, Mail, User as UserIcon, Eye, EyeOff } from 'lucide-react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { StatusBadge } from '../../components/common/StatusBadge';
+import { Avatar } from '../../components/common/Avatar';
 
 import apiClient from '../../api/client';
 
@@ -99,16 +100,7 @@ export const AdminProfilePage: React.FC = () => {
           flexWrap: 'wrap',
         }}
       >
-        <img
-          src={adminUser?.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminChief'}
-          alt={adminUser?.name || 'Admin'}
-          style={{
-            width: 76,
-            height: 76,
-            borderRadius: '50%',
-            border: '3px solid var(--color-primary-100)',
-          }}
-        />
+        <Avatar name={adminUser?.name || 'Admin'} size="xl" />
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <h3 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, color: 'var(--color-gray-900)' }}>

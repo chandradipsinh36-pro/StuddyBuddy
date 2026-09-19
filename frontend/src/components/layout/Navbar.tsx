@@ -3,9 +3,10 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   BookOpen, Bell, Search, Menu, X, ChevronDown,
   LayoutDashboard, User, LogOut, Settings, ShoppingBag,
-  Bookmark, Star, Users, Package, FileText
+  Bookmark, Star, Users, Package, FileText, Sun, Moon
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Avatar } from '../ui/Avatar/Avatar';
 import { NotificationItem } from '../shared/NotificationItem';
 import { notificationService } from '../../services/notificationService';
@@ -38,6 +39,7 @@ const TUTOR_NAV = [
 
 export function Navbar() {
   const { user, isAuthenticated, logout, role } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -244,6 +246,16 @@ export function Navbar() {
             </>
           )}
 
+          {/* Theme Toggle */}
+          <button
+            className={styles.iconBtn}
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle theme mode"
+          >
+            {theme === 'dark' ? <Sun size={20} color="#F59E0B" /> : <Moon size={20} />}
+          </button>
+
           {/* Mobile hamburger */}
           <button
             className={styles.hamburger}
@@ -271,6 +283,10 @@ export function Navbar() {
             </NavLink>
           ))}
           <hr className={styles.mobileDivider} />
+          <button className={styles.mobileLink} onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun size={16} color="#F59E0B" /> : <Moon size={16} />}
+            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
           {isAuthenticated ? (
             <button className={`${styles.mobileLink} ${styles.mobileLinkDanger}`} onClick={handleLogout}>
               <LogOut size={16} /> Sign Out

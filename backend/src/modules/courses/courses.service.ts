@@ -11,10 +11,23 @@ const courseSelect = {
   _count: { select: { enrollments: true, reviews: true, resources: true } },
 };
 
+function extractVideoThumbnail(url?: string | null): string | null {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  const ytMatch = trimmed.match(
+    /(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?.*?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i
+  );
+  if (ytMatch && ytMatch[1]) {
+    return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+  }
+  return null;
+}
+
 export function formatCoursePayload(course: any) {
   if (!course) return course;
   let overview = course.description || '';
   let lessons: any[] = [];
+  let thumbnailUrl: string | null = null;
 
   if (course.description && typeof course.description === 'string' && course.description.trim().startsWith('{')) {
     try {
@@ -26,9 +39,34 @@ export function formatCoursePayload(course: any) {
         if (parsed.overview !== undefined) {
           overview = parsed.overview;
         }
+        if (parsed.thumbnailUrl) {
+          thumbnailUrl = parsed.thumbnailUrl;
+        }
       }
     } catch {
       // Keep plain text overview
+    }
+  }
+
+  // If no explicit thumbnailUrl, extract from the first lesson with a video URL
+  if (!thumbnailUrl && lessons.length > 0) {
+    for (const lesson of lessons) {
+      const thumb = extractVideoThumbnail(lesson.videoUrl);
+      if (thumb) {
+        thumbnailUrl = thumb;
+        break;
+      }
+    }
+  }
+
+  // Also check course resources for video thumbnails
+  if (!thumbnailUrl && course.resources && Array.isArray(course.resources)) {
+    for (const res of course.resources) {
+      const thumb = extractVideoThumbnail(res.fileUrl);
+      if (thumb) {
+        thumbnailUrl = thumb;
+        break;
+      }
     }
   }
 
@@ -36,6 +74,7 @@ export function formatCoursePayload(course: any) {
     ...course,
     description: overview,
     lessons,
+    thumbnailUrl,
   };
 }
 

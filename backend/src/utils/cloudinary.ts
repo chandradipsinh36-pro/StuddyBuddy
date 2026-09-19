@@ -33,6 +33,7 @@ export async function uploadBufferToCloudinary(
         folder,
         public_id: publicId,
         resource_type: 'auto',
+        access_mode: 'public',
       },
       (error, result) => {
         if (error || !result) {
@@ -66,6 +67,7 @@ export async function uploadBase64ToCloudinary(
   const result = await cloudinary.uploader.upload(base64Data, {
     folder,
     resource_type: 'auto',
+    access_mode: 'public',
   });
 
   return {

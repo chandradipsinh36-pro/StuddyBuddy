@@ -7,7 +7,6 @@ import {
   TrendingUp,
   Search,
   RotateCcw,
-  MoreVertical,
   Eye,
   Edit2,
   Globe,
@@ -23,6 +22,8 @@ import { FilterDropdown } from '../../components/common/FilterDropdown';
 import { Pagination } from '../../components/common/Pagination';
 import { TableSkeleton } from '../../components/common/LoadingSkeleton';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Avatar } from '../../components/common/Avatar';
+import { RowActionsMenu } from '../../components/common/RowActionsMenu';
 
 export const AdminBundlesPage: React.FC = () => {
   const [bundles, setBundles] = useState<AdminBundle[]>([]);
@@ -36,9 +37,6 @@ export const AdminBundlesPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'createdAt' | 'title' | 'price'>('createdAt');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-
-  // Action Menu
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
 
   // Modals
   const [viewBundle, setViewBundle] = useState<AdminBundle | null>(null);
@@ -302,7 +300,6 @@ export const AdminBundlesPage: React.FC = () => {
               </thead>
               <tbody>
                 {bundles.map((bundle) => {
-                  const isMenuOpen = activeMenuId === bundle.bundleId;
                   const origNum = Number(bundle.originalPrice || bundle.price);
                   const priceNum = Number(bundle.price);
 
@@ -336,11 +333,7 @@ export const AdminBundlesPage: React.FC = () => {
 
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                          <img
-                            src={bundle.tutor?.profilePic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tutor'}
-                            alt={bundle.tutor?.name || 'Tutor'}
-                            style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover' }}
-                          />
+                          <Avatar name={bundle.tutor?.name || 'Tutor'} size={26} />
                           <div>
                             <div style={{ fontWeight: 600, color: 'var(--color-gray-800)', fontSize: 'var(--font-size-xs)' }}>
                               {bundle.tutor?.name || 'Tutor'}
@@ -380,38 +373,18 @@ export const AdminBundlesPage: React.FC = () => {
                         </span>
                       </td>
 
-                      <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right', position: 'relative' }}>
-                        <button
-                          onClick={() => setActiveMenuId(isMenuOpen ? null : bundle.bundleId)}
-                          className="btn btn-ghost btn-icon-only"
-                          aria-label="Bundle actions"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {isMenuOpen && (
-                          <>
-                            <div onClick={() => setActiveMenuId(null)} style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-dropdown)' }} />
-                            <div
-                              className="admin-card animate-fade-in"
-                              style={{
-                                position: 'absolute',
-                                right: 16,
-                                top: 'calc(100% - 4px)',
-                                width: 190,
-                                padding: 'var(--space-1)',
-                                zIndex: 'calc(var(--z-dropdown) + 1)',
-                                boxShadow: 'var(--shadow-xl)',
-                                textAlign: 'left',
-                              }}
-                            >
+                      <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right' }}>
+                        <RowActionsMenu width={190}>
+                          {(close) => (
+                            <>
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   setViewBundle(bundle);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)' }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Eye size={14} />
@@ -419,11 +392,12 @@ export const AdminBundlesPage: React.FC = () => {
                               </button>
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   handleTogglePublish(bundle);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: bundle.isPublished ? 'var(--color-warning-dark)' : 'var(--color-success-dark)', borderRadius: 'var(--radius-md)' }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: bundle.isPublished ? 'var(--color-warning-dark)' : 'var(--color-success-dark)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = bundle.isPublished ? 'var(--color-warning-light)' : 'var(--color-success-light)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
@@ -432,12 +406,13 @@ export const AdminBundlesPage: React.FC = () => {
                               </button>
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   handleOpenEdit(bundle);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)' }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Edit2 size={14} />
@@ -447,20 +422,21 @@ export const AdminBundlesPage: React.FC = () => {
                               <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   setDeleteBundle(bundle);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-danger)', fontWeight: 600, borderRadius: 'var(--radius-md)' }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-danger)', fontWeight: 600, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Trash2 size={14} />
                                 <span>Delete Bundle</span>
                               </button>
-                            </div>
-                          </>
-                        )}
+                            </>
+                          )}
+                        </RowActionsMenu>
                       </td>
                     </tr>
                   );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ConfirmModal } from '../common/ConfirmModal';
+import { Avatar } from '../common/Avatar';
 import type { User } from '../../types/admin';
 
 interface DeleteUserModalProps {
@@ -69,11 +70,7 @@ export const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
             gap: 'var(--space-3)',
           }}
         >
-          <img
-            src={user.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
-            alt={user.name}
-            style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }}
-          />
+          <Avatar name={user.name} size="md" />
           <div>
             <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-900)' }}>
               {user.name}

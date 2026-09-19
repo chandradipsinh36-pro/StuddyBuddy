@@ -31,10 +31,18 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const from = (location.state as any)?.from?.pathname || null;
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting, isSubmitted, touchedFields } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    mode: 'onChange',
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
   });
+
+  const getFieldError = (fieldName: keyof FormData) => {
+    if (isSubmitted || touchedFields[fieldName]) {
+      return errors[fieldName]?.message;
+    }
+    return undefined;
+  };
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -66,7 +74,7 @@ export function LoginPage() {
             type="email"
             placeholder="you@example.com"
             leftIcon={<Mail size={16} />}
-            error={errors.email?.message}
+            error={getFieldError('email')}
             autoComplete="email"
             {...register('email')}
           />
@@ -85,7 +93,7 @@ export function LoginPage() {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             }
-            error={errors.password?.message}
+            error={getFieldError('password')}
             autoComplete="current-password"
             {...register('password')}
           />

@@ -228,3 +228,43 @@
   background: var(--color-primary-600, #1d4ed8);
   border-color: var(--color-primary-600, #1d4ed8);
 }
+
+/* =====================================================
+   Dark Mode Overrides — AMOLED Black
+   ===================================================== */
+:global([data-theme="dark"]) .card {
+  background-color: #0d0d0d;
+  border-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .bundleBadge {
+  background: rgba(37, 99, 235, 0.2);
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+:global([data-theme="dark"]) .discountBadge {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+:global([data-theme="dark"]) .itemCountBadge {
+  background: #1c1c1c;
+  color: #d4d4d4;
+  border: 1px solid #262626;
+}
+
+:global([data-theme="dark"]) .materialsSection {
+  background: #121212;
+  border-color: #222222;
+}
+
+:global([data-theme="dark"]) .materialItem {
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .cardFooter {
+  border-top-color: #222222;
+}
+

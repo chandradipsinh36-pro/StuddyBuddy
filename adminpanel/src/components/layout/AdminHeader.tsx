@@ -10,10 +10,14 @@ import {
   CheckCircle2,
   AlertCircle,
   Info,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { AdminBreadcrumbs } from './AdminBreadcrumbs';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { useAdminTheme } from '../../contexts/AdminThemeContext';
 import { adminDashboardService } from '../../services/adminDashboardService';
+import { Avatar } from '../common/Avatar';
 import type { AdminNotification } from '../../types/admin';
 import { ROUTES } from '../../constants';
 
@@ -24,6 +28,7 @@ interface AdminHeaderProps {
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenMobileMenu, pageTitle }) => {
   const { adminUser, logout } = useAdminAuth();
+  const { theme, toggleTheme } = useAdminTheme();
   const navigate = useNavigate();
 
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
@@ -87,8 +92,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenMobileMenu, page
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
         <button
           onClick={onOpenMobileMenu}
-          className="btn btn-ghost btn-icon-only"
-          style={{ display: window.innerWidth <= 768 ? 'flex' : 'none' }}
+          className="btn btn-ghost btn-icon-only admin-mobile-only"
           aria-label="Open navigation menu"
         >
           <Menu size={20} />
@@ -113,6 +117,27 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenMobileMenu, page
 
       {/* Right side: Notifications & Profile Dropdown */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="btn btn-ghost btn-icon-only"
+          style={{
+            color: 'var(--color-gray-600)',
+            position: 'relative',
+            borderRadius: 'var(--radius-full)',
+            padding: 'var(--space-2)',
+            transition: 'all var(--transition-fast)',
+          }}
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          aria-label="Toggle theme mode"
+        >
+          {theme === 'dark' ? (
+            <Sun size={20} color="#F59E0B" />
+          ) : (
+            <Moon size={20} />
+          )}
+        </button>
+
         {/* Notification Bell with Dropdown */}
         <div style={{ position: 'relative' }} ref={notifRef}>
           <button
@@ -161,21 +186,22 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenMobileMenu, page
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: 'var(--space-2) var(--space-2) var(--space-3)',
+                  padding: 'var(--space-2) var(--space-3)',
                   borderBottom: '1px solid var(--color-border)',
+                  marginBottom: 'var(--space-2)',
                 }}
               >
-                <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-900)' }}>
+                <span style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-900)' }}>
                   Notifications
-                </div>
+                </span>
                 {unreadCount > 0 && (
-                  <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>
-                    {unreadCount} New
+                  <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>
+                    {unreadCount} new
                   </span>
                 )}
               </div>
 
-              <div style={{ maxHeight: 280, overflowY: 'auto', marginTop: 'var(--space-2)' }}>
+              <div style={{ maxHeight: 320, overflowY: 'auto' }}>
                 {notifications.length === 0 ? (
                   <div style={{ padding: 'var(--space-4)', textAlign: 'center', color: 'var(--color-gray-400)', fontSize: 'var(--font-size-xs)' }}>
                     No notifications
@@ -246,17 +272,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenMobileMenu, page
             }}
             aria-label="Admin account menu"
           >
-            <img
-              src={adminUser?.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminChief'}
-              alt={adminUser?.name || 'Admin'}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '2px solid var(--color-primary-200)',
-              }}
-            />
+            <Avatar name={adminUser?.name || 'Admin'} size={34} />
             <div style={{ textAlign: 'left', display: window.innerWidth <= 640 ? 'none' : 'block' }}>
               <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-gray-900)', lineHeight: 1.2 }}>
                 {adminUser?.name || 'Admin Chief'}

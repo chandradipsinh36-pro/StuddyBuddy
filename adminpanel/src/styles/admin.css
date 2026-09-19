@@ -310,3 +310,44 @@ input, select, textarea {
 .animate-pulse {
   animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* =====================================================
+   Responsive Layout Utilities
+   ===================================================== */
+.admin-mobile-only {
+  display: none !important;
+}
+
+.admin-desktop-only {
+  display: block;
+}
+
+.admin-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.admin-sidebar {
+  transform: translateX(0);
+}
+
+@media (max-width: 768px) {
+  .admin-mobile-only {
+    display: flex !important;
+  }
+  .admin-desktop-only {
+    display: none !important;
+  }
+  .admin-main-content {
+    margin-left: 0 !important;
+    padding: var(--space-4) !important;
+  }
+  .admin-sidebar {
+    transform: translateX(-100%);
+  }
+  .admin-sidebar.admin-sidebar-mobile-open {
+    transform: translateX(0);
+  }
+}
+

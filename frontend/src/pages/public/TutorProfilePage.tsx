@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ShieldCheck, Star, Users, BookOpen, Play, ArrowLeft, Package, BookOpenCheck, Send } from 'lucide-react';
+import { ShieldCheck, Star, Users, BookOpen, Play, ArrowLeft, Package, BookOpenCheck, Send, Lock, CheckCircle } from 'lucide-react';
 import { tutorService } from '../../services/tutorService';
 import { resourceService } from '../../services/resourceService';
 import { reviewService } from '../../services/reviewService';
+import { enrollmentService } from '../../services/enrollmentService';
+import { isCourseCompleted, getCourseProgress } from '../../utils/courseProgress';
 import { ResourceCard } from '../../components/shared/ResourceCard';
 import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -29,6 +31,7 @@ export function TutorProfilePage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [tutorCourses, setTutorCourses] = useState<any[]>([]);
   const [tutorBundles, setTutorBundles] = useState<any[]>([]);
+  const [myEnrollments, setMyEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [videoOpen, setVideoOpen] = useState(false);
@@ -51,18 +54,20 @@ export function TutorProfilePage() {
     const load = async () => {
       if (!id) return;
       try {
-        const [t, r, rv, courses, bundles] = await Promise.all([
+        const [t, r, rv, courses, bundles, enrollments] = await Promise.all([
           tutorService.getTutor(+id),
           resourceService.getTutorResources(+id),
           reviewService.getTutorReviews(+id),
           tutorService.getTutorCourses(+id),
           tutorService.getTutorBundles(+id),
+          isAuthenticated && isStudent ? enrollmentService.getMyEnrollments().catch(() => []) : Promise.resolve([]),
         ]);
         setTutor(t);
         setResources(r);
         setReviews(rv);
         setTutorCourses(courses);
         setTutorBundles(bundles);
+        setMyEnrollments(enrollments || []);
       } catch {
         setError('Could not load tutor profile.');
       } finally {
@@ -70,12 +75,37 @@ export function TutorProfilePage() {
       }
     };
     load();
-  }, [id]);
+  }, [id, isAuthenticated, isStudent]);
+
+  // Filter student enrollments belonging to this tutor
+  const tutorEnrollments = myEnrollments.filter((e: any) => {
+    const course = e.course || {};
+    const cTutorId = Number(course.tutorId || course.tutor?.id);
+    const cId = Number(e.courseId || course.courseId || course.id);
+    return cTutorId === Number(id) || tutorCourses.some((tc: any) => Number(tc.courseId || tc.id) === cId);
+  });
+
+  // Check if student has completed 100% of at least one course taught by this tutor
+  const completedTutorCourses = tutorEnrollments.filter((e: any) => {
+    const course = e.course || {};
+    const cId = Number(e.courseId || course.courseId || course.id);
+    const totalLessons = course.lessons?.length || (course.resources?.length ?? 0) || e.totalLessons || 0;
+    const isComp = totalLessons > 0 ? isCourseCompleted(user?.id, cId, totalLessons) : false;
+    const progressNum = Number(e.progress ?? e.progressPercent ?? 0);
+    return isComp || progressNum === 100;
+  });
+
+  const isEligibleToRate = completedTutorCourses.length > 0;
+  const bestTutorEnrollment = tutorEnrollments[0];
 
   const handleSubmitRating = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!isAuthenticated || !isStudent) {
       toast.error('Please log in as a student to rate this tutor.');
+      return;
+    }
+    if (!isEligibleToRate && !myReview) {
+      toast.error('🔒 You must complete 100% of a course taught by this tutor before submitting a review.');
       return;
     }
     setSubmittingRating(true);
@@ -284,60 +314,141 @@ export function TutorProfilePage() {
         <div className={styles.reviewList}>
           {/* Rating CTA / Review Status for Students */}
           {isStudent && (
-            <div
-              style={{
-                marginBottom: 24,
-                backgroundColor: '#FEF3C7',
-                border: '1.5px solid #FCD34D',
-                borderRadius: 14,
-                padding: '18px 22px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 12,
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 800, color: '#92400E', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Star size={18} fill="#F59E0B" color="#F59E0B" />
-                  <span>{myReview ? 'You Rated This Tutor' : 'Share Your Feedback'}</span>
-                </div>
-                <div style={{ fontSize: '0.85rem', color: '#B45309', marginTop: 2 }}>
-                  {myReview
-                    ? `Your current rating: ${myReview.rating} of 5 stars • Click button to update`
-                    : `Have you learned with ${tutor.name}? Rate your experience to help fellow students.`}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (myReview) {
-                    setRatingValue(myReview.rating || 5);
-                    setRatingComment(myReview.comment || '');
-                  }
-                  setShowRatingModal(true);
-                }}
+            isEligibleToRate || myReview ? (
+              <div
                 style={{
-                  backgroundColor: '#D97706',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: 10,
-                  padding: '9px 18px',
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
+                  marginBottom: 24,
+                  backgroundColor: '#ECFDF5',
+                  border: '1.5px solid #A7F3D0',
+                  borderRadius: 14,
+                  padding: '18px 22px',
+                  display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
-                  boxShadow: '0 2px 6px rgba(217, 119, 6, 0.3)',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
                 }}
               >
-                <Star size={15} fill="#ffffff" />
-                <span>{myReview ? 'Edit Your Rating' : '⭐ Rate This Tutor'}</span>
-              </button>
-            </div>
+                <div>
+                  <div style={{ fontWeight: 800, color: '#065F46', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <CheckCircle size={18} color="#059669" />
+                    <span>{myReview ? 'You Rated This Tutor' : 'Verified Graduate Learner — Share Feedback'}</span>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: 2 }}>
+                    {myReview
+                      ? `Your current rating: ${myReview.rating} of 5 stars • Click button to update`
+                      : `You completed 100% of "${completedTutorCourses[0]?.course?.title || 'a course'}" by ${tutor.name}. Share your review!`}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (myReview) {
+                      setRatingValue(myReview.rating || 5);
+                      setRatingComment(myReview.comment || '');
+                    }
+                    setShowRatingModal(true);
+                  }}
+                  style={{
+                    backgroundColor: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '9px 18px',
+                    fontWeight: 700,
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+                  }}
+                >
+                  <Star size={15} fill="#ffffff" />
+                  <span>{myReview ? 'Edit Your Rating' : '⭐ Rate This Tutor'}</span>
+                </button>
+              </div>
+            ) : bestTutorEnrollment ? (() => {
+              const cTitle = bestTutorEnrollment.course?.title || 'Enrolled Course';
+              const cId = Number(bestTutorEnrollment.courseId || bestTutorEnrollment.course?.courseId || bestTutorEnrollment.course?.id);
+              const tLessons = bestTutorEnrollment.course?.lessons?.length || 0;
+              const pData = getCourseProgress(user?.id, cId);
+              const pPercent = tLessons > 0 ? Math.round((pData.completedCount / tLessons) * 100) : Number(bestTutorEnrollment.progress ?? 0);
+
+              return (
+                <div
+                  style={{
+                    marginBottom: 24,
+                    backgroundColor: '#FFFBEB',
+                    border: '1.5px solid #FDE68A',
+                    borderRadius: 14,
+                    padding: '18px 22px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flex: 1, minWidth: 260 }}>
+                    <Lock size={20} color="#D97706" style={{ marginTop: 2, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontWeight: 800, color: '#92400E', fontSize: '0.98rem' }}>
+                        Tutor Rating & Review Locked
+                      </div>
+                      <div style={{ fontSize: '0.84rem', color: '#B45309', marginTop: 3, lineHeight: 1.45 }}>
+                        To ensure genuine and trustworthy feedback, tutor reviews can only be submitted after completing 100% of a course taught by this tutor.
+                      </div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#D97706', marginTop: 6 }}>
+                        Your progress in "{cTitle}": {pPercent}% ({pData.completedCount}/{tLessons} lessons). Finish this course to unlock tutor review!
+                      </div>
+                    </div>
+                  </div>
+
+                  <Link to={ROUTES.COURSE_DETAIL(cId)}>
+                    <Button size="sm" variant="secondary" style={{ whiteSpace: 'nowrap' }}>
+                      Continue Course
+                    </Button>
+                  </Link>
+                </div>
+              );
+            })() : (
+              <div
+                style={{
+                  marginBottom: 24,
+                  backgroundColor: '#FFFBEB',
+                  border: '1.5px solid #FDE68A',
+                  borderRadius: 14,
+                  padding: '18px 22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flex: 1, minWidth: 260 }}>
+                  <Lock size={20} color="#D97706" style={{ flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontWeight: 800, color: '#92400E', fontSize: '0.98rem' }}>
+                      Tutor Rating & Review Locked
+                    </div>
+                    <div style={{ fontSize: '0.84rem', color: '#B45309', marginTop: 3 }}>
+                      Only verified students who have completed 100% of a course taught by {tutor.name} can submit ratings and reviews.
+                    </div>
+                  </div>
+                </div>
+
+                {tutorCourses.length > 0 && (
+                  <Link to={ROUTES.COURSE_DETAIL(Number(tutorCourses[0].courseId || tutorCourses[0].id))}>
+                    <Button size="sm" variant="secondary" style={{ whiteSpace: 'nowrap' }}>
+                      Explore Courses
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            )
           )}
 
           {reviews.length === 0
@@ -455,6 +566,10 @@ export function TutorProfilePage() {
                   toast.error('Only students can rate tutors.');
                   return;
                 }
+                if (!isEligibleToRate && !myReview) {
+                  toast.error('🔒 Tutor ratings require 100% completion of a course taught by this tutor.');
+                  return;
+                }
                 if (myReview) {
                   setRatingValue(myReview.rating || 5);
                   setRatingComment(myReview.comment || '');
@@ -465,9 +580,9 @@ export function TutorProfilePage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                backgroundColor: '#FEF3C7',
-                border: '1.5px solid #FCD34D',
-                color: '#92400E',
+                backgroundColor: isEligibleToRate || myReview ? '#FEF3C7' : '#F3F4F6',
+                border: `1.5px solid ${isEligibleToRate || myReview ? '#FCD34D' : '#D1D5DB'}`,
+                color: isEligibleToRate || myReview ? '#92400E' : '#6B7280',
                 borderRadius: 10,
                 padding: '9px 18px',
                 fontSize: '0.9rem',
@@ -475,11 +590,24 @@ export function TutorProfilePage() {
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FDE68A')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FEF3C7')}
+              onMouseEnter={(e) => {
+                if (isEligibleToRate || myReview) e.currentTarget.style.backgroundColor = '#FDE68A';
+              }}
+              onMouseLeave={(e) => {
+                if (isEligibleToRate || myReview) e.currentTarget.style.backgroundColor = '#FEF3C7';
+              }}
             >
-              <Star size={16} fill="#F59E0B" color="#F59E0B" />
-              <span>{myReview ? 'Update Your Rating' : 'Rate This Tutor'}</span>
+              {isEligibleToRate || myReview ? (
+                <>
+                  <Star size={16} fill="#F59E0B" color="#F59E0B" />
+                  <span>{myReview ? 'Update Your Rating' : 'Rate This Tutor'}</span>
+                </>
+              ) : (
+                <>
+                  <Lock size={15} color="#6B7280" />
+                  <span>Rating Locked</span>
+                </>
+              )}
             </button>
 
             {trialVideoUrl && (

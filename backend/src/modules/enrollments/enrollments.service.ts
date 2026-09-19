@@ -41,6 +41,10 @@ export const enrollmentsService = {
           select: {
             courseId: true, title: true, description: true, price: true,
             tutor: { select: { id: true, name: true, profilePic: true } },
+            resources: {
+              where: { status: 'published' },
+              select: { resourceId: true, filename: true, fileType: true, fileUrl: true },
+            },
           },
         },
       },

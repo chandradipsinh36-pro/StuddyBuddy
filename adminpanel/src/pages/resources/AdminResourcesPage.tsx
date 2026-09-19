@@ -7,7 +7,6 @@ import {
   Lock,
   Unlock,
   RotateCcw,
-  MoreVertical,
   Eye,
   Edit2,
   Trash2,
@@ -26,6 +25,8 @@ import { StatusBadge } from '../../components/common/StatusBadge';
 import { Pagination } from '../../components/common/Pagination';
 import { TableSkeleton } from '../../components/common/LoadingSkeleton';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Avatar } from '../../components/common/Avatar';
+import { RowActionsMenu } from '../../components/common/RowActionsMenu';
 
 export const AdminResourcesPage: React.FC = () => {
   const [resources, setResources] = useState<AdminResource[]>([]);
@@ -41,9 +42,6 @@ export const AdminResourcesPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'createdAt' | 'filename' | 'price'>('createdAt');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-
-  // Action Menu
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
 
   // Modals
   const [viewResource, setViewResource] = useState<AdminResource | null>(null);
@@ -370,7 +368,6 @@ export const AdminResourcesPage: React.FC = () => {
               </thead>
               <tbody>
                 {resources.map((res) => {
-                  const isMenuOpen = activeMenuId === res.resourceId;
                   const priceNum = Number(res.price);
 
                   return (
@@ -409,11 +406,7 @@ export const AdminResourcesPage: React.FC = () => {
 
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                          <img
-                            src={res.uploader?.profilePic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Uploader'}
-                            alt={res.uploader?.name || 'Tutor'}
-                            style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover' }}
-                          />
+                          <Avatar name={res.uploader?.name || 'Tutor'} size={26} />
                           <div>
                             <div style={{ fontWeight: 600, color: 'var(--color-gray-800)', fontSize: 'var(--font-size-xs)' }}>
                               {res.uploader?.name || 'Tutor'}
@@ -459,38 +452,18 @@ export const AdminResourcesPage: React.FC = () => {
                         {new Date(res.createdAt).toLocaleDateString()}
                       </td>
 
-                      <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right', position: 'relative' }}>
-                        <button
-                          onClick={() => setActiveMenuId(isMenuOpen ? null : res.resourceId)}
-                          className="btn btn-ghost btn-icon-only"
-                          aria-label="Resource actions"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {isMenuOpen && (
-                          <>
-                            <div onClick={() => setActiveMenuId(null)} style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-dropdown)' }} />
-                            <div
-                              className="admin-card animate-fade-in"
-                              style={{
-                                position: 'absolute',
-                                right: 16,
-                                top: 'calc(100% - 4px)',
-                                width: 195,
-                                padding: 'var(--space-1)',
-                                zIndex: 'calc(var(--z-dropdown) + 1)',
-                                boxShadow: 'var(--shadow-xl)',
-                                textAlign: 'left',
-                              }}
-                            >
+                      <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right' }}>
+                        <RowActionsMenu width={195}>
+                          {(close) => (
+                            <>
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   setViewResource(res);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)' }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Eye size={14} />
@@ -499,11 +472,12 @@ export const AdminResourcesPage: React.FC = () => {
 
                               {res.status !== 'published' && (
                                 <button
+                                  type="button"
                                   onClick={() => {
-                                    setActiveMenuId(null);
+                                    close();
                                     handleUpdateStatus(res.resourceId, 'published');
                                   }}
-                                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-success-dark)', borderRadius: 'var(--radius-md)' }}
+                                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-success-dark)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
                                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-success-light)'; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                                 >
@@ -514,11 +488,12 @@ export const AdminResourcesPage: React.FC = () => {
 
                               {res.status !== 'rejected' && (
                                 <button
+                                  type="button"
                                   onClick={() => {
-                                    setActiveMenuId(null);
+                                    close();
                                     handleUpdateStatus(res.resourceId, 'rejected');
                                   }}
-                                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-danger)', borderRadius: 'var(--radius-md)' }}
+                                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-danger)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
                                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                                 >
@@ -528,12 +503,13 @@ export const AdminResourcesPage: React.FC = () => {
                               )}
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   handleToggleLock(res);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)' }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 {res.isLocked ? <Unlock size={14} /> : <Lock size={14} />}
@@ -541,12 +517,13 @@ export const AdminResourcesPage: React.FC = () => {
                               </button>
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   handleOpenEdit(res);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)' }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-700)', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Edit2 size={14} />
@@ -556,20 +533,21 @@ export const AdminResourcesPage: React.FC = () => {
                               <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
 
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   setDeleteResource(res);
                                 }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-danger)', fontWeight: 600, borderRadius: 'var(--radius-md)' }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0.45rem var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-danger)', fontWeight: 600, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background-color var(--transition-fast)' }}
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Trash2 size={14} />
                                 <span>Delete Resource</span>
                               </button>
-                            </div>
-                          </>
-                        )}
+                            </>
+                          )}
+                        </RowActionsMenu>
                       </td>
                     </tr>
                   );

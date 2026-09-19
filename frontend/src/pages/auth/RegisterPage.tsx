@@ -142,18 +142,32 @@ export function RegisterPage() {
     });
   };
 
-  const { register, handleSubmit, setValue, trigger, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    clearErrors,
+    formState: { errors, isSubmitting, isSubmitted, touchedFields }
+  } = useForm<FormData>({
     resolver: zodResolver(registerSchema),
-    mode: 'onChange',
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
     defaultValues: { role: 'student', trialVideoLink: '', highestQualification: '', experienceYears: '' },
   });
+
+  const getFieldError = (fieldName: keyof FormData) => {
+    if (isSubmitted || touchedFields[fieldName]) {
+      return errors[fieldName]?.message;
+    }
+    return undefined;
+  };
 
   const handleRoleChange = (newRole: 'student' | 'tutor') => {
     setRole(newRole);
     setValue('role', newRole);
     setFileError(null);
     setSubjectError(null);
-    trigger();
+    clearErrors();
   };
 
   const ALLOWED_CERT_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'webp'];
@@ -318,7 +332,7 @@ export function RegisterPage() {
             type="text"
             placeholder={role === 'tutor' ? 'Dr. Sarah Chen' : 'Alex Johnson'}
             leftIcon={<User size={16} />}
-            error={errors.name?.message}
+            error={getFieldError('name')}
             autoComplete="name"
             {...register('name')}
           />
@@ -328,7 +342,7 @@ export function RegisterPage() {
             type="email"
             placeholder="you@example.com"
             leftIcon={<Mail size={16} />}
-            error={errors.email?.message}
+            error={getFieldError('email')}
             autoComplete="email"
             {...register('email')}
           />
@@ -347,7 +361,7 @@ export function RegisterPage() {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             }
-            error={errors.password?.message}
+            error={getFieldError('password')}
             autoComplete="new-password"
             {...register('password')}
           />
@@ -367,7 +381,7 @@ export function RegisterPage() {
                 {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             }
-            error={errors.confirmPassword?.message}
+            error={getFieldError('confirmPassword')}
             autoComplete="new-password"
             {...register('confirmPassword')}
           />
@@ -440,7 +454,7 @@ export function RegisterPage() {
                 placeholder="https://www.youtube.com/watch?v=... or Loom / Google Drive link"
                 leftIcon={<Video size={16} />}
                 helper="Provide a 3-5 minute teaching demonstration or intro video link"
-                error={errors.trialVideoLink?.message}
+                error={getFieldError('trialVideoLink')}
                 {...register('trialVideoLink')}
               />
 
@@ -450,7 +464,7 @@ export function RegisterPage() {
                 type="text"
                 placeholder="e.g. M.Sc in Applied Mathematics, PhD, B.Tech"
                 leftIcon={<Award size={16} />}
-                error={errors.highestQualification?.message}
+                error={getFieldError('highestQualification')}
                 {...register('highestQualification')}
               />
 
@@ -460,7 +474,7 @@ export function RegisterPage() {
                 type="number"
                 placeholder="e.g. 5"
                 leftIcon={<Briefcase size={16} />}
-                error={errors.experienceYears?.message}
+                error={getFieldError('experienceYears')}
                 {...register('experienceYears')}
               />
 

@@ -65,6 +65,24 @@ export const reviewsService = {
     const tutor = await prisma.user.findFirst({ where: { id: tutorId, role: 'tutor' } });
     if (!tutor) throw new NotFoundError('Tutor');
 
+    // Verify student has enrolled in at least one course taught by this tutor
+    const tutorCourses = await prisma.course.findMany({
+      where: { tutorId },
+      select: { courseId: true },
+    });
+    const courseIds = tutorCourses.map((c) => c.courseId);
+
+    const enrollment = await prisma.enrollment.findFirst({
+      where: {
+        studentId,
+        courseId: { in: courseIds },
+        status: 'active',
+      },
+    });
+    if (!enrollment) {
+      throw new BadRequestError('You must be enrolled in and have completed a course by this tutor to submit a review');
+    }
+
     const existing = await prisma.tutorReview.findUnique({
       where: { studentId_tutorId: { studentId, tutorId } },
     });

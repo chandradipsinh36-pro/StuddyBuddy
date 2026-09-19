@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  MoreVertical,
   Eye,
   Edit2,
   UserMinus,
@@ -22,6 +21,8 @@ import { StatusBadge } from '../../components/common/StatusBadge';
 import { Pagination } from '../../components/common/Pagination';
 import { TableSkeleton } from '../../components/common/LoadingSkeleton';
 import { EmptyState } from '../../components/common/EmptyState';
+import { Avatar } from '../../components/common/Avatar';
+import { RowActionsMenu } from '../../components/common/RowActionsMenu';
 import { SuspendUserModal } from '../../components/modals/SuspendUserModal';
 import { BanUserModal } from '../../components/modals/BanUserModal';
 import { ReactivateUserModal } from '../../components/modals/ReactivateUserModal';
@@ -50,9 +51,6 @@ export const UsersListPage: React.FC = () => {
 
   // Row selection for bulk actions
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-  // Action Menu Dropdown State
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
 
   // Modals
   const [modalUser, setModalUser] = useState<User | null>(null);
@@ -432,7 +430,6 @@ export const UsersListPage: React.FC = () => {
               <tbody>
                 {users.map((user) => {
                   const isSelected = selectedIds.includes(user.id);
-                  const isMenuOpen = activeMenuId === user.id;
 
                   return (
                     <tr
@@ -463,17 +460,7 @@ export const UsersListPage: React.FC = () => {
                       {/* User (Avatar, Name, Email) */}
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                          <img
-                            src={user.profile_pic || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
-                            alt={user.name}
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: '50%',
-                              objectFit: 'cover',
-                              border: '1px solid var(--color-border)',
-                            }}
-                          />
+                          <Avatar name={user.name} size="sm" />
                           <div>
                             <div
                               onClick={() => navigate(ROUTES.USER_DETAIL(user.id))}
@@ -523,39 +510,14 @@ export const UsersListPage: React.FC = () => {
                       </td>
 
                       {/* Actions Dropdown */}
-                      <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right', position: 'relative' }}>
-                        <button
-                          onClick={() => setActiveMenuId(isMenuOpen ? null : user.id)}
-                          className="btn btn-ghost btn-icon-only"
-                          aria-label="User actions menu"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {isMenuOpen && (
-                          <>
-                            {/* Backdrop to close */}
-                            <div
-                              onClick={() => setActiveMenuId(null)}
-                              style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-dropdown)' }}
-                            />
-
-                            <div
-                              className="admin-card animate-fade-in"
-                              style={{
-                                position: 'absolute',
-                                right: 16,
-                                top: 'calc(100% - 4px)',
-                                width: 190,
-                                padding: 'var(--space-1)',
-                                zIndex: 'calc(var(--z-dropdown) + 1)',
-                                boxShadow: 'var(--shadow-xl)',
-                                textAlign: 'left',
-                              }}
-                            >
+                      <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right' }}>
+                        <RowActionsMenu width={190}>
+                          {(close) => (
+                            <>
                               <button
+                                type="button"
                                 onClick={() => {
-                                  setActiveMenuId(null);
+                                  close();
                                   navigate(ROUTES.USER_DETAIL(user.id));
                                 }}
                                 style={{
@@ -567,8 +529,13 @@ export const UsersListPage: React.FC = () => {
                                   fontSize: 'var(--font-size-xs)',
                                   color: 'var(--color-gray-700)',
                                   borderRadius: 'var(--radius-md)',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  transition: 'background-color var(--transition-fast)',
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 <Eye size={14} />
@@ -577,8 +544,9 @@ export const UsersListPage: React.FC = () => {
 
                               {user.role === 'tutor' && (
                                 <button
+                                  type="button"
                                   onClick={() => {
-                                    setActiveMenuId(null);
+                                    close();
                                     navigate(ROUTES.TUTOR_PROFILE(user.id));
                                   }}
                                   style={{
@@ -590,8 +558,13 @@ export const UsersListPage: React.FC = () => {
                                     fontSize: 'var(--font-size-xs)',
                                     color: 'var(--color-gray-700)',
                                     borderRadius: 'var(--radius-md)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    textAlign: 'left',
+                                    transition: 'background-color var(--transition-fast)',
                                   }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                                 >
                                   <Shield size={14} />
@@ -599,15 +572,14 @@ export const UsersListPage: React.FC = () => {
                                 </button>
                               )}
 
-                              {user.role !== 'admin' && (
-                                <>
-                                  <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
+                              <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
 
-                                  {/* Suspend Action (Active -> Suspend) */}
-                                  {user.status === 'active' && (
+                              {/* Suspend Action (Active -> Suspend) */}
+                              {user.status === 'active' && (
                                     <button
+                                      type="button"
                                       onClick={() => {
-                                        setActiveMenuId(null);
+                                        close();
                                         setModalUser(user);
                                         setIsSuspendOpen(true);
                                       }}
@@ -620,6 +592,11 @@ export const UsersListPage: React.FC = () => {
                                         fontSize: 'var(--font-size-xs)',
                                         color: 'var(--color-suspended-dark)',
                                         borderRadius: 'var(--radius-md)',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        transition: 'background-color var(--transition-fast)',
                                       }}
                                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-suspended-light)'; }}
                                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -632,8 +609,9 @@ export const UsersListPage: React.FC = () => {
                                   {/* Reactivate Action (Suspended/Banned -> Reactivate) */}
                                   {(user.status === 'suspended' || user.status === 'banned') && (
                                     <button
+                                      type="button"
                                       onClick={() => {
-                                        setActiveMenuId(null);
+                                        close();
                                         setModalUser(user);
                                         setIsReactivateOpen(true);
                                       }}
@@ -646,6 +624,11 @@ export const UsersListPage: React.FC = () => {
                                         fontSize: 'var(--font-size-xs)',
                                         color: 'var(--color-success-dark)',
                                         borderRadius: 'var(--radius-md)',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        transition: 'background-color var(--transition-fast)',
                                       }}
                                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-success-light)'; }}
                                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -658,8 +641,9 @@ export const UsersListPage: React.FC = () => {
                                   {/* Ban Action (Active/Suspended -> Ban) */}
                                   {user.status !== 'banned' && (
                                     <button
+                                      type="button"
                                       onClick={() => {
-                                        setActiveMenuId(null);
+                                        close();
                                         setModalUser(user);
                                         setIsBanOpen(true);
                                       }}
@@ -672,6 +656,11 @@ export const UsersListPage: React.FC = () => {
                                         fontSize: 'var(--font-size-xs)',
                                         color: 'var(--color-danger)',
                                         borderRadius: 'var(--radius-md)',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        transition: 'background-color var(--transition-fast)',
                                       }}
                                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'; }}
                                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -684,8 +673,9 @@ export const UsersListPage: React.FC = () => {
                                   <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
 
                                   <button
+                                    type="button"
                                     onClick={() => {
-                                      setActiveMenuId(null);
+                                      close();
                                       toast.success(`Password reset link sent to ${user.email}`);
                                     }}
                                     style={{
@@ -697,8 +687,13 @@ export const UsersListPage: React.FC = () => {
                                       fontSize: 'var(--font-size-xs)',
                                       color: 'var(--color-gray-600)',
                                       borderRadius: 'var(--radius-md)',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      transition: 'background-color var(--transition-fast)',
                                     }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'; }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-gray-100)'; }}
                                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                                   >
                                     <KeyRound size={14} />
@@ -708,8 +703,9 @@ export const UsersListPage: React.FC = () => {
                                   <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
 
                                   <button
+                                    type="button"
                                     onClick={() => {
-                                      setActiveMenuId(null);
+                                      close();
                                       setModalUser(user);
                                       setIsDeleteOpen(true);
                                     }}
@@ -723,6 +719,11 @@ export const UsersListPage: React.FC = () => {
                                       color: 'var(--color-danger)',
                                       fontWeight: 600,
                                       borderRadius: 'var(--radius-md)',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      transition: 'background-color var(--transition-fast)',
                                     }}
                                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'; }}
                                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -730,11 +731,9 @@ export const UsersListPage: React.FC = () => {
                                     <Trash2 size={14} />
                                     <span>Delete User</span>
                                   </button>
-                                </>
-                              )}
-                            </div>
-                          </>
-                        )}
+                            </>
+                          )}
+                        </RowActionsMenu>
                       </td>
                     </tr>
                   );

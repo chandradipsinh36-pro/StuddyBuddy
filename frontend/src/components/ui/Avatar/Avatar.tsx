@@ -7,26 +7,39 @@ interface AvatarProps {
   className?: string;
 }
 
-function getInitials(name: string): string {
-  return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+function getFirstChar(name: string): string {
+  const clean = name.trim();
+  return clean ? clean.charAt(0).toUpperCase() : 'U';
 }
 
 function getColorFromName(name: string): string {
-  const colors = ['#2563EB', '#7C3AED', '#059669', '#D97706', '#DC2626', '#0891B2'];
-  const idx = name.charCodeAt(0) % colors.length;
-  return colors[idx];
+  const colors = [
+    '#2563EB', // Blue
+    '#7C3AED', // Purple
+    '#059669', // Emerald
+    '#D97706', // Amber
+    '#DC2626', // Red
+    '#0891B2', // Cyan
+    '#4F46E5', // Indigo
+    '#DB2777', // Pink
+  ];
+  const charCode = (name.trim().charCodeAt(0) || 65);
+  return colors[charCode % colors.length];
 }
 
-export function Avatar({ src, name = 'User', size = 'md', className = '' }: AvatarProps) {
+export function Avatar({ name = 'User', size = 'md', className = '' }: AvatarProps) {
+  const firstChar = getFirstChar(name);
+  const bgColor = getColorFromName(name);
+
   return (
     <div
       className={`${styles.avatar} ${styles[size]} ${className}`}
-      style={!src ? { background: getColorFromName(name) } : undefined}
+      style={{ backgroundColor: bgColor }}
+      aria-label={name}
+      title={name}
     >
-      {src
-        ? <img src={src} alt={name} className={styles.img} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-        : <span className={styles.initials}>{getInitials(name)}</span>
-      }
+      <span className={styles.initials}>{firstChar}</span>
     </div>
   );
 }
+

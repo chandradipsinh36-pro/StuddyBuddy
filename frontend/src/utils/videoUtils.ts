@@ -81,3 +81,49 @@ export function parseVideoUrl(url?: string | null): VideoInfo {
     providerLabel: 'Direct Video',
   };
 }
+
+/**
+ * Extracts a high-quality video thumbnail image (YouTube, etc.)
+ */
+export function getVideoThumbnail(url?: string | null): string | null {
+  if (!url || typeof url !== 'string' || !url.trim()) return null;
+  const info = parseVideoUrl(url);
+  if (info.type === 'youtube' && info.videoId) {
+    return `https://img.youtube.com/vi/${info.videoId}/hqdefault.jpg`;
+  }
+  return null;
+}
+
+/**
+ * Helper to determine the best thumbnail for a course based on its explicit
+ * thumbnailUrl, lessons, or resources.
+ */
+export function getCourseThumbnail(course?: {
+  thumbnailUrl?: string | null;
+  lessons?: { videoUrl?: string }[];
+  resources?: { fileType?: string; fileUrl?: string | null }[];
+}): string | null {
+  if (!course) return null;
+  if (course.thumbnailUrl) return course.thumbnailUrl;
+
+  // Search lessons for first video URL with a thumbnail
+  if (course.lessons && Array.isArray(course.lessons)) {
+    for (const lesson of course.lessons) {
+      const thumb = getVideoThumbnail(lesson.videoUrl);
+      if (thumb) return thumb;
+    }
+  }
+
+  // Search resources for video
+  if (course.resources && Array.isArray(course.resources)) {
+    for (const res of course.resources) {
+      if (res.fileType === 'youtube' && res.fileUrl) {
+        const thumb = getVideoThumbnail(res.fileUrl);
+        if (thumb) return thumb;
+      }
+    }
+  }
+
+  return null;
+}
+

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, BookOpen, Trash2, ExternalLink, ToggleLeft, ToggleRight, Edit3, Paperclip } from 'lucide-react';
+import { getCourseThumbnail } from '../../utils/videoUtils';
 import { courseService } from '../../services/courseService';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -102,9 +103,20 @@ export function TutorCoursesPage() {
                 <tr key={c.courseId}>
                   <td>
                     <div className={styles.courseCell}>
-                      <div className={styles.courseIcon}>
-                        <BookOpen size={20} />
-                      </div>
+                      {(() => {
+                        const thumb = getCourseThumbnail(c);
+                        return thumb ? (
+                          <img
+                            src={thumb}
+                            alt={c.title}
+                            style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
+                          />
+                        ) : (
+                          <div className={styles.courseIcon}>
+                            <BookOpen size={20} />
+                          </div>
+                        );
+                      })()}
                       <div>
                         <Link to={`/courses/${c.courseId}`} className={styles.courseTitle}>
                           {c.title}
