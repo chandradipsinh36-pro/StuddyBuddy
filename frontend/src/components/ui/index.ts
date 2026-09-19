@@ -13,3 +13,6 @@ export { Textarea } from './Textarea/Textarea';
 export { Select } from './Select/Select';
 export { SearchBar } from './SearchBar/SearchBar';
 export { ProgressBar } from './ProgressBar/ProgressBar';
+export { DegreeSelect } from './DegreeSelect/DegreeSelect';
+export { SubjectMultiSelect } from './SubjectMultiSelect/SubjectMultiSelect';
+export { SubjectAutocomplete } from './SubjectAutocomplete/SubjectAutocomplete';

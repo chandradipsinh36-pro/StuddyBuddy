@@ -5,7 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Input } from '../../components/ui/Input/Input';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { Button } from '../../components/ui/Button/Button';
-import { SUBJECTS } from '../../constants';
+import { SubjectMultiSelect } from '../../components/ui';
+import { ALL_SUBJECTS } from '../../constants';
 import toast from 'react-hot-toast';
 import styles from './TutorProfileEditPage.module.css';
 
@@ -52,7 +53,7 @@ export function TutorProfileEditPage() {
           if (Array.isArray(t.skills) && t.skills.length > 0) {
             const skillNames = t.skills.map((s: any) => s.skillName || s.name || String(s));
             setSkills(skillNames.join(', '));
-            setSubjects(skillNames.filter((s: string) => (SUBJECTS as readonly string[]).includes(s)));
+            setSubjects(skillNames.filter((s: string) => (ALL_SUBJECTS as readonly string[]).includes(s) || s.trim().length > 0));
           } else if (t.subjects && t.subjects.length > 0) {
             setSubjects(t.subjects);
           }
@@ -67,18 +68,6 @@ export function TutorProfileEditPage() {
     };
     fetchProfile();
   }, [user]);
-
-  const toggleSubject = (s: string) => {
-    setSubjects(prev => {
-      const next = prev.includes(s)
-        ? prev.length > 1 ? prev.filter(x => x !== s) : prev
-        : [...prev, s];
-      if (next.length > 0 && formErrors.subjects) {
-        setFormErrors(fe => ({ ...fe, subjects: undefined }));
-      }
-      return next;
-    });
-  };
 
   const validateForm = (): boolean => {
     const errors: typeof formErrors = {};
@@ -330,31 +319,18 @@ export function TutorProfileEditPage() {
             leftIcon={<Award size={16} />}
           />
 
-          <div>
-            <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-700)' }}>
-              Primary Subjects Taught * (Click to select)
-            </label>
-            {formErrors.subjects && (
-              <p style={{ color: '#dc2626', fontSize: '13px', fontWeight: 600, marginTop: 4, marginBottom: 6 }}>
-                {formErrors.subjects}
-              </p>
-            )}
-            <div className={styles.subjectsGrid}>
-              {SUBJECTS.map(subj => {
-                const active = subjects.includes(subj);
-                return (
-                  <button
-                    key={subj}
-                    type="button"
-                    className={`${styles.subjectChip} ${active ? styles.subjectChipActive : ''}`}
-                    onClick={() => toggleSubject(subj)}
-                  >
-                    {active ? '✓ ' : '+ '} {subj}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <SubjectMultiSelect
+            label="Primary Subjects Taught * (Select from global list or add custom)"
+            selectedSubjects={subjects}
+            onChange={(newSubjects) => {
+              setSubjects(newSubjects);
+              if (newSubjects.length > 0 && formErrors.subjects) {
+                setFormErrors(fe => ({ ...fe, subjects: undefined }));
+              }
+            }}
+            error={formErrors.subjects}
+            helper="Select from all recognized disciplines or search 65,000+ topics via OpenAlex"
+          />
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
             <Button type="submit" variant="primary" isLoading={saving} leftIcon={<Save size={16} />}>

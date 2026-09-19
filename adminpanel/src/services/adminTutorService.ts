@@ -60,10 +60,19 @@ function mapApplication(app: Record<string, unknown>): TutorApplication {
       } else if (docUrl.startsWith('data:application/pdf')) {
         fileName = 'Qualification_Certificate.pdf';
       }
+
+      // If Cloudinary PDF, convert to high-res PNG for preview to avoid 401 ACL failure
+      const isCloudinaryPdf = fullDocUrl.includes('res.cloudinary.com') && fullDocUrl.toLowerCase().includes('.pdf');
+      const previewUrl = isCloudinaryPdf ? fullDocUrl.replace(/\.pdf(\?.*)?$/i, '.png') : fullDocUrl;
+      const docId = (d.docId as number) ?? (d.doc_id as number) ?? 0;
+      const downloadUrl = `http://localhost:5000/api/admin/tutor-applications/documents/${docId}/download`;
+
       return {
-        doc_id:        (d.docId as number) ?? (d.doc_id as number) ?? 0,
+        doc_id:        docId,
         application_id: (app.applicationId as number) ?? (d.applicationId as number) ?? 0,
         document_url:  fullDocUrl,
+        preview_url:   previewUrl,
+        download_url:  downloadUrl,
         document_type: docType,
         file_name:     fileName,
         file_size:     docUrl.startsWith('data:') ? `${Math.round(docUrl.length * 0.75 / 1024)} KB` : 'Attached Document',
@@ -297,6 +306,14 @@ export const adminTutorService = {
       { admin_note: rejectionReason }
     );
     return mapApplication(data.data as Record<string, unknown>);
+  },
+
+  /**
+   * GET /api/admin/tutor-applications/documents/:docId/download-url
+   */
+  async getDocumentDownloadUrl(docId: number): Promise<string> {
+    const { data } = await apiClient.get(`/admin/tutor-applications/documents/${docId}/download-url`);
+    return (data.data as { downloadUrl: string }).downloadUrl;
   },
 
   /**

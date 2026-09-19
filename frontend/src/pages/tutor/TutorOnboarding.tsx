@@ -5,7 +5,8 @@ import { tutorService } from '../../services/tutorService';
 import { Input } from '../../components/ui/Input/Input';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { Button } from '../../components/ui/Button/Button';
-import { SUBJECTS, ROUTES } from '../../constants';
+import { SubjectMultiSelect, DegreeSelect } from '../../components/ui';
+import { ROUTES } from '../../constants';
 import toast from 'react-hot-toast';
 import styles from './TutorOnboarding.module.css';
 
@@ -34,22 +35,13 @@ export function TutorOnboarding() {
 
   const [formData, setFormData] = useState({
     name: '', bio: '', phone: '', subjects: [] as string[],
-    experience: '', skills: '', documents: [] as File[],
+    highestQualification: '', experience: '', skills: '', documents: [] as File[],
     trialVideoFile: null as File | null, trialVideoUrl: '',
     trialVideoDuration: 0,
   });
 
   const updateFormData = (updates: Partial<typeof formData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
-  };
-
-  const toggleSubject = (subject: string) => {
-    setFormData(prev => ({
-      ...prev,
-      subjects: prev.subjects.includes(subject)
-        ? prev.subjects.filter(s => s !== subject)
-        : [...prev.subjects, subject],
-    }));
   };
 
   const handleSubmit = async () => {
@@ -127,28 +119,33 @@ export function TutorOnboarding() {
         {step === 1 && (
           <div className={styles.stepContent}>
             <h2>Teaching Information</h2>
-            <div>
-              <p className={styles.fieldLabel}>Subjects you teach (select all that apply)</p>
-              <div className={styles.subjectGrid}>
-                {SUBJECTS.map(s => (
-                  <button
-                    key={s} type="button"
-                    className={`${styles.subjectTag} ${formData.subjects.includes(s) ? styles.subjectTagActive : ''}`}
-                    onClick={() => toggleSubject(s)}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+            <SubjectMultiSelect
+              label="Subjects you teach (select all that apply)"
+              selectedSubjects={formData.subjects}
+              onChange={(newSubjects) => updateFormData({ subjects: newSubjects })}
+              helper="Choose from standard disciplines or search 65,000+ topics via OpenAlex"
+            />
+            <div style={{ marginTop: 'var(--space-4)' }}>
+              <Input label="Years of Teaching Experience" value={formData.experience} onChange={e => updateFormData({ experience: e.target.value })} type="number" placeholder="e.g. 5" />
             </div>
-            <Input label="Years of Teaching Experience" value={formData.experience} onChange={e => updateFormData({ experience: e.target.value })} type="number" placeholder="e.g. 5" />
-            <Input label="Key Skills (comma-separated)" value={formData.skills} onChange={e => updateFormData({ skills: e.target.value })} placeholder="Calculus, Linear Algebra, Statistics, Python..." />
+            <div style={{ marginTop: 'var(--space-3)' }}>
+              <Input label="Key Skills (comma-separated)" value={formData.skills} onChange={e => updateFormData({ skills: e.target.value })} placeholder="Calculus, Linear Algebra, Statistics, Python..." />
+            </div>
           </div>
         )}
 
         {step === 2 && (
           <div className={styles.stepContent}>
             <h2>Qualifications</h2>
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <DegreeSelect
+                label="Highest Degree / Educational Qualification"
+                value={formData.highestQualification}
+                onChange={(val) => updateFormData({ highestQualification: val })}
+                placeholder="Select or search degree (e.g. MCA, MBA, Ph.D., B.Tech)..."
+                helper="Choose your degree or enter any specialized qualification"
+              />
+            </div>
             <p className={styles.fieldNote}>Please upload documents to verify your qualifications (degree certificates, ID proof, etc.)</p>
             <div className={styles.uploadArea}>
               <input

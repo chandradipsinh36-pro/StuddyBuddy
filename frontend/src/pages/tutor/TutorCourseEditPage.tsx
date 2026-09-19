@@ -7,8 +7,8 @@ import { categoryService } from '../../services/categoryService';
 import { resourceService } from '../../services/resourceService';
 import { Input } from '../../components/ui/Input/Input';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
-import { Select } from '../../components/ui/Select/Select';
 import { Button } from '../../components/ui/Button/Button';
+import { SubjectAutocomplete } from '../../components/ui/SubjectAutocomplete/SubjectAutocomplete';
 import { DynamicCourseLessonsEditor } from '../../components/shared/DynamicCourseLessonsEditor';
 import { ROUTES } from '../../constants';
 import type { Category, Resource, Course, CourseLesson } from '../../types';
@@ -23,7 +23,7 @@ export function TutorCourseEditPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [categoryId, setCategoryId] = useState<string>('');
+  const [subjectCategory, setSubjectCategory] = useState('Mathematics');
   const [price, setPrice] = useState('0');
   const [categories, setCategories] = useState<Category[]>([]);
   const [availableResources, setAvailableResources] = useState<Resource[]>([]);
@@ -35,7 +35,7 @@ export function TutorCourseEditPage() {
     title?: string;
     description?: string;
     price?: string;
-    categoryId?: string;
+    subjectCategory?: string;
     lessons?: string;
   }>({});
 
@@ -65,11 +65,8 @@ export function TutorCourseEditPage() {
         setPrice(String(courseData.price ?? 0));
         setCategories(cats || []);
 
-        if (courseData.categoryId) {
-          setCategoryId(String(courseData.categoryId));
-        } else if (cats && cats.length > 0) {
-          setCategoryId(String(cats[0].categoryId));
-        }
+        const currentCatName = (courseData.category as any)?.name || cats.find(c => c.categoryId === courseData.categoryId)?.name || '';
+        setSubjectCategory(currentCatName || 'Mathematics');
 
         // Load lessons if present
         const existingLessons: CourseLesson[] = (courseData.lessons || []) as CourseLesson[];
@@ -126,8 +123,11 @@ export function TutorCourseEditPage() {
       errors.title = 'Course title cannot exceed 150 characters';
     }
 
-    if (!categoryId) {
-      errors.categoryId = 'Please select an academic category';
+    const trimmedCategory = subjectCategory.trim();
+    if (!trimmedCategory) {
+      errors.subjectCategory = 'Please enter or select a Subject/Category';
+    } else if (trimmedCategory.length < 2) {
+      errors.subjectCategory = 'Subject/Category must be at least 2 characters long';
     }
 
     const trimmedDesc = description.trim();
@@ -188,10 +188,16 @@ export function TutorCourseEditPage() {
 
     setSubmitting(true);
     try {
+      const trimmedCategory = subjectCategory.trim();
+      const matchedCat = categories.find(
+        (c) => c.name.toLowerCase() === trimmedCategory.toLowerCase()
+      );
+
       await courseService.updateCourse(Number(id), {
         title: title.trim(),
         description: description.trim() || undefined,
-        categoryId: categoryId ? Number(categoryId) : undefined,
+        categoryId: matchedCat ? matchedCat.categoryId : undefined,
+        categoryName: trimmedCategory,
         price: parseFloat(price) || 0,
         resourceIds: generalResourceIds,
         lessons,
@@ -278,21 +284,17 @@ export function TutorCourseEditPage() {
             required
           />
 
-          {categories.length > 0 && (
-            <Select
-              label="Academic Discipline / Category *"
-              value={categoryId}
-              onChange={(e) => {
-                setCategoryId(e.target.value);
-                if (formErrors.categoryId) setFormErrors(fe => ({ ...fe, categoryId: undefined }));
-              }}
-              options={categories.map((c) => ({
-                value: String(c.categoryId),
-                label: c.name,
-              }))}
-              error={formErrors.categoryId}
-            />
-          )}
+          <SubjectAutocomplete
+            label="Subject/Category *"
+            placeholder="Search or type subject (e.g. Mathematics, React JS, Python, Physics)..."
+            value={subjectCategory}
+            onChange={(val) => {
+              setSubjectCategory(val);
+              if (formErrors.subjectCategory) setFormErrors(fe => ({ ...fe, subjectCategory: undefined }));
+            }}
+            error={formErrors.subjectCategory}
+            required
+          />
 
           <Textarea
             label="Course Description & Syllabus Overview"

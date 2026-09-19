@@ -9,6 +9,7 @@ export const courseLessonSchema = z.object({
 
 export const createCourseSchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
+  categoryName: z.string().optional(),
   title: z.string().min(3).max(200),
   description: z.string().max(20000).optional(),
   price: z.coerce.number().min(0).default(0),

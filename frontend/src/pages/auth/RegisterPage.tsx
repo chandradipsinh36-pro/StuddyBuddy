@@ -5,13 +5,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   BookOpen, User, Mail, Lock, Eye, EyeOff, Upload, Video,
-  FileCheck, X, ShieldAlert, Award, Briefcase, Plus, AlertCircle
+  FileCheck, X, ShieldAlert, Award, Briefcase
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
 import { Badge } from '../../components/ui/Badge/Badge';
+import { DegreeSelect, SubjectMultiSelect } from '../../components/ui';
 import { ROUTES } from '../../constants';
 import toast from 'react-hot-toast';
 import styles from './Auth.module.css';
@@ -118,29 +119,10 @@ export function RegisterPage() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [subjectError, setSubjectError] = useState<string | null>(null);
 
-  // Teaching subjects list with Add button
-  const [subjectInput, setSubjectInput] = useState('');
-  const [subjectsList, setSubjectsList] = useState<string[]>(['Mathematics']);
-
-  const handleAddSubject = () => {
-    const trimmed = subjectInput.trim();
-    if (!trimmed) return;
-    if (!subjectsList.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
-      setSubjectsList(prev => [...prev, trimmed]);
-      setSubjectError(null);
-    }
-    setSubjectInput('');
-  };
-
-  const handleRemoveSubject = (indexToRemove: number) => {
-    setSubjectsList(prev => {
-      const updated = prev.filter((_, idx) => idx !== indexToRemove);
-      if (updated.length === 0 && role === 'tutor') {
-        setSubjectError('Please add at least one teaching subject');
-      }
-      return updated;
-    });
-  };
+  // Teaching subjects list
+  const [subjectsList, setSubjectsList] = useState<string[]>(['Mathematics (General)']);
+  // Academic degrees list (multi-select)
+  const [degreesList, setDegreesList] = useState<string[]>(['B.Tech']);
 
   const {
     register,
@@ -231,11 +213,7 @@ export function RegisterPage() {
       }
 
       if (role === 'tutor') {
-        let finalSubjects = [...subjectsList];
-        const pendingInput = subjectInput.trim();
-        if (pendingInput && !finalSubjects.some(s => s.toLowerCase() === pendingInput.toLowerCase())) {
-          finalSubjects.push(pendingInput);
-        }
+        const finalSubjects = [...subjectsList];
         if (finalSubjects.length === 0) {
           setSubjectError('Please add at least one teaching subject.');
           toast.error('Please add at least one teaching subject.');
@@ -283,7 +261,7 @@ export function RegisterPage() {
 
   return (
     <div className={styles.page}>
-      <div className={`${styles.card} ${role === 'tutor' ? styles.cardWide : ''}`}>
+      <div className={`${styles.card} ${role === 'tutor' ? styles.cardTutor : ''}`}>
         <div className={styles.header}>
           <Link to={ROUTES.HOME} className={styles.logo}>
             <BookOpen size={28} className={styles.logoIcon} />
@@ -327,254 +305,277 @@ export function RegisterPage() {
             </div>
           </div>
 
-          <Input
-            label="Full Name"
-            type="text"
-            placeholder={role === 'tutor' ? 'Dr. Sarah Chen' : 'Alex Johnson'}
-            leftIcon={<User size={16} />}
-            error={getFieldError('name')}
-            autoComplete="name"
-            {...register('name')}
-          />
-
-          <Input
-            label="Email address"
-            type="email"
-            placeholder="you@example.com"
-            leftIcon={<Mail size={16} />}
-            error={getFieldError('email')}
-            autoComplete="email"
-            {...register('email')}
-          />
-
-          <Input
-            label="Password"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="At least 8 characters"
-            leftIcon={<Lock size={16} />}
-            rightIcon={
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            }
-            error={getFieldError('password')}
-            autoComplete="new-password"
-            {...register('password')}
-          />
-
-          <Input
-            label="Confirm Password"
-            type={showConfirmPassword ? 'text' : 'password'}
-            placeholder="Repeat your password"
-            leftIcon={<Lock size={16} />}
-            rightIcon={
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
-                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-              >
-                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            }
-            error={getFieldError('confirmPassword')}
-            autoComplete="new-password"
-            {...register('confirmPassword')}
-          />
-
-          {/* Tutor-Specific Application Fields */}
-          {role === 'tutor' && (
-            <div className={styles.tutorSection}>
-              <div className={styles.tutorBadgeHeader}>
-                <span className={styles.tutorBadgeTitle}>
-                  <Award size={18} /> Tutor Verification Details
-                </span>
-                <Badge variant="primary">Required for approval</Badge>
-              </div>
-
-              {/* Upload Qualification Certificate */}
-              <div>
-                <label className={styles.uploadLabel}>
-                  <FileCheck size={16} color="var(--color-primary-600)" />
-                  Upload Qualification Certificate *
-                </label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,image/*,.png,.jpg,.jpeg,.webp"
-                  style={{ display: 'none' }}
-                  onChange={handleFileChange}
-                />
-                {!certificateFile ? (
-                  <div
-                    className={styles.uploadBox}
-                    onClick={() => fileInputRef.current?.click()}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <Upload size={24} color="var(--color-primary-500)" />
-                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-primary-600)' }}>
-                      Click to choose certificate or degree document
-                    </span>
-                    <span className={styles.uploadSub}>
-                      Supports PDF and Images (PNG, JPG) up to 15MB
-                    </span>
-                  </div>
-                ) : (
-                  <div className={styles.filePreviewChip}>
-                    <div className={styles.fileInfo}>
-                      <FileCheck size={16} color="var(--color-success)" />
-                      <span><strong>{certificateFile.name}</strong> ({(certificateFile.size / 1024 / 1024).toFixed(2)} MB)</span>
-                    </div>
-                    <button
-                      type="button"
-                      className={styles.fileRemoveBtn}
-                      onClick={() => setCertificateFile(null)}
-                      title="Remove file"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                )}
-                {fileError && (
-                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-error)', marginTop: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <ShieldAlert size={12} /> {fileError}
-                  </p>
-                )}
-              </div>
-
-              {/* Upload Trial Video Link */}
-              <Input
-                label="Upload Trial Video Link *"
-                type="url"
-                placeholder="https://www.youtube.com/watch?v=... or Loom / Google Drive link"
-                leftIcon={<Video size={16} />}
-                helper="Provide a 3-5 minute teaching demonstration or intro video link"
-                error={getFieldError('trialVideoLink')}
-                {...register('trialVideoLink')}
-              />
-
-              {/* Highest Qualification */}
-              <Input
-                label="Highest Degree / Qualification *"
-                type="text"
-                placeholder="e.g. M.Sc in Applied Mathematics, PhD, B.Tech"
-                leftIcon={<Award size={16} />}
-                error={getFieldError('highestQualification')}
-                {...register('highestQualification')}
-              />
-
-              {/* Experience */}
-              <Input
-                label="Teaching Experience (Years) *"
-                type="number"
-                placeholder="e.g. 5"
-                leftIcon={<Briefcase size={16} />}
-                error={getFieldError('experienceYears')}
-                {...register('experienceYears')}
-              />
-
-              {/* Teaching Subjects */}
-              <div>
-                <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-700)', marginBottom: 'var(--space-1)', display: 'block' }}>
-                  Teaching Subjects *
-                </label>
-                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                  <div style={{ flex: 1 }}>
-                    <Input
-                      type="text"
-                      placeholder="Type a subject and click Add (e.g. Mathematics)"
-                      leftIcon={<BookOpen size={16} />}
-                      value={subjectInput}
-                      onChange={(e) => setSubjectInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddSubject();
-                        }
-                      }}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleAddSubject}
-                    style={{ height: 40, alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4 }}
-                  >
-                    <Plus size={16} />
-                    <span>Add</span>
-                  </Button>
+          {role === 'tutor' ? (
+            /* Horizontal 2-Column Tutor Registration Layout */
+            <div className={styles.tutorFormGrid}>
+              {/* Left Column: Personal & Account Details */}
+              <div className={styles.formColumn}>
+                <div className={styles.columnHeader}>
+                  <span className={styles.columnTitle}>
+                    <User size={18} color="var(--color-primary-600)" />
+                    Personal & Account Details
+                  </span>
+                  <span className={styles.columnSubtitle}>Step 1</span>
                 </div>
 
-                {/* Added subject tags */}
-                {subjectsList.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
-                    {subjectsList.map((subj, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 10px',
-                          backgroundColor: 'var(--color-primary-50)',
-                          border: '1px solid var(--color-primary-200)',
-                          borderRadius: 'var(--radius-full)',
-                          fontSize: 'var(--font-size-xs)',
-                          fontWeight: 600,
-                          color: 'var(--color-primary-700)',
-                        }}
-                      >
-                        {subj}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSubject(idx)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            padding: 0,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: 'var(--color-primary-500)',
-                          }}
-                          title={`Remove ${subj}`}
-                        >
-                          <X size={12} />
-                        </button>
+                <Input
+                  label="Full Name *"
+                  type="text"
+                  placeholder="Dr. Sarah Chen"
+                  leftIcon={<User size={16} />}
+                  error={getFieldError('name')}
+                  autoComplete="name"
+                  {...register('name')}
+                />
+
+                <Input
+                  label="Email address *"
+                  type="email"
+                  placeholder="you@example.com"
+                  leftIcon={<Mail size={16} />}
+                  error={getFieldError('email')}
+                  autoComplete="email"
+                  {...register('email')}
+                />
+
+                <Input
+                  label="Password *"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="At least 8 characters"
+                  leftIcon={<Lock size={16} />}
+                  rightIcon={
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  }
+                  error={getFieldError('password')}
+                  autoComplete="new-password"
+                  {...register('password')}
+                />
+
+                <Input
+                  label="Confirm Password *"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Repeat your password"
+                  leftIcon={<Lock size={16} />}
+                  rightIcon={
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
+                      aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  }
+                  error={getFieldError('confirmPassword')}
+                  autoComplete="new-password"
+                  {...register('confirmPassword')}
+                />
+
+                <Input
+                  label="Teaching Experience (Years) *"
+                  type="number"
+                  placeholder="e.g. 5"
+                  leftIcon={<Briefcase size={16} />}
+                  error={getFieldError('experienceYears')}
+                  {...register('experienceYears')}
+                />
+              </div>
+
+              {/* Right Column: Academic & Verification Credentials */}
+              <div className={styles.formColumn}>
+                <div className={styles.columnHeader}>
+                  <span className={styles.columnTitle}>
+                    <Award size={18} color="var(--color-primary-600)" />
+                    Academic & Verification Details
+                  </span>
+                  <Badge variant="primary">Required for approval</Badge>
+                </div>
+
+                {/* Degrees & Qualifications with DegreeSelect (Multi-select) */}
+                <DegreeSelect
+                  label="Degrees & Qualifications *"
+                  selectedDegrees={degreesList}
+                  onChange={(newDegrees: string[]) => {
+                    setDegreesList(newDegrees);
+                    setValue('highestQualification', newDegrees.join(', '), { shouldValidate: true, shouldTouch: true });
+                    if (newDegrees.length > 0) {
+                      clearErrors('highestQualification');
+                    }
+                  }}
+                  error={getFieldError('highestQualification')}
+                  helper="Select one or more degrees/qualifications or type any custom specialization"
+                />
+
+                {/* Teaching Subjects with SubjectMultiSelect */}
+                <SubjectMultiSelect
+                  label="Teaching Subjects *"
+                  selectedSubjects={subjectsList}
+                  onChange={(newSubjects) => {
+                    setSubjectsList(newSubjects);
+                    if (newSubjects.length > 0) {
+                      setSubjectError(null);
+                    }
+                  }}
+                  error={subjectError || undefined}
+                  helper="Select from all major global subjects or search 65,000+ academic disciplines"
+                />
+
+                {/* Upload Qualification Certificate */}
+                <div>
+                  <label className={styles.uploadLabel}>
+                    <FileCheck size={16} color="var(--color-primary-600)" />
+                    Upload Qualification Certificate *
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,image/*,.png,.jpg,.jpeg,.webp"
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
+                  {!certificateFile ? (
+                    <div
+                      className={styles.uploadBox}
+                      onClick={() => fileInputRef.current?.click()}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <Upload size={24} color="var(--color-primary-500)" />
+                      <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-primary-600)' }}>
+                        Click to choose certificate or degree document
                       </span>
-                    ))}
-                  </div>
-                )}
-                {subjectError && (
-                  <p style={{ fontSize: 'var(--font-size-xs)', color: '#dc2626', fontWeight: 600, marginTop: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <AlertCircle size={13} /> {subjectError}
-                  </p>
-                )}
-                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', marginTop: 'var(--space-1)' }}>
-                  Type a subject and click Add to include multiple teaching disciplines.
+                      <span className={styles.uploadSub}>
+                        Supports PDF and Images (PNG, JPG) up to 15MB
+                      </span>
+                    </div>
+                  ) : (
+                    <div className={styles.filePreviewChip}>
+                      <div className={styles.fileInfo}>
+                        <FileCheck size={16} color="var(--color-success)" />
+                        <span><strong>{certificateFile.name}</strong> ({(certificateFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.fileRemoveBtn}
+                        onClick={() => setCertificateFile(null)}
+                        title="Remove file"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+                  {fileError && (
+                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-error)', marginTop: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <ShieldAlert size={12} /> {fileError}
+                    </p>
+                  )}
+                </div>
+
+                {/* Upload Trial Video Link */}
+                <Input
+                  label="Upload Trial Video Link *"
+                  type="url"
+                  placeholder="https://www.youtube.com/watch?v=... or Loom / Google Drive link"
+                  leftIcon={<Video size={16} />}
+                  helper="Provide a 3-5 minute teaching demonstration or intro video link"
+                  error={getFieldError('trialVideoLink')}
+                  {...register('trialVideoLink')}
+                />
+              </div>
+
+              {/* Bottom Full-Width Action Row */}
+              <div className={styles.formFullWidth}>
+                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', lineHeight: 'var(--line-height-relaxed)', margin: 0 }}>
+                  By registering, you agree to the StudyBuddy{' '}
+                  <a href="#" style={{ color: 'var(--color-primary-500)' }}>Terms of Service</a>,{' '}
+                  <a href="#" style={{ color: 'var(--color-primary-500)' }}>Tutor Code of Conduct</a>, and{' '}
+                  <a href="#" style={{ color: 'var(--color-primary-500)' }}>Privacy Policy</a>.
                 </p>
+
+                <Button type="submit" isLoading={isSubmitting} fullWidth size="lg">
+                  Register and Send Request to Become Tutor
+                </Button>
               </div>
             </div>
+          ) : (
+            /* Student Registration (Single Column Compact) */
+            <>
+              <Input
+                label="Full Name"
+                type="text"
+                placeholder="Alex Johnson"
+                leftIcon={<User size={16} />}
+                error={getFieldError('name')}
+                autoComplete="name"
+                {...register('name')}
+              />
+
+              <Input
+                label="Email address"
+                type="email"
+                placeholder="you@example.com"
+                leftIcon={<Mail size={16} />}
+                error={getFieldError('email')}
+                autoComplete="email"
+                {...register('email')}
+              />
+
+              <Input
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="At least 8 characters"
+                leftIcon={<Lock size={16} />}
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                }
+                error={getFieldError('password')}
+                autoComplete="new-password"
+                {...register('password')}
+              />
+
+              <Input
+                label="Confirm Password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Repeat your password"
+                leftIcon={<Lock size={16} />}
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
+                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                }
+                error={getFieldError('confirmPassword')}
+                autoComplete="new-password"
+                {...register('confirmPassword')}
+              />
+
+              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', lineHeight: 'var(--line-height-relaxed)' }}>
+                By registering, you agree to the StudyBuddy{' '}
+                <a href="#" style={{ color: 'var(--color-primary-500)' }}>Terms of Service</a> and{' '}
+                <a href="#" style={{ color: 'var(--color-primary-500)' }}>Privacy Policy</a>.
+              </p>
+
+              <Button type="submit" isLoading={isSubmitting} fullWidth size="lg">
+                Create Student Account
+              </Button>
+            </>
           )}
-
-          <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', lineHeight: 'var(--line-height-relaxed)' }}>
-            By registering, you agree to the StudyBuddy{' '}
-            <a href="#" style={{ color: 'var(--color-primary-500)' }}>Terms of Service</a>,{' '}
-            <a href="#" style={{ color: 'var(--color-primary-500)' }}>Tutor Code of Conduct</a>, and{' '}
-            <a href="#" style={{ color: 'var(--color-primary-500)' }}>Privacy Policy</a>.
-          </p>
-
-          {/* Explicit button name according to user requirement */}
-          <Button type="submit" isLoading={isSubmitting} fullWidth size="lg">
-            {role === 'tutor'
-              ? 'Register and Send Request to Become Tutor'
-              : 'Create Student Account'}
-          </Button>
         </form>
 
         <p className={styles.footer}>

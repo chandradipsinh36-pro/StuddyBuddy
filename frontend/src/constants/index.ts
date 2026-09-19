@@ -7,12 +7,10 @@ export const MOCK_MODE = import.meta.env.VITE_USE_MOCK === 'true';
 export const APP_NAME = 'StudyBuddy';
 export const APP_TAGLINE = 'Making quality education accessible, safe & trustworthy for everyone.';
 
-export const SUBJECTS = [
-  'Mathematics', 'Physics', 'Chemistry', 'Biology',
-  'Computer Science', 'English', 'History', 'Geography',
-  'Economics', 'Accounting', 'Business Studies', 'Psychology',
-  'Philosophy', 'Art', 'Music', 'Physical Education',
-];
+export * from './academicData';
+import { ALL_SUBJECTS } from './academicData';
+
+export const SUBJECTS = ALL_SUBJECTS;
 
 export const CATEGORIES = [
   'Study Notes', 'Practice Tests', 'Video Lectures', 'Worksheets',

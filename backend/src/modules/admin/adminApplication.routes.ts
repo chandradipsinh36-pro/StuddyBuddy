@@ -11,6 +11,8 @@ const router = Router();
 // All routes here already have authenticate + authorize('admin') applied by the parent router
 
 router.get('/',        validate(ApplicationQuerySchema, 'query'), adminApplicationController.listApplications);
+router.get('/documents/:docId/download',                          adminApplicationController.downloadDocument);
+router.get('/documents/:docId/download-url',                      adminApplicationController.getDocumentDownloadUrl);
 router.get('/:id',                                                adminApplicationController.getApplicationById);
 router.patch('/:id/approve', adminActionLimiter, validate(ApproveTutorSchema), adminApplicationController.approveApplication);
 router.patch('/:id/reject',  adminActionLimiter, validate(RejectTutorSchema),  adminApplicationController.rejectApplication);

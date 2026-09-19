@@ -256,7 +256,18 @@ export const coursesService = {
       throw new BadRequestError('Your tutor application is currently pending admin approval. You can only create courses after your application is approved.');
     }
 
-    const { resourceIds, lessons, ...courseData } = input;
+    const { resourceIds, lessons, categoryName, ...courseData } = input;
+
+    let categoryId = courseData.categoryId;
+    if (categoryName && typeof categoryName === 'string' && categoryName.trim()) {
+      const catName = categoryName.trim();
+      const dbCat = await prisma.category.upsert({
+        where: { name: catName },
+        update: {},
+        create: { name: catName },
+      });
+      categoryId = dbCat.categoryId;
+    }
 
     // Collect all resource IDs across lessons + standalone resourceIds
     const rawLessonResourceIds = (lessons || []).flatMap((l: any) => l.resourceIds || []);
@@ -301,6 +312,7 @@ export const coursesService = {
       data: {
         tutorId,
         ...courseData,
+        ...(categoryId !== undefined && { categoryId }),
         description: finalDescription,
         price: courseData.price ?? 0,
       },
@@ -365,7 +377,18 @@ export const coursesService = {
     if (!course) throw new NotFoundError('Course');
     if (course.tutorId !== tutorId) throw new AuthorizationError();
 
-    const { resourceIds, lessons, ...courseData } = input;
+    const { resourceIds, lessons, categoryName, ...courseData } = input;
+
+    let categoryId = courseData.categoryId;
+    if (categoryName && typeof categoryName === 'string' && categoryName.trim()) {
+      const catName = categoryName.trim();
+      const dbCat = await prisma.category.upsert({
+        where: { name: catName },
+        update: {},
+        create: { name: catName },
+      });
+      categoryId = dbCat.categoryId;
+    }
 
     // Strictly enforce tutor resource isolation for updates as well
     const rawLessonResourceIds = (lessons || []).flatMap((l: any) => l.resourceIds || []);
@@ -419,6 +442,7 @@ export const coursesService = {
       where: { courseId },
       data: {
         ...courseData,
+        ...(categoryId !== undefined && { categoryId }),
         ...(finalDescription !== undefined && { description: finalDescription }),
       },
     });

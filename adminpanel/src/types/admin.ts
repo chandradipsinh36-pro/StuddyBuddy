@@ -41,6 +41,8 @@ export interface TutorDocument {
   doc_id: number;
   application_id: number;
   document_url: string;
+  preview_url?: string;
+  download_url?: string;
   document_type: string;
   file_name: string;
   file_size?: string;

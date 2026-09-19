@@ -13,6 +13,11 @@ import {
   Calendar,
   Clock,
   Shield,
+  Award,
+  BookOpen,
+  Quote,
+  Download,
+  Video,
 } from 'lucide-react';
 import { adminTutorService } from '../../services/adminTutorService';
 import type { TutorApplication, TutorDocument } from '../../types/admin';
@@ -168,49 +173,145 @@ export const TutorApplicationReviewPage: React.FC = () => {
                 {application.user.email}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginTop: 'var(--space-3)', color: 'var(--color-gray-700)', fontSize: 'var(--font-size-xs)', flexWrap: 'wrap' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <GraduationCap size={16} color="var(--color-primary-600)" />
-                  <strong>Institute:</strong> {application.institute_name}
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Briefcase size={16} color="var(--color-primary-600)" />
-                  <strong>Experience:</strong> {application.experience_years} Years
+              {/* Experience Highlight Pill */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginTop: 'var(--space-3)', flexWrap: 'wrap' }}>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 10px',
+                    borderRadius: 'var(--radius-full)',
+                    backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    color: 'var(--color-primary-400, #60a5fa)',
+                    fontSize: 'var(--font-size-xs)',
+                    fontWeight: 600,
+                  }}
+                >
+                  <Briefcase size={14} />
+                  <span>{application.experience_years} Years Teaching Experience</span>
                 </span>
               </div>
 
-              {/* Bio */}
-              <div style={{ marginTop: 'var(--space-4)', fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-700)', lineHeight: 1.5, backgroundColor: 'var(--color-bg-subtle)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
-                <strong>Candidate Statement / Bio:</strong>
-                <p style={{ marginTop: 2 }}>{application.bio}</p>
-              </div>
-
-              {/* Skills Chips */}
+              {/* Academic Qualifications & Degrees Section */}
               <div style={{ marginTop: 'var(--space-4)' }}>
-                <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-gray-500)', marginBottom: 'var(--space-2)' }}>
-                  Stated Teaching Subjects & Skills
+                <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-gray-500)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Award size={14} color="var(--color-primary-400, #60a5fa)" />
+                  <span>Highest Academic Qualifications & Degrees</span>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-                  {application.skills.map((skill) => (
-                    <div
-                      key={skill.skill_id}
-                      style={{
-                        padding: '0.25rem 0.6rem',
-                        backgroundColor: 'var(--color-white)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-md)',
-                        fontSize: 'var(--font-size-xs)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--space-2)',
-                      }}
-                    >
-                      <span style={{ fontWeight: 600, color: 'var(--color-gray-800)' }}>{skill.skill_name}</span>
-                      <span className="badge badge-neutral" style={{ fontSize: '0.62rem', padding: '1px 4px' }}>
-                        {skill.proficiency}
-                      </span>
-                    </div>
-                  ))}
+                  {application.institute_name ? (
+                    application.institute_name
+                      .split(/,\s*(?=[A-Z])/)
+                      .map((q) => q.trim())
+                      .filter(Boolean)
+                      .map((deg, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            padding: '0.45rem 0.85rem',
+                            backgroundColor: 'var(--color-bg-subtle, #111827)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: 'var(--font-size-xs)',
+                            fontWeight: 600,
+                            color: 'var(--color-primary-300, #93c5fd)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                          }}
+                        >
+                          <GraduationCap size={16} color="#60a5fa" style={{ flexShrink: 0 }} />
+                          <span>{deg}</span>
+                        </div>
+                      ))
+                  ) : (
+                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-400)' }}>
+                      No degree specified
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Bio / Candidate Statement */}
+              {application.bio && (
+                <div
+                  style={{
+                    marginTop: 'var(--space-4)',
+                    fontSize: 'var(--font-size-sm)',
+                    color: 'var(--color-gray-300, #d1d5db)',
+                    lineHeight: 1.6,
+                    backgroundColor: 'var(--color-bg-subtle, #111827)',
+                    padding: 'var(--space-4)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: 'var(--font-size-xs)', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-gray-400)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Quote size={13} color="var(--color-primary-400, #60a5fa)" />
+                    <span>Candidate Statement</span>
+                  </div>
+                  <p style={{ margin: 0 }}>
+                    {application.bio.startsWith('Highest Qualification / Degree:')
+                      ? `Candidate holds verified credentials with ${application.experience_years} years of teaching experience.`
+                      : application.bio}
+                  </p>
+                </div>
+              )}
+
+              {/* Stated Teaching Subjects & Skills */}
+              <div style={{ marginTop: 'var(--space-4)' }}>
+                <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-gray-500)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <BookOpen size={14} color="var(--color-primary-400, #60a5fa)" />
+                  <span>Stated Teaching Subjects & Disciplines</span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                  {application.skills.map((skill) => {
+                    const proficiency = (skill.proficiency || 'intermediate').toLowerCase();
+                    const conf =
+                      proficiency === 'expert'
+                        ? { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', border: 'rgba(52, 211, 153, 0.3)' }
+                        : proficiency === 'advanced'
+                        ? { bg: 'rgba(59, 130, 246, 0.15)', text: '#60a5fa', border: 'rgba(96, 165, 250, 0.3)' }
+                        : proficiency === 'intermediate'
+                        ? { bg: 'rgba(245, 158, 11, 0.15)', text: '#fbbf24', border: 'rgba(251, 191, 36, 0.3)' }
+                        : { bg: 'rgba(148, 163, 184, 0.15)', text: '#cbd5e1', border: 'rgba(203, 213, 225, 0.3)' };
+
+                    return (
+                      <div
+                        key={skill.skill_id}
+                        style={{
+                          padding: '0.35rem 0.75rem',
+                          backgroundColor: 'var(--color-surface, #1e293b)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 'var(--radius-md)',
+                          fontSize: 'var(--font-size-xs)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 'var(--space-2)',
+                        }}
+                      >
+                        <span style={{ fontWeight: 600, color: 'var(--color-gray-900, #f8fafc)' }}>{skill.skill_name}</span>
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            padding: '1px 6px',
+                            borderRadius: '9999px',
+                            backgroundColor: conf.bg,
+                            color: conf.text,
+                            border: `1px solid ${conf.border}`,
+                          }}
+                        >
+                          {skill.proficiency}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -220,6 +321,7 @@ export const TutorApplicationReviewPage: React.FC = () => {
           <div className="admin-card" style={{ padding: 'var(--space-6)' }}>
             <div style={{ marginBottom: 'var(--space-4)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <Video size={18} color="var(--color-primary-400, #60a5fa)" />
                 <h3 style={{ fontSize: 'var(--font-size-base)', fontWeight: 800, color: 'var(--color-gray-900)' }}>
                   Mandatory 5-Minute Trial Video Lecture
                 </h3>
@@ -238,13 +340,31 @@ export const TutorApplicationReviewPage: React.FC = () => {
 
           {/* Submitted Documents Section */}
           <div className="admin-card" style={{ padding: 'var(--space-6)' }}>
-            <div style={{ marginBottom: 'var(--space-4)' }}>
-              <h3 style={{ fontSize: 'var(--font-size-base)', fontWeight: 800, color: 'var(--color-gray-900)' }}>
-                Supporting Academic & Identity Documents ({application.documents.length})
-              </h3>
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', marginTop: 2 }}>
-                Inspect degrees, government-issued IDs, and professional teaching credentials submitted by applicant.
-              </p>
+            <div style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <h3 style={{ fontSize: 'var(--font-size-base)', fontWeight: 800, color: 'var(--color-gray-900)' }}>
+                    Supporting Academic & Identity Documents ({application.documents.length})
+                  </h3>
+                  <span
+                    style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                      color: '#34d399',
+                      border: '1px solid rgba(52, 211, 153, 0.3)',
+                    }}
+                  >
+                    Verified Credentials
+                  </span>
+                </div>
+                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', marginTop: 2 }}>
+                  Inspect degrees, qualification certificates, and official credentials submitted by the applicant.
+                </p>
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -256,7 +376,7 @@ export const TutorApplicationReviewPage: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: 'var(--space-4)',
-                    backgroundColor: 'var(--color-bg-subtle)',
+                    backgroundColor: 'var(--color-bg-subtle, #111827)',
                     borderRadius: 'var(--radius-lg)',
                     border: '1px solid var(--color-border)',
                     flexWrap: 'wrap',
@@ -266,29 +386,42 @@ export const TutorApplicationReviewPage: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                     <div
                       style={{
-                        width: 40,
-                        height: 40,
+                        width: 44,
+                        height: 44,
                         borderRadius: 'var(--radius-md)',
-                        backgroundColor: 'var(--color-primary-50)',
+                        backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                        color: 'var(--color-primary-400, #60a5fa)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: 'var(--color-primary-600)',
+                        border: '1px solid rgba(37, 99, 235, 0.3)',
                       }}
                     >
-                      <FileText size={20} />
+                      <FileText size={22} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-900)' }}>
+                      <div style={{ fontWeight: 700, fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-900, #f8fafc)' }}>
                         {doc.file_name}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 2 }}>
-                        <span className="badge badge-neutral" style={{ fontSize: '0.65rem' }}>
-                          {doc.document_type}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 3, flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                            color: '#818cf8',
+                            border: '1px solid rgba(129, 140, 248, 0.3)',
+                          }}
+                        >
+                          {doc.document_type.replace(/_/g, ' ')}
                         </span>
                         {doc.file_size && (
-                          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
-                            {doc.file_size}
+                          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-400)' }}>
+                            • {doc.file_size}
                           </span>
                         )}
                         <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-400)' }}>
@@ -300,23 +433,37 @@ export const TutorApplicationReviewPage: React.FC = () => {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                     <button
+                      type="button"
                       onClick={() => setPreviewDoc(doc)}
-                      className="btn btn-secondary btn-sm"
-                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}
+                      className="btn btn-primary btn-sm"
+                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', padding: '6px 14px' }}
                     >
                       <Eye size={14} />
                       <span>Preview Document</span>
                     </button>
-                    <a
-                      href={doc.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-ghost btn-sm"
-                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          if (doc.doc_id) {
+                            const url = await adminTutorService.getDocumentDownloadUrl(doc.doc_id);
+                            window.open(url, '_blank');
+                          } else if (doc.download_url) {
+                            window.open(doc.download_url, '_blank');
+                          } else {
+                            window.open(doc.preview_url || doc.document_url, '_blank');
+                          }
+                        } catch (e) {
+                          window.open(doc.preview_url || doc.document_url, '_blank');
+                        }
+                      }}
+                      className="btn btn-secondary btn-sm"
+                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', padding: '6px 12px' }}
+                      title="Download document"
                     >
-                      <ExternalLink size={14} />
-                      <span>Open</span>
-                    </a>
+                      <Download size={14} />
+                      <span>Download</span>
+                    </button>
                   </div>
                 </div>
               ))}

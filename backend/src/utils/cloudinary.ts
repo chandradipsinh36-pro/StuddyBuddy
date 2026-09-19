@@ -90,3 +90,29 @@ export async function deleteFromCloudinary(
     console.error(`[Cloudinary] Failed to delete public_id ${publicId}:`, err);
   }
 }
+
+/**
+ * Generates an authorized signed direct download URL for a Cloudinary asset,
+ * bypassing ACL/delivery restrictions for raw and PDF files.
+ */
+export function getCloudinaryDownloadUrl(cloudinaryUrl: string, filename?: string): string | null {
+  try {
+    if (!cloudinaryUrl || !cloudinaryUrl.includes('res.cloudinary.com')) return null;
+
+    // Pattern to match /upload/(optional v12345/)(folder/publicId).(format)
+    const match = cloudinaryUrl.match(/\/upload\/(?:(?:s--[^/]+--\/)?)(?:v\d+\/)?(.+?)\.([a-zA-Z0-9]+)(?:\?.*)?$/);
+    if (!match) return null;
+
+    const publicId = match[1];
+    const format = match[2];
+
+    return cloudinary.utils.private_download_url(publicId, format, {
+      resource_type: 'image',
+      type: 'upload',
+      attachment: filename ? true : true,
+    });
+  } catch (err) {
+    console.error('[Cloudinary] Error generating signed download URL:', err);
+    return null;
+  }
+}

@@ -56,7 +56,7 @@ export const resourcesController = {
       const isLocked = body.accessType === 'premium' || body.isLocked === 'true' || body.isLocked === true;
       const price = isLocked ? Number(body.price || 0) : 0;
 
-      let fileUrl = body.fileUrl;
+      let fileUrl = body.fileUrl || body.videoUrl || body.youtubeUrl;
       let cloudinaryPublicId: string | undefined;
       if (file) {
         if (file.buffer) {

@@ -29,6 +29,7 @@ export const courseService = {
     description?: string;
     price?: number;
     categoryId?: number;
+    categoryName?: string;
     resourceIds?: number[];
     lessons?: CourseLesson[];
   }): Promise<Course> {
@@ -41,6 +42,7 @@ export const courseService = {
     description: string;
     price: number;
     categoryId: number | null;
+    categoryName: string;
     isPublished: boolean;
     resourceIds: number[];
     lessons: CourseLesson[];

@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { adminApplicationService } from './adminApplication.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 import { ApplicationQuery, ApproveTutorInput, RejectTutorInput } from './admin.schema';
+import { prisma } from '../../config/database';
+import { NotFoundError } from '../../utils/AppError';
+import { getCloudinaryDownloadUrl } from '../../utils/cloudinary';
 
 export const adminApplicationController = {
   async listApplications(req: Request, res: Response, next: NextFunction) {
@@ -47,4 +50,54 @@ export const adminApplicationController = {
       next(err);
     }
   },
+
+  async getDocumentDownloadUrl(req: Request, res: Response, next: NextFunction) {
+    try {
+      const docId = parseInt(req.params.docId, 10);
+      const doc = await prisma.tutorApplicationDocument.findUnique({
+        where: { docId },
+      });
+      if (!doc) throw new NotFoundError('Tutor application document');
+
+      let downloadUrl = doc.documentUrl;
+      if (doc.documentUrl.includes('res.cloudinary.com')) {
+        const signedUrl = getCloudinaryDownloadUrl(doc.documentUrl);
+        if (signedUrl) {
+          downloadUrl = signedUrl;
+        }
+      } else if (!doc.documentUrl.startsWith('http') && !doc.documentUrl.startsWith('data:')) {
+        downloadUrl = `http://localhost:5000${doc.documentUrl.startsWith('/') ? '' : '/'}${doc.documentUrl}`;
+      }
+
+      sendSuccess(res, { downloadUrl }, { message: 'Download URL generated successfully' });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async downloadDocument(req: Request, res: Response, next: NextFunction) {
+    try {
+      const docId = parseInt(req.params.docId, 10);
+      const doc = await prisma.tutorApplicationDocument.findUnique({
+        where: { docId },
+      });
+      if (!doc) throw new NotFoundError('Tutor application document');
+
+      if (doc.documentUrl.includes('res.cloudinary.com')) {
+        const signedUrl = getCloudinaryDownloadUrl(doc.documentUrl);
+        if (signedUrl) {
+          return res.redirect(signedUrl);
+        }
+      }
+
+      if (doc.documentUrl.startsWith('http')) {
+        return res.redirect(doc.documentUrl);
+      }
+
+      return res.redirect(`http://localhost:5000${doc.documentUrl.startsWith('/') ? '' : '/'}${doc.documentUrl}`);
+    } catch (err) {
+      next(err);
+    }
+  },
 };
+

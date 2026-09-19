@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Upload, FileText, CheckCircle2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, CheckCircle2, ShieldCheck, ShieldAlert, Video } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { resourceService } from '../../services/resourceService';
 import { Input } from '../../components/ui/Input/Input';
@@ -8,7 +8,8 @@ import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { Select } from '../../components/ui/Select/Select';
 import { Button } from '../../components/ui/Button/Button';
 import { ProgressBar } from '../../components/ui/ProgressBar/ProgressBar';
-import { CATEGORIES, RESOURCE_TYPES, DIFFICULTY_LEVELS, ROUTES } from '../../constants';
+import { SubjectAutocomplete } from '../../components/ui/SubjectAutocomplete/SubjectAutocomplete';
+import { RESOURCE_TYPES, DIFFICULTY_LEVELS, ROUTES } from '../../constants';
 import toast from 'react-hot-toast';
 import styles from './TutorResourceCreatePage.module.css';
 
@@ -29,9 +30,9 @@ export function TutorResourceCreatePage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [subject, setSubject] = useState('Mathematics');
-  const [category, setCategory] = useState(CATEGORIES[0]);
-  const [customCategory, setCustomCategory] = useState('');
+  const [category, setCategory] = useState('');
   const [type, setType] = useState('pdf');
+  const [videoUrl, setVideoUrl] = useState('');
   const [difficulty, setDifficulty] = useState('intermediate');
   const [accessType, setAccessType] = useState('free');
   const [price, setPrice] = useState('199');
@@ -42,7 +43,8 @@ export function TutorResourceCreatePage() {
     title?: string;
     description?: string;
     subject?: string;
-    customCategory?: string;
+    category?: string;
+    videoUrl?: string;
     price?: string;
     file?: string;
   }>({});
@@ -131,8 +133,11 @@ export function TutorResourceCreatePage() {
       errors.subject = 'Subject must be at least 2 characters long';
     }
 
-    if (category === 'Other' && !customCategory.trim()) {
-      errors.customCategory = 'Please enter your custom category name';
+    const trimmedCategory = category.trim();
+    if (!trimmedCategory) {
+      errors.category = 'Content category is required';
+    } else if (trimmedCategory.length < 2) {
+      errors.category = 'Content category must be at least 2 characters long';
     }
 
     if (accessType === 'premium') {
@@ -150,14 +155,26 @@ export function TutorResourceCreatePage() {
       }
     }
 
-    if (!file && type !== 'youtube') {
-      errors.file = 'Please attach the study material file';
-    } else if (file) {
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
-        errors.file = 'Invalid file extension. Allowed: PDF, PPT, Word, Video, MP3, Images';
-      } else if (file.size > 50 * 1024 * 1024) {
-        errors.file = 'File size cannot exceed 50MB';
+    if (type === 'youtube') {
+      const trimmedVideo = videoUrl.trim();
+      if (!trimmedVideo) {
+        errors.videoUrl = 'YouTube video link is required';
+      } else {
+        const ytRegex = /^(https?:\/\/)?(www\.|m\.)?(youtube\.com\/(watch\?.*?v=|embed\/|shorts\/|v\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}/i;
+        if (!ytRegex.test(trimmedVideo)) {
+          errors.videoUrl = 'Please enter a valid YouTube video URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)';
+        }
+      }
+    } else {
+      if (!file) {
+        errors.file = 'Please attach the study material file';
+      } else if (file) {
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
+          errors.file = 'Invalid file extension. Allowed: PDF, PPT, Word, Video, MP3, Images';
+        } else if (file.size > 50 * 1024 * 1024) {
+          errors.file = 'File size cannot exceed 50MB';
+        }
       }
     }
 
@@ -189,17 +206,21 @@ export function TutorResourceCreatePage() {
     }, 200);
 
     try {
-      const finalCategory = category === 'Other' ? (customCategory.trim() || 'Other') : category;
       const fd = new FormData();
       fd.append('title', title.trim());
       fd.append('description', description.trim());
       fd.append('subject', subject.trim());
-      fd.append('category', finalCategory);
+      fd.append('category', category.trim());
       fd.append('type', type);
       fd.append('difficulty', difficulty);
       fd.append('accessType', accessType);
       if (accessType === 'premium') fd.append('price', price);
-      if (file) fd.append('file', file);
+      if (type === 'youtube') {
+        fd.append('fileUrl', videoUrl.trim());
+        fd.append('videoUrl', videoUrl.trim());
+      } else if (file) {
+        fd.append('file', file);
+      }
 
       await resourceService.createResource(fd);
       setUploadProgress(100);
@@ -255,41 +276,29 @@ export function TutorResourceCreatePage() {
           />
 
           <div className={styles.row}>
-            <Input
+            <SubjectAutocomplete
               label="Subject Discipline *"
-              placeholder="e.g. Mathematics, Physics, Organic Chemistry"
+              placeholder="Search or type subject (e.g. Mathematics, Python, Physics)..."
               value={subject}
-              onChange={(e) => {
-                setSubject(e.target.value);
+              onChange={(val) => {
+                setSubject(val);
                 if (formErrors.subject) setFormErrors(fe => ({ ...fe, subject: undefined }));
               }}
               error={formErrors.subject}
               required
             />
-            <Select
-              label="Content Category *"
-              options={[
-                ...CATEGORIES.map(c => ({ value: c, label: c })),
-                { value: 'Other', label: 'Other' },
-              ]}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
-          </div>
-
-          {category === 'Other' && (
             <Input
-              label="Custom Category Name *"
-              placeholder="e.g. Lab Manual, Cheatsheet, Formula Book..."
-              value={customCategory}
+              label="Content Category *"
+              placeholder="e.g. Lecture Notes, Exam Preparation, Formula Sheet, Lab Manual..."
+              value={category}
               onChange={(e) => {
-                setCustomCategory(e.target.value);
-                if (formErrors.customCategory) setFormErrors(fe => ({ ...fe, customCategory: undefined }));
+                setCategory(e.target.value);
+                if (formErrors.category) setFormErrors(fe => ({ ...fe, category: undefined }));
               }}
-              error={formErrors.customCategory}
+              error={formErrors.category}
               required
             />
-          )}
+          </div>
 
           <div className={styles.row}>
             <Select
@@ -336,48 +345,66 @@ export function TutorResourceCreatePage() {
             )}
           </div>
 
-          {/* File Upload Dropzone */}
-          <div>
-            <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-700)', marginBottom: 'var(--space-2)', display: 'block' }}>
-              Resource File Attachment *
-            </label>
-            {formErrors.file && (
-              <p style={{ color: '#dc2626', fontSize: '13px', fontWeight: 600, marginBottom: 6 }}>
-                {formErrors.file}
-              </p>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.mov,.webm,.mkv,.avi,.mp3,.wav,.m4a,.ogg,.aac,.png,.jpg,.jpeg,.webp,.gif"
-              style={{ display: 'none' }}
-              onChange={handleFileSelect}
-            />
-            <div
-              className={`${styles.dropzone} ${file ? styles.fileActive : ''}`}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {file ? (
-                <>
-                  <CheckCircle2 size={32} color="var(--color-success)" />
-                  <span style={{ fontWeight: 'bold' }}>{file.name}</span>
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
-                    {(file.size / 1024 / 1024).toFixed(2)} MB — Click to choose different file
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Upload size={32} color="var(--color-primary-500)" />
-                  <span style={{ fontWeight: 'bold', color: 'var(--color-primary-700)' }}>
-                    Click or drag file to upload
-                  </span>
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
-                    Supports PDF, PPT, Word, Video, MP3, and Images up to 50MB
-                  </span>
-                </>
-              )}
+          {/* Resource Attachment: YouTube Link vs File Upload Dropzone */}
+          {type === 'youtube' ? (
+            <div>
+              <Input
+                label="YouTube Video Link *"
+                placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                value={videoUrl}
+                onChange={(e) => {
+                  setVideoUrl(e.target.value);
+                  if (formErrors.videoUrl) setFormErrors(fe => ({ ...fe, videoUrl: undefined }));
+                }}
+                error={formErrors.videoUrl}
+                helper="Paste the full YouTube video link for students to watch this video lecture"
+                leftIcon={<Video size={16} color="#ef4444" />}
+                required
+              />
             </div>
-          </div>
+          ) : (
+            <div>
+              <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-700)', marginBottom: 'var(--space-2)', display: 'block' }}>
+                Resource File Attachment *
+              </label>
+              {formErrors.file && (
+                <p style={{ color: '#dc2626', fontSize: '13px', fontWeight: 600, marginBottom: 6 }}>
+                  {formErrors.file}
+                </p>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.ppt,.pptx,.doc,.docx,.mp4,.mov,.webm,.mkv,.avi,.mp3,.wav,.m4a,.ogg,.aac,.png,.jpg,.jpeg,.webp,.gif"
+                style={{ display: 'none' }}
+                onChange={handleFileSelect}
+              />
+              <div
+                className={`${styles.dropzone} ${file ? styles.fileActive : ''}`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {file ? (
+                  <>
+                    <CheckCircle2 size={32} color="var(--color-success)" />
+                    <span style={{ fontWeight: 'bold' }}>{file.name}</span>
+                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
+                      {(file.size / 1024 / 1024).toFixed(2)} MB — Click to choose different file
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={32} color="var(--color-primary-500)" />
+                    <span style={{ fontWeight: 'bold', color: 'var(--color-primary-700)' }}>
+                      Click or drag file to upload
+                    </span>
+                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
+                      Supports PDF, PPT, Word, Video, MP3, and Images up to 50MB
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {uploading && (
             <div style={{ marginTop: 'var(--space-2)' }}>

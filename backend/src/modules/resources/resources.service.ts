@@ -232,7 +232,7 @@ export const resourcesService = {
       price = Number(body.price || 0);
     }
 
-    let fileUrl = resource.fileUrl;
+    let fileUrl = body.fileUrl || body.videoUrl || body.youtubeUrl || resource.fileUrl;
     let savedFilename = existingMeta.savedFilename;
     let originalFilename = existingMeta.originalFilename;
     let fileSize = existingMeta.fileSize;

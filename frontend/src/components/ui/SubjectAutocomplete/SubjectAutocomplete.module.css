@@ -1,0 +1,240 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  position: relative;
+}
+
+.wrapperOpen {
+  z-index: 50;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-800);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input {
+  width: 100%;
+  padding: 9px 12px 9px 38px;
+  padding-right: 75px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-900);
+  background: var(--color-white);
+  transition: all var(--transition-fast);
+  min-height: 42px;
+}
+
+.input::placeholder {
+  color: var(--color-gray-400);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.leftIcon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 11px;
+  color: var(--color-gray-400);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.rightActions {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clearBtn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gray-400);
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.clearBtn:hover {
+  color: var(--color-gray-700);
+  background-color: var(--color-gray-100);
+}
+
+.dropdownToggleBtn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gray-400);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.dropdownToggleBtn:hover {
+  color: var(--color-gray-700);
+  background-color: var(--color-gray-100);
+}
+
+/* Autocomplete Suggestion Dropdown - Directly below input */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.categoryGroup {
+  padding-bottom: 4px;
+}
+
+.categoryGroup:not(:last-child) {
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.categoryTitle {
+  padding: 7px 12px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-gray-500);
+  background: var(--color-gray-50);
+}
+
+.subjectItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-gray-800);
+  transition: background var(--transition-fast);
+}
+
+.subjectItem:hover {
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-900);
+}
+
+.subjectItemActive {
+  background-color: var(--color-primary-100);
+  font-weight: 600;
+  color: var(--color-primary-800);
+}
+
+.customOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background-color: #f0fdf4;
+  border: none;
+  border-bottom: 1px solid #bbf7d0;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  color: #166534;
+  font-weight: 600;
+  transition: background var(--transition-fast);
+}
+
+.customOption:hover {
+  background-color: #dcfce7;
+}
+
+.apiResultsHeader {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #0369a1;
+  background-color: #f0f9ff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px solid #bae6fd;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #e0f2fe;
+  border-top-color: var(--color-primary-600);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.hasError .input {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+}
+
+.hasError .input:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: #dc2626;
+  margin-top: 4px;
+}
+
+.helper {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
