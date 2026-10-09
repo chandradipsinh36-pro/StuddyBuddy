@@ -71,6 +71,11 @@ p { line-height: var(--line-height-relaxed); }
   border-radius: var(--radius-sm);
 }
 
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
 /* === Scrollbar === */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--color-gray-100); }

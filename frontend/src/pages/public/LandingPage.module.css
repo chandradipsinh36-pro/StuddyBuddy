@@ -398,3 +398,60 @@
   .heroStatDivider { display: none; }
   .sectionHeader { flex-direction: column; align-items: flex-start; }
 }
+
+/* =====================================================
+   Dark Mode Overrides — AMOLED Deep Black Aesthetics
+   ===================================================== */
+:global([data-theme="dark"]) .hero {
+  background: linear-gradient(135deg, #000000 0%, #040914 40%, #081226 70%, #02050c 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+:global([data-theme="dark"]) .heroFloatingCard1,
+:global([data-theme="dark"]) .heroFloatingCard2 {
+  background: #121214;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f4f4f5;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+}
+:global([data-theme="dark"]) .categoryCard {
+  background: #0a0a0a;
+  border-color: #222222;
+}
+:global([data-theme="dark"]) .categoryCard:hover {
+  background: #111827;
+  border-color: #3b82f6;
+}
+:global([data-theme="dark"]) .categoryName {
+  color: #f5f5f5;
+}
+:global([data-theme="dark"]) .howIcon {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+:global([data-theme="dark"]) .howTitle {
+  color: #f5f5f5;
+}
+:global([data-theme="dark"]) .aiSection {
+  background: linear-gradient(135deg, #02050c 0%, #061124 50%, #030814 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+:global([data-theme="dark"]) .aiDemoCard {
+  background: rgba(18, 18, 24, 0.85);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+:global([data-theme="dark"]) .groupCard {
+  background: #0a0a0a;
+  border-color: #222222;
+}
+:global([data-theme="dark"]) .groupCard:hover {
+  border-color: #3b82f6;
+  background: #0f172a;
+}
+:global([data-theme="dark"]) .groupName {
+  color: #f5f5f5;
+}
+:global([data-theme="dark"]) .tutorCta {
+  background: linear-gradient(135deg, #050b14 0%, #0c1833 50%, #060e1d 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}

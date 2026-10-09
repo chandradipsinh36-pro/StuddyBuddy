@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen, ShieldAlert, AlertCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, ShieldAlert, AlertCircle, Gift, CheckCircle2, Tag } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { courseService } from '../../services/courseService';
 import { categoryService } from '../../services/categoryService';
@@ -241,19 +241,60 @@ export function TutorCourseCreatePage() {
             rows={3}
           />
 
-          <Input
-            label="Enrollment Fee (₹) — Enter 0 for Free Access"
-            type="number"
-            min="0"
-            step="1"
-            placeholder="0"
-            value={price}
-            onChange={(e) => {
-              setPrice(e.target.value);
-              if (formErrors.price) setFormErrors(fe => ({ ...fe, price: undefined }));
-            }}
-            error={formErrors.price}
-          />
+          {/* Pricing & Free Access Toggle */}
+          <div className={styles.pricingCard}>
+            <div className={styles.pricingHeader}>
+              <h3 className={styles.pricingTitle}>
+                <Tag size={16} /> Course Pricing & Student Access
+              </h3>
+              <div className={styles.pricingToggleGroup}>
+                <button
+                  type="button"
+                  className={`${styles.pricingToggleBtn} ${price !== '0' && price !== '' ? styles.pricingToggleBtnActivePaid : ''}`}
+                  onClick={() => {
+                    if (price === '0') setPrice('499');
+                    setFormErrors(fe => ({ ...fe, price: undefined }));
+                  }}
+                >
+                  <Tag size={13} /> Paid Course
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.pricingToggleBtn} ${price === '0' ? styles.pricingToggleBtnActiveFree : ''}`}
+                  onClick={() => {
+                    setPrice('0');
+                    setFormErrors(fe => ({ ...fe, price: undefined }));
+                    toast.success('Course set to 100% Free! Students can enroll at zero cost. 🎁');
+                  }}
+                >
+                  <Gift size={13} /> Free Course (₹0)
+                </button>
+              </div>
+            </div>
+
+            {price === '0' ? (
+              <div className={styles.freeBanner}>
+                <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
+                <span>
+                  <strong>100% Free Course:</strong> Students will be able to enroll and access all video lectures and attached study materials completely free of charge.
+                </span>
+              </div>
+            ) : (
+              <Input
+                label="Enrollment Fee (₹) *"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="e.g. 499"
+                value={price}
+                onChange={(e) => {
+                  setPrice(e.target.value);
+                  if (formErrors.price) setFormErrors(fe => ({ ...fe, price: undefined }));
+                }}
+                error={formErrors.price}
+              />
+            )}
+          </div>
 
           {formErrors.lessons && (
             <div style={{

@@ -17,6 +17,7 @@ import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
 import { ProgressBar } from '../../components/ui/ProgressBar/ProgressBar';
 import { PaymentCheckoutModal } from '../../components/shared/PaymentCheckoutModal';
 import { DocumentViewerModal } from '../../components/shared/DocumentViewerModal';
+import { StudentVideoPlayer } from '../../components/shared/StudentVideoPlayer';
 import {
   getCourseProgress,
   toggleLessonProgress,
@@ -25,6 +26,13 @@ import {
   getAllEngagements,
   type LessonEngagement,
 } from '../../utils/courseProgress';
+import { CertificateModal } from '../../components/shared/CertificateModal';
+import {
+  saveCertificate,
+  generateCertificateId,
+  generateVerificationCode,
+  type CourseCertificate,
+} from '../../utils/certificateUtils';
 import { ROUTES } from '../../constants';
 import type { Course, CourseReview } from '../../types';
 import toast from 'react-hot-toast';
@@ -50,6 +58,7 @@ export function CourseDetailPage() {
   const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
   const [completedLessonIndices, setCompletedLessonIndices] = useState<number[]>([]);
   const [engagements, setEngagements] = useState<Record<number, LessonEngagement>>({});
+  const [certificateModalOpen, setCertificateModalOpen] = useState(false);
 
   useEffect(() => {
     if (user?.id && courseId) {
@@ -63,6 +72,30 @@ export function CourseDetailPage() {
   const completedCount = completedLessonIndices.length;
   const progressPercent = totalLessons > 0 ? Math.min(100, Math.round((completedCount / totalLessons) * 100)) : (isEnrolled ? 100 : 0);
   const isCourseCompleted = totalLessons > 0 ? completedCount >= totalLessons : isEnrolled;
+  const hasCourseAccess = isEnrolled || (user?.id && course && user.id === course.tutorId) || (user?.role as any) === 'admin';
+
+  // Generate certificate data when course is fully completed
+  const currentCertificate: CourseCertificate | null = (hasCourseAccess && isCourseCompleted && course && user?.id)
+    ? {
+        certificateId: generateCertificateId(user.id, courseId),
+        studentId: user.id,
+        studentName: user.name || 'Student Scholar',
+        courseId,
+        courseTitle: course.title,
+        tutorName: course.tutor?.name || 'StudyBuddy Instructor',
+        tutorId: course.tutorId,
+        categoryName: course.category?.name || 'Academic Course',
+        completedAt: new Date().toISOString(),
+        totalLessons: totalLessons > 0 ? totalLessons : 1,
+        verificationCode: generateVerificationCode(user.id, courseId),
+      }
+    : null;
+
+  useEffect(() => {
+    if (currentCertificate) {
+      saveCertificate(currentCertificate);
+    }
+  }, [hasCourseAccess, isCourseCompleted, courseId, user?.id]);
   const remainingLessons = Math.max(0, totalLessons - completedCount);
   const nextIncompleteIdx = (course?.lessons || []).findIndex((_, idx) => !completedLessonIndices.includes(idx));
   const myReview = user?.id ? reviews.find((r) => r.studentId === user.id || (r.student as any)?.id === user.id) : null;
@@ -385,19 +418,30 @@ export function CourseDetailPage() {
                   <div>
                     <h3 className={styles.completionTitle}>Congratulations! You've Completed the Course! 🎓</h3>
                     <p className={styles.completionDesc}>
-                      You've completed all lectures in <strong>{course.title}</strong>. Your feedback is invaluable to fellow students and the instructor. Leave your verified graduate rating below!
+                      You've completed all lectures in <strong>{course.title}</strong>. Your official accredited certificate of completion has been issued and is ready for download!
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={scrollToReviews}
-                  style={{ backgroundColor: '#059669', borderColor: '#059669', fontWeight: 700, gap: 6, display: 'inline-flex', alignItems: 'center' }}
-                >
-                  <Star size={14} fill="#ffffff" />
-                  <span>Rate Course Now</span>
-                </Button>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setCertificateModalOpen(true)}
+                    style={{ backgroundColor: '#2563EB', borderColor: '#2563EB', fontWeight: 700, gap: 6, display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    <Award size={15} fill="#ffffff" />
+                    <span>View & Download Certificate</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={scrollToReviews}
+                    style={{ fontWeight: 600, gap: 6, display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    <Star size={14} />
+                    <span>Rate Course</span>
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -472,7 +516,7 @@ export function CourseDetailPage() {
                               </button>
                             )}
 
-                            {lesson.videoUrl ? (
+                            {lesson.videoUrl && user?.role === 'tutor' ? (
                               <a
                                 href={lesson.videoUrl}
                                 target="_blank"
@@ -512,28 +556,21 @@ export function CourseDetailPage() {
 
                       {/* Embedded Video Player OR Locked Overlay */}
                       {isLessonUnlocked ? (
-                        videoInfo.type !== 'none' && videoInfo.embedUrl && (
+                        videoInfo.type !== 'none' && (lesson.videoUrl || videoInfo.embedUrl) && (
                           <div>
-                            <div
-                              className={styles.videoWrapper}
-                              onClick={() => handleRecordEngagement(idx, 'video')}
-                            >
-                              {videoInfo.type === 'direct' ? (
-                                <video
-                                  src={videoInfo.embedUrl}
-                                  controls
-                                  className={styles.videoFrame}
-                                  onPlay={() => handleRecordEngagement(idx, 'video')}
-                                />
-                              ) : (
-                                <iframe
-                                  src={videoInfo.embedUrl}
-                                  title={lesson.title}
-                                  className={styles.videoFrame}
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                  allowFullScreen
-                                />
-                              )}
+                            <div style={{ marginTop: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+                              <StudentVideoPlayer
+                                videoUrl={lesson.videoUrl || videoInfo.embedUrl}
+                                title={lesson.title ? `Lecture #${idx + 1}: ${lesson.title}` : `Lecture #${idx + 1}`}
+                                onPlay={() => handleRecordEngagement(idx, 'video')}
+                                onEnded={() => {
+                                  handleRecordEngagement(idx, 'video');
+                                  if (!completedLessonIndices.includes(idx)) {
+                                    handleToggleLesson(idx, lesson.title);
+                                  }
+                                }}
+                                isStudentSide={user?.role !== 'tutor'}
+                              />
                             </div>
 
                             {/* Video Study Engagement Status Strip */}
@@ -1188,6 +1225,15 @@ export function CourseDetailPage() {
         title="Course Material — View Only"
         onClose={() => setPdfViewerUrl(null)}
       />
+
+      {/* Official Certificate Modal */}
+      {currentCertificate && (
+        <CertificateModal
+          certificate={currentCertificate}
+          isOpen={certificateModalOpen}
+          onClose={() => setCertificateModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

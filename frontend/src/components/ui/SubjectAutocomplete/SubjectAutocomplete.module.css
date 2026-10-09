@@ -238,3 +238,80 @@
   color: var(--color-gray-500);
   margin-top: 2px;
 }
+
+/* =====================================================
+   Dark Mode Styles
+   ===================================================== */
+:global([data-theme="dark"]) .input {
+  background: #111111;
+  border-color: #2c2c2c;
+  color: #f5f5f5;
+}
+
+:global([data-theme="dark"]) .input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+:global([data-theme="dark"]) .clearBtn {
+  color: #737373;
+}
+
+:global([data-theme="dark"]) .clearBtn:hover {
+  color: #f5f5f5;
+  background-color: #222222;
+}
+
+:global([data-theme="dark"]) .dropdownToggleBtn {
+  color: #737373;
+}
+
+:global([data-theme="dark"]) .dropdownToggleBtn:hover {
+  color: #f5f5f5;
+  background-color: #222222;
+}
+
+:global([data-theme="dark"]) .dropdown {
+  background: #121212;
+  border-color: #2c2c2c;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+}
+
+:global([data-theme="dark"]) .categoryGroup:not(:last-child) {
+  border-bottom-color: #222222;
+}
+
+:global([data-theme="dark"]) .categoryTitle {
+  background: #181818;
+  color: #a3a3a3;
+}
+
+:global([data-theme="dark"]) .subjectItem {
+  color: #e5e5e5;
+}
+
+:global([data-theme="dark"]) .subjectItem:hover {
+  background-color: rgba(37, 99, 235, 0.18);
+  color: #60a5fa;
+}
+
+:global([data-theme="dark"]) .subjectItemActive {
+  background-color: rgba(37, 99, 235, 0.28);
+  color: #93c5fd;
+}
+
+:global([data-theme="dark"]) .customOption {
+  background-color: rgba(16, 185, 129, 0.12);
+  border-bottom-color: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+}
+
+:global([data-theme="dark"]) .customOption:hover {
+  background-color: rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="dark"]) .apiResultsHeader {
+  background-color: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+  border-top-color: rgba(14, 165, 233, 0.3);
+}

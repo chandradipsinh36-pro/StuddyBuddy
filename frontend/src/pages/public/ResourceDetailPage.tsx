@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Lock, Unlock, Star, Eye, ShoppingCart, ArrowLeft, FileText, Video, Headphones, Image, Presentation, BookmarkPlus } from 'lucide-react';
+import { Lock, Unlock, Star, Eye, ShoppingCart, ArrowLeft, BookmarkPlus } from 'lucide-react';
 import { resourceService } from '../../services/resourceService';
 import { reviewService } from '../../services/reviewService';
 import { paymentService } from '../../services/paymentService';
@@ -13,18 +13,14 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState';
 import { Modal } from '../../components/ui/Modal/Modal';
 import { DocumentViewerModal } from '../../components/shared/DocumentViewerModal';
+import { StudentVideoPlayer } from '../../components/shared/StudentVideoPlayer';
+import { ResourceFormatBadge, ResourceFormatIcon } from '../../components/shared/ResourceFormatBadge';
 import type { Resource, Review } from '../../types';
-import { parseVideoUrl } from '../../utils/videoUtils';
 import { ROUTES } from '../../constants';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import styles from './ResourceDetailPage.module.css';
 
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  pdf: <FileText size={20} />, image: <Image size={20} />,
-  ppt: <Presentation size={20} />, audio: <Headphones size={20} />,
-  youtube: <Video size={20} />, test_paper: <FileText size={20} />,
-};
 
 const TYPE_LABELS: Record<string, string> = {
   pdf: 'PDF', image: 'Image', ppt: 'Presentation',
@@ -144,24 +140,15 @@ export function ResourceDetailPage() {
             </div>
 
             {/* If YouTube and accessible */}
-            {canAccess && resource.type === 'youtube' && (resource.youtubeUrl || resource.fileUrl) && (() => {
-              const videoInfo = parseVideoUrl(resource.youtubeUrl || resource.fileUrl);
-              return (
-                <div className={styles.videoWrapper}>
-                  {videoInfo.type === 'direct' ? (
-                    <video src={videoInfo.embedUrl} controls className={styles.video} />
-                  ) : (
-                    <iframe
-                      src={videoInfo.embedUrl}
-                      title={resource.title}
-                      className={styles.video}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  )}
-                </div>
-              );
-            })()}
+            {canAccess && resource.type === 'youtube' && (resource.youtubeUrl || resource.fileUrl) && (
+              <div style={{ marginBottom: 'var(--space-6)' }}>
+                <StudentVideoPlayer
+                  videoUrl={resource.youtubeUrl || resource.fileUrl}
+                  title={resource.title || resource.filename}
+                  isStudentSide={user?.role !== 'tutor'}
+                />
+              </div>
+            )}
 
             {/* Details */}
             <div className={styles.details}>
@@ -170,9 +157,10 @@ export function ResourceDetailPage() {
                 <Badge variant={resource.difficulty === 'beginner' ? 'success' : resource.difficulty === 'advanced' ? 'error' : 'warning'}>
                   {resource.difficulty || 'All Levels'}
                 </Badge>
-                <Badge variant="default">
-                  {TYPE_ICONS[(resource.type || resource.fileType || 'pdf') as keyof typeof TYPE_ICONS]} {TYPE_LABELS[(resource.type || resource.fileType || 'pdf') as keyof typeof TYPE_LABELS]}
-                </Badge>
+                <ResourceFormatBadge
+                  type={resource.type || resource.fileType}
+                  filename={resource.title || resource.filename}
+                />
                 {resource.accessType === 'premium' ? (
                   <Badge variant="premium"><Lock size={10} /> Premium</Badge>
                 ) : (
@@ -295,7 +283,10 @@ export function ResourceDetailPage() {
               </Button>
 
               <div className={styles.cardInfo}>
-                <div className={styles.cardInfoItem}><FileText size={14} /> {TYPE_LABELS[(resource.type || resource.fileType || 'pdf') as keyof typeof TYPE_LABELS]}</div>
+                <div className={styles.cardInfoItem} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ResourceFormatIcon type={resource.type || resource.fileType} filename={resource.title || resource.filename} size={15} />
+                  <span>{TYPE_LABELS[(resource.type || resource.fileType || 'pdf') as keyof typeof TYPE_LABELS]}</span>
+                </div>
                 <div className={styles.cardInfoItem}><Star size={14} /> {(resource.averageRating ?? 5).toFixed(1)} Rating</div>
                 <div className={styles.cardInfoItem}><Eye size={14} /> {(resource.viewCount ?? 0).toLocaleString()} views</div>
               </div>

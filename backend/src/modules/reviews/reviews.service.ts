@@ -53,11 +53,54 @@ export const reviewsService = {
 
   // ── Tutor Reviews ──────────────────────────────────────────────
   async listTutorReviews(tutorId: number) {
-    return prisma.tutorReview.findMany({
+    const tutorReviews = await prisma.tutorReview.findMany({
       where: { tutorId },
       orderBy: { createdAt: 'desc' },
-      include: { student: { select: { id: true, name: true, profilePic: true } } },
+      include: {
+        student: { select: { id: true, name: true, profilePic: true } },
+      },
     });
+
+    const courseReviews = await prisma.courseReview.findMany({
+      where: {
+        course: { tutorId },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        student: { select: { id: true, name: true, profilePic: true } },
+        course: { select: { courseId: true, title: true } },
+      },
+    });
+
+    const formattedTutor = tutorReviews.map((r) => ({
+      id: r.reviewId,
+      reviewId: r.reviewId,
+      studentId: r.studentId,
+      tutorId: r.tutorId,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt,
+      student: r.student,
+      type: 'tutor' as const,
+    }));
+
+    const formattedCourse = courseReviews.map((r) => ({
+      id: r.reviewId,
+      reviewId: r.reviewId,
+      studentId: r.studentId,
+      courseId: r.courseId,
+      courseTitle: r.course.title,
+      tutorId,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt,
+      student: r.student,
+      type: 'course' as const,
+    }));
+
+    const combined = [...formattedTutor, ...formattedCourse];
+    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return combined;
   },
 
   async createTutorReview(studentId: number, tutorId: number, input: CreateTutorReviewInput) {

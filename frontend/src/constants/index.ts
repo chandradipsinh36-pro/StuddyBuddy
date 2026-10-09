@@ -78,6 +78,7 @@ export const ROUTES = {
   PLAYLIST_DETAIL: (id: string | number) => `/playlists/${id}`,
   STUDY_GROUPS: '/study-groups',
   STUDY_GROUP_DETAIL: (id: string | number) => `/study-groups/${id}`,
+  CERTIFICATES: '/certificates',
   // Student
   STUDENT_DASHBOARD: '/student/dashboard',
   STUDENT_PROFILE: '/student/profile',
@@ -85,6 +86,7 @@ export const ROUTES = {
   STUDENT_PURCHASES: '/student/purchases',
   STUDENT_SAVED: '/student/saved',
   STUDENT_REVIEWS: '/student/reviews',
+  STUDENT_CERTIFICATES: '/student/certificates',
   AI: '/ai',
   // Tutor
   TUTOR_DASHBOARD: '/tutor/dashboard',

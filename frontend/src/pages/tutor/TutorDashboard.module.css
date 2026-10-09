@@ -56,3 +56,98 @@
 @media (max-width: 1280px) { .metricsGrid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 768px) { .metricsGrid { grid-template-columns: repeat(2, 1fr); } .grid { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .metricsGrid { grid-template-columns: repeat(2, 1fr); } .welcome { flex-direction: column; } }
+
+/* Verification Banners */
+.verificationBannerPending {
+  background-color: #FFFBEB;
+  border: 1px solid #FCD34D;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-6);
+  margin-bottom: var(--space-6);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+.verificationPendingTitle { color: #92400E; font-size: var(--font-size-base); }
+.verificationPendingBadge {
+  background-color: #FDE68A;
+  color: #92400E;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+.verificationPendingDesc { color: #78350F; font-size: var(--font-size-sm); margin-top: var(--space-1); line-height: 1.5; }
+
+.verificationBannerApproved {
+  background-color: #F0FDF4;
+  border: 1px solid #86EFAC;
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-5);
+  margin-bottom: var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.verificationApprovedText { color: #166534; font-size: var(--font-size-sm); font-weight: 600; }
+
+/* Dark Mode Overrides — AMOLED Deep Black */
+:global([data-theme="dark"]) .welcome {
+  background: linear-gradient(135deg, #02050c 0%, #0c1833 60%, #060e1d 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+:global([data-theme="dark"]) .welcomeLeft { color: #ffffff; }
+:global([data-theme="dark"]) .greeting { color: #ffffff; }
+:global([data-theme="dark"]) .subtitle { color: rgba(255, 255, 255, 0.75); }
+
+:global([data-theme="dark"]) .metricCard {
+  background: #0a0a0a;
+  border-color: #222222;
+}
+:global([data-theme="dark"]) .metricCard:hover {
+  border-color: #333333;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+}
+:global([data-theme="dark"]) .metricValue {
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .block {
+  background: #0a0a0a;
+  border-color: #222222;
+}
+:global([data-theme="dark"]) .blockTitle {
+  color: #ffffff;
+}
+:global([data-theme="dark"]) .resourceRow {
+  border-color: #222222;
+  background: #0d0d0d;
+}
+:global([data-theme="dark"]) .resourceTitle {
+  color: #f5f5f5;
+}
+:global([data-theme="dark"]) .reviewName {
+  color: #f5f5f5;
+}
+:global([data-theme="dark"]) .reviewComment {
+  color: #a3a3a3;
+}
+
+:global([data-theme="dark"]) .verificationBannerPending {
+  background-color: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+:global([data-theme="dark"]) .verificationPendingTitle { color: #fde68a; }
+:global([data-theme="dark"]) .verificationPendingBadge {
+  background-color: rgba(245, 158, 11, 0.25);
+  color: #fde68a;
+}
+:global([data-theme="dark"]) .verificationPendingDesc { color: #cbd5e1; }
+
+:global([data-theme="dark"]) .verificationBannerApproved {
+  background-color: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+:global([data-theme="dark"]) .verificationApprovedText { color: #86efac; }

@@ -27,6 +27,19 @@ export function TutorReviewsPage() {
 
   const filtered = ratingFilter ? reviews.filter(r => r.rating === ratingFilter) : reviews;
 
+  const totalCount = reviews.length;
+  const avgScore = totalCount > 0
+    ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / totalCount).toFixed(1)
+    : '5.0';
+
+  const fiveStarCount = reviews.filter(r => r.rating === 5).length;
+  const fourStarCount = reviews.filter(r => r.rating === 4).length;
+  const threeOrLessCount = reviews.filter(r => (r.rating || 0) <= 3).length;
+
+  const fivePct = totalCount > 0 ? Math.round((fiveStarCount / totalCount) * 100) : 100;
+  const fourPct = totalCount > 0 ? Math.round((fourStarCount / totalCount) * 100) : 0;
+  const threePct = totalCount > 0 ? Math.round((threeOrLessCount / totalCount) * 100) : 0;
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -46,10 +59,10 @@ export function TutorReviewsPage() {
 
       <div className={styles.overviewCard}>
         <div className={styles.ratingLarge}>
-          <div className={styles.score}>4.9</div>
-          <Rating value={4.9} size="md" />
+          <div className={styles.score}>{avgScore}</div>
+          <Rating value={Number(avgScore)} size="md" />
           <div className={styles.scoreSub} style={{ marginTop: 6 }}>
-            Based on 248 verified student ratings
+            Based on {totalCount} verified student {totalCount === 1 ? 'rating' : 'ratings'}
           </div>
         </div>
 
@@ -58,23 +71,23 @@ export function TutorReviewsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 45 }}>5 stars</span>
               <div style={{ flex: 1, height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ width: '88%', height: '100%', background: '#22c55e' }} />
+                <div style={{ width: `${fivePct}%`, height: '100%', background: '#22c55e' }} />
               </div>
-              <span>88%</span>
+              <span>{fivePct}%</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 45 }}>4 stars</span>
               <div style={{ flex: 1, height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ width: '10%', height: '100%', background: '#3b82f6' }} />
+                <div style={{ width: `${fourPct}%`, height: '100%', background: '#3b82f6' }} />
               </div>
-              <span>10%</span>
+              <span>{fourPct}%</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 45 }}>3 stars</span>
+              <span style={{ width: 45 }}>≤3 stars</span>
               <div style={{ flex: 1, height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ width: '2%', height: '100%', background: '#f59e0b' }} />
+                <div style={{ width: `${threePct}%`, height: '100%', background: '#f59e0b' }} />
               </div>
-              <span>2%</span>
+              <span>{threePct}%</span>
             </div>
           </div>
         </div>

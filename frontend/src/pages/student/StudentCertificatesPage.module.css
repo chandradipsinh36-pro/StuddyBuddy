@@ -1,0 +1,291 @@
+.page {
+  max-width: var(--max-width-7xl);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.headerLeft {
+  flex: 1;
+  min-width: 280px;
+}
+
+.badgeArea {
+  margin-bottom: var(--space-2);
+}
+
+.title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  margin: 0 0 var(--space-2);
+}
+
+.subtitle {
+  font-size: var(--font-size-base);
+  color: var(--color-gray-600);
+  margin: 0;
+  max-width: 680px;
+  line-height: var(--line-height-relaxed);
+}
+
+.statsCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+
+.statNumber {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: #2563eb;
+}
+
+.statLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  font-weight: var(--font-weight-medium);
+}
+
+.statDivider {
+  width: 1px;
+  height: 36px;
+  background: var(--color-border);
+}
+
+.loadingArea {
+  padding: var(--space-12);
+  text-align: center;
+  color: var(--color-gray-500);
+}
+
+.emptyContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* =========================================================
+   CERTIFICATES GRID
+   ========================================================= */
+
+.certGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-10);
+}
+
+.certCard {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  transition: all var(--transition-base);
+}
+
+.certCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.1);
+  border-color: #93c5fd;
+}
+
+.certBanner {
+  height: 120px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 2px solid #fbbf24;
+}
+
+.certBannerEmblem {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(4px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 1.5px solid rgba(251, 191, 36, 0.6);
+}
+
+.certBannerTag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2px 8px;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #065f46;
+  letter-spacing: 0.02em;
+}
+
+.certCardBody {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.certCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.certDiscipline {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2563eb;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.certDate {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.certCardTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  margin: 0 0 var(--space-2);
+  line-height: var(--line-height-snug);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.certCardTutor {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  margin: 0 0 var(--space-3);
+}
+
+.certIdRow {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-gray-500);
+  margin-bottom: var(--space-4);
+}
+
+.certIdRow code {
+  color: var(--color-gray-800);
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.certCardActions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* =========================================================
+   IN-PROGRESS SECTION
+   ========================================================= */
+
+.inProgressSection {
+  margin-top: var(--space-8);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-6);
+}
+
+.sectionHeading {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  margin: 0 0 var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.inProgressGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-4);
+}
+
+.progressCard {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.progressCourseInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.courseName {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+}
+
+.tutorName {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.progressRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progressMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-gray-500);
+  font-weight: 500;
+}

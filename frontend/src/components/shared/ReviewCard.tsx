@@ -39,9 +39,23 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
       <p className={styles.comment}>{review.comment}</p>
 
-      {review.tags && review.tags.length > 0 && (
-        <div className={styles.tags}>
-          {review.tags.map(tag => (
+      {((review as any).courseTitle || (review.tags && review.tags.length > 0)) && (
+        <div className={styles.tags} style={{ marginTop: 'var(--space-2)' }}>
+          {(review as any).courseTitle && (
+            <span
+              className={styles.tag}
+              style={{
+                background: '#eff6ff',
+                color: '#1d4ed8',
+                border: '1px solid #bfdbfe',
+                fontWeight: 600,
+                fontSize: '11px',
+              }}
+            >
+              📚 Course: {(review as any).courseTitle}
+            </span>
+          )}
+          {review.tags?.map(tag => (
             <span key={tag} className={styles.tag}>#{tag}</span>
           ))}
         </div>

@@ -26,22 +26,27 @@ export function TutorDashboard() {
 
   useEffect(() => {
     refreshUser();
+    const tutorId = user?.id;
     Promise.allSettled([
       earningsService.getSummary().then(setEarnings).catch(() => null),
       resourceService.getMyResources({ limit: 5 }).then(res => setResources(res.data || [])).catch(() => []),
-      reviewService.getTutorReceivedReviews().then(setReviews).catch(() => []),
+      reviewService.getTutorReceivedReviews(tutorId).then(setReviews).catch(() => []),
       applicationService.getMyApplication().then(app => setApplicationStatus(app.status)).catch(() => null),
     ]).finally(() => setLoading(false));
-  }, [refreshUser]);
+  }, [user?.id, refreshUser]);
 
   const firstName = user?.name?.split(' ')[0] || 'there';
+
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1)
+    : '5.0';
 
   const METRICS = [
     { icon: <IndianRupee size={20} />, label: 'Total Earnings', value: earnings ? `₹${earnings.totalEarnings?.toLocaleString() ?? 0}` : '₹0', color: 'success', link: ROUTES.TUTOR_EARNINGS },
     { icon: <BookOpen size={20} />, label: 'Resources', value: resources.length.toString(), color: 'primary', link: ROUTES.TUTOR_RESOURCES },
     { icon: <Users size={20} />, label: 'Students Reached', value: '0', color: 'ai', link: ROUTES.TUTOR_ANALYTICS },
     { icon: <Eye size={20} />, label: 'Total Views', value: '0', color: 'warning', link: ROUTES.TUTOR_ANALYTICS },
-    { icon: <Star size={20} />, label: 'Avg Rating', value: '5.0', color: 'premium', link: ROUTES.TUTOR_REVIEWS },
+    { icon: <Star size={20} />, label: 'Avg Rating', value: avgRating, color: 'premium', link: ROUTES.TUTOR_REVIEWS },
     { icon: <TrendingUp size={20} />, label: 'This Month', value: earnings ? `₹${earnings.thisMonthEarnings?.toLocaleString() ?? 0}` : '₹0', color: 'success', link: ROUTES.TUTOR_EARNINGS },
   ];
 
@@ -49,52 +54,26 @@ export function TutorDashboard() {
     <div className={styles.page}>
       {/* Verification Status Banner */}
       {!user?.isVerified ? (
-        <div style={{
-          backgroundColor: '#FFFBEB',
-          border: '1px solid #FCD34D',
-          borderRadius: 'var(--radius-lg)',
-          padding: 'var(--space-4) var(--space-6)',
-          marginBottom: 'var(--space-6)',
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 'var(--space-4)',
-        }}>
+        <div className={styles.verificationBannerPending}>
           <ShieldAlert size={26} color="#D97706" style={{ flexShrink: 0, marginTop: 2 }} />
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-              <strong style={{ color: '#92400E', fontSize: 'var(--font-size-base)' }}>
+              <strong className={styles.verificationPendingTitle}>
                 Tutor Verification In Progress
               </strong>
-              <span style={{
-                backgroundColor: '#FDE68A',
-                color: '#92400E',
-                fontSize: 'var(--font-size-xs)',
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: '9999px',
-                textTransform: 'uppercase',
-              }}>
+              <span className={styles.verificationPendingBadge}>
                 {applicationStatus || 'Pending Admin Approval'}
               </span>
             </div>
-            <p style={{ color: '#78350F', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)', lineHeight: 1.5 }}>
+            <p className={styles.verificationPendingDesc}>
               Your tutor approval application has been sent to the Admin Panel. The admin is verifying your qualification certificate, trial video lecture, degree, and experience. Once approved, you can create courses, playlists, and resource bundles.
             </p>
           </div>
         </div>
       ) : (
-        <div style={{
-          backgroundColor: '#F0FDF4',
-          border: '1px solid #86EFAC',
-          borderRadius: 'var(--radius-lg)',
-          padding: 'var(--space-3) var(--space-5)',
-          marginBottom: 'var(--space-6)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-3)',
-        }}>
+        <div className={styles.verificationBannerApproved}>
           <CheckCircle2 size={20} color="#16A34A" />
-          <span style={{ color: '#166534', fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>
+          <span className={styles.verificationApprovedText}>
             Verified Tutor Account • Full permissions enabled to create courses, playlists, and bundles.
           </span>
         </div>
@@ -183,14 +162,19 @@ export function TutorDashboard() {
           </div>
           <div className={styles.reviewList}>
             {reviews.length > 0 ? (
-              reviews.map(r => (
-                <div key={r.id} className={styles.reviewCard}>
+              reviews.slice(0, 5).map(r => (
+                <div key={r.id || r.reviewId} className={styles.reviewCard}>
                   <Avatar name={r.student?.name} src={r.student?.avatarUrl || r.student?.profilePic || undefined} size="sm" />
                   <div className={styles.reviewContent}>
                     <div className={styles.reviewHeader}>
-                      <span className={styles.reviewName}>{r.student?.name || 'Student'}</span>
+                      <span className={styles.reviewName}>{r.student?.name || 'Verified Student'}</span>
                       <Rating value={r.rating || 5} showValue={false} size="sm" />
                     </div>
+                    {r.courseTitle && (
+                      <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px', margin: '2px 0 4px' }}>
+                        📚 Course: {r.courseTitle}
+                      </span>
+                    )}
                     <p className={styles.reviewComment}>{r.comment}</p>
                   </div>
                 </div>

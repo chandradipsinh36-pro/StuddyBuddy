@@ -21,6 +21,7 @@ import {
   Tag,
   Calendar,
   AlertCircle,
+  Gift,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button/Button';
@@ -137,16 +138,16 @@ export function TutorBundlesPage() {
       const origNum = parseFloat(originalPrice);
       if (isNaN(origNum)) {
         errors.originalPrice = 'Please enter a valid price number';
-      } else if (origNum <= 0) {
-        errors.originalPrice = 'Standard price must be greater than ₹0';
+      } else if (origNum < 0) {
+        errors.originalPrice = 'Standard price cannot be negative';
       } else if (origNum > 100000) {
         errors.originalPrice = 'Standard price cannot exceed ₹1,00,000';
       }
     }
 
-    if (!discount || discount.trim() === '') {
+    if (originalPrice !== '0' && (!discount || discount.trim() === '')) {
       errors.discount = 'Discount percent is required (enter 0 for no discount)';
-    } else {
+    } else if (originalPrice !== '0') {
       const discNum = parseFloat(discount);
       if (isNaN(discNum)) {
         errors.discount = 'Please enter a valid discount percentage';
@@ -292,8 +293,8 @@ export function TutorBundlesPage() {
     }
 
     const orig = parseFloat(originalPrice) || 0;
-    const disc = parseFloat(discount) || 0;
-    const finalP = Math.max(0, Math.round(orig * (1 - disc / 100)));
+    const disc = orig === 0 ? 0 : (parseFloat(discount) || 0);
+    const finalP = orig === 0 ? 0 : Math.max(0, Math.round(orig * (1 - disc / 100)));
 
     setSubmitting(true);
     try {
@@ -552,13 +553,21 @@ export function TutorBundlesPage() {
                 </div>
 
                 <div className={styles.pricingRow}>
-                  <div className={styles.priceGroup}>
-                    <span className={styles.originalPrice}>₹{b.originalPrice}</span>
-                    <span className={styles.finalPrice}>₹{b.finalPrice ?? b.price}</span>
-                  </div>
-                  <span style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-                    Save ₹{(Number(b.originalPrice || 0) - Number(b.finalPrice ?? b.price ?? 0)).toLocaleString()}
-                  </span>
+                  {Number(b.finalPrice ?? b.price ?? 0) === 0 ? (
+                    <div className={styles.freeBundleBadge}>
+                      <Gift size={12} /> 100% Free Bundle
+                    </div>
+                  ) : (
+                    <>
+                      <div className={styles.priceGroup}>
+                        <span className={styles.originalPrice}>₹{b.originalPrice}</span>
+                        <span className={styles.finalPrice}>₹{b.finalPrice ?? b.price}</span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
+                        Save ₹{(Number(b.originalPrice || 0) - Number(b.finalPrice ?? b.price ?? 0)).toLocaleString()}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -603,88 +612,135 @@ export function TutorBundlesPage() {
             rows={3}
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-            <Input
-              label="Standard / Original Price (₹) *"
-              type="number"
-              min="0"
-              placeholder="e.g. 600"
-              value={originalPrice}
-              onChange={(e) => {
-                setOriginalPrice(e.target.value);
-                if (formErrors.originalPrice) setFormErrors(fe => ({ ...fe, originalPrice: undefined }));
-              }}
-              error={formErrors.originalPrice}
-              required
-            />
-            <Input
-              label="Discount Percent (%) *"
-              type="number"
-              min="0"
-              max="99"
-              placeholder="e.g. 30"
-              value={discount}
-              onChange={(e) => {
-                setDiscount(e.target.value);
-                if (formErrors.discount) setFormErrors(fe => ({ ...fe, discount: undefined }));
-              }}
-              error={formErrors.discount}
-              required
-            />
-          </div>
+          {/* Pricing & Free Bundle Toggle */}
+          <div className={styles.pricingCard}>
+            <div className={styles.pricingHeader}>
+              <h3 className={styles.pricingTitle}>
+                <Tag size={16} /> Bundle Pricing & Student Access
+              </h3>
+              <div className={styles.pricingToggleGroup}>
+                <button
+                  type="button"
+                  className={`${styles.pricingToggleBtn} ${originalPrice !== '0' ? styles.pricingToggleBtnActivePaid : ''}`}
+                  onClick={() => {
+                    if (originalPrice === '0') {
+                      setOriginalPrice(totalCombinedValue > 0 ? String(totalCombinedValue) : '600');
+                      setDiscount('30');
+                    }
+                    setFormErrors(fe => ({ ...fe, originalPrice: undefined, discount: undefined }));
+                  }}
+                >
+                  <Tag size={13} /> Paid Bundle
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.pricingToggleBtn} ${originalPrice === '0' ? styles.pricingToggleBtnActiveFree : ''}`}
+                  onClick={() => {
+                    setOriginalPrice('0');
+                    setDiscount('0');
+                    setFormErrors(fe => ({ ...fe, originalPrice: undefined, discount: undefined }));
+                    toast.success('Bundle set to 100% Free! Students can unlock all materials at zero cost. 🎁');
+                  }}
+                >
+                  <Gift size={13} /> Free Bundle (₹0)
+                </button>
+              </div>
+            </div>
 
-          {/* Live Calculated Price Breakdown */}
-          {(() => {
-            const orig = parseFloat(originalPrice) || 0;
-            const disc = parseFloat(discount) || 0;
-            const savings = Math.round(orig * (disc / 100));
-            const finalP = Math.max(0, orig - savings);
-            return (
-              <div style={{
-                backgroundColor: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: 'var(--radius-lg)',
-                padding: 'var(--space-3) var(--space-4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 'var(--space-2)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                  <div>
-                    <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>
-                      Standard Price
-                    </span>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#334155', textDecoration: disc > 0 ? 'line-through' : 'none' }}>
-                      ₹{orig.toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  {disc > 0 && (
-                    <>
-                      <span style={{ color: '#94A3B8' }}>→</span>
-                      <div>
-                        <span style={{ fontSize: '11px', color: '#16A34A', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>
-                          Discount ({disc}%)
+            {originalPrice === '0' ? (
+              <div className={styles.freeBanner}>
+                <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
+                <span>
+                  <strong>100% Free Bundle:</strong> All bundled study notes, practice questions, and video tutorials will be accessible to students for free.
+                </span>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                  <Input
+                    label="Standard / Original Price (₹) *"
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 600"
+                    value={originalPrice}
+                    onChange={(e) => {
+                      setOriginalPrice(e.target.value);
+                      if (formErrors.originalPrice) setFormErrors(fe => ({ ...fe, originalPrice: undefined }));
+                    }}
+                    error={formErrors.originalPrice}
+                    required
+                  />
+                  <Input
+                    label="Discount Percent (%) *"
+                    type="number"
+                    min="0"
+                    max="99"
+                    placeholder="e.g. 30"
+                    value={discount}
+                    onChange={(e) => {
+                      setDiscount(e.target.value);
+                      if (formErrors.discount) setFormErrors(fe => ({ ...fe, discount: undefined }));
+                    }}
+                    error={formErrors.discount}
+                    required
+                  />
+                </div>
+
+                {/* Live Calculated Price Breakdown */}
+                {(() => {
+                  const orig = parseFloat(originalPrice) || 0;
+                  const disc = parseFloat(discount) || 0;
+                  const savings = Math.round(orig * (disc / 100));
+                  const finalP = Math.max(0, orig - savings);
+                  return (
+                    <div style={{
+                      backgroundColor: 'var(--color-surface, #F8FAFC)',
+                      border: '1px solid var(--color-border, #E2E8F0)',
+                      borderRadius: 'var(--radius-lg)',
+                      padding: 'var(--space-3) var(--space-4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 'var(--space-2)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                        <div>
+                          <span style={{ fontSize: '11px', color: 'var(--color-gray-500)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>
+                            Standard Price
+                          </span>
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-gray-800)', textDecoration: disc > 0 ? 'line-through' : 'none' }}>
+                            ₹{orig.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                        {disc > 0 && (
+                          <>
+                            <span style={{ color: 'var(--color-gray-400)' }}>→</span>
+                            <div>
+                              <span style={{ fontSize: '11px', color: 'var(--color-success)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>
+                                Discount ({disc}%)
+                              </span>
+                              <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-success)' }}>
+                                -₹{savings.toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--color-primary-500)', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>
+                          Student Selling Price
                         </span>
-                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#16A34A' }}>
-                          -₹{savings.toLocaleString('en-IN')}
+                        <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--color-gray-900)' }}>
+                          ₹{finalP.toLocaleString('en-IN')}
                         </span>
                       </div>
-                    </>
-                  )}
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '11px', color: '#4F46E5', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Student Selling Price
-                  </span>
-                  <span style={{ fontSize: '18px', fontWeight: 800, color: '#1E1B4B' }}>
-                    ₹{finalP.toLocaleString('en-IN')}
-                  </span>
-                </div>
-              </div>
-            );
-          })()}
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+          </div>
 
           {/* Section: Add / Edit Resources from Resource Library */}
           <div className={styles.resourceSection}>
@@ -965,28 +1021,46 @@ export function TutorBundlesPage() {
 
             {/* Pricing Highlight Banner */}
             <div className={styles.viewPricingBanner}>
-              <div className={styles.pricingBannerLeft}>
-                <div>
-                  <div style={{ fontSize: '11px', color: '#166534', fontWeight: 600, textTransform: 'uppercase' }}>
-                    Bundle Discounted Price
+              {Number(viewingBundle.finalPrice ?? viewingBundle.price ?? 0) === 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#166534', fontWeight: 600, textTransform: 'uppercase' }}>
+                      Bundle Access
+                    </div>
+                    <div className={styles.pricingBannerPrice} style={{ color: '#059669' }}>
+                      Free (₹0)
+                    </div>
                   </div>
-                  <div className={styles.pricingBannerPrice}>
-                    ₹{viewingBundle.finalPrice ?? viewingBundle.price}
+                  <div className={styles.freeBundleBadge}>
+                    <Gift size={13} /> 100% Free Bundle
                   </div>
                 </div>
-                <div className={styles.pricingBannerOriginal}>
-                  ₹{viewingBundle.originalPrice}
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className={styles.pricingBannerLeft}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#166534', fontWeight: 600, textTransform: 'uppercase' }}>
+                        Bundle Discounted Price
+                      </div>
+                      <div className={styles.pricingBannerPrice}>
+                        ₹{viewingBundle.finalPrice ?? viewingBundle.price}
+                      </div>
+                    </div>
+                    <div className={styles.pricingBannerOriginal}>
+                      ₹{viewingBundle.originalPrice}
+                    </div>
+                  </div>
 
-              <div className={styles.savingsTag}>
-                <Sparkles size={13} />
-                Student Savings: ₹
-                {(
-                  Number(viewingBundle.originalPrice || 0) -
-                  Number(viewingBundle.finalPrice ?? viewingBundle.price ?? 0)
-                ).toLocaleString()}
-              </div>
+                  <div className={styles.savingsTag}>
+                    <Sparkles size={13} />
+                    Student Savings: ₹
+                    {(
+                      Number(viewingBundle.originalPrice || 0) -
+                      Number(viewingBundle.finalPrice ?? viewingBundle.price ?? 0)
+                    ).toLocaleString()}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Materials List */}

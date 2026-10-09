@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { BookOpen, ArrowRight, Play, Video } from 'lucide-react';
 import { getCourseThumbnail } from '../../utils/videoUtils';
 import { courseService } from '../../services/courseService';
@@ -13,15 +13,39 @@ import type { Course, Category } from '../../types';
 import styles from './CoursesListPage.module.css';
 
 export function CoursesListPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlCatId = searchParams.get('categoryId');
+  const urlSubject = searchParams.get('subject');
+  const urlSearch = searchParams.get('search') || searchParams.get('q') || '';
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
-  const [search, setSearch] = useState('');
+  const [selectedCatId, setSelectedCatId] = useState<number | null>(
+    urlCatId ? Number(urlCatId) : null
+  );
+  const [search, setSearch] = useState(urlSearch);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    categoryService.getCategories().then(setCategories).catch(() => {});
-  }, []);
+    categoryService.getCategories().then((cats) => {
+      setCategories(cats);
+      if (!urlCatId && urlSubject) {
+        const found = cats.find(c => c.name.toLowerCase() === urlSubject.toLowerCase());
+        if (found) {
+          const foundId = found.categoryId ?? found.id;
+          if (foundId) setSelectedCatId(foundId);
+        }
+      }
+    }).catch(() => {});
+  }, [urlCatId, urlSubject]);
+
+  useEffect(() => {
+    if (urlCatId) {
+      setSelectedCatId(Number(urlCatId));
+    } else if (!urlSubject) {
+      setSelectedCatId(null);
+    }
+  }, [urlCatId, urlSubject]);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -42,6 +66,33 @@ export function CoursesListPage() {
     fetchCourses();
   }, [search, selectedCatId]);
 
+  const handleSelectCategory = (cId: number | null, catName?: string) => {
+    setSelectedCatId(cId);
+    const newParams = new URLSearchParams(searchParams);
+    if (cId === null) {
+      newParams.delete('categoryId');
+      newParams.delete('subject');
+    } else {
+      newParams.set('categoryId', String(cId));
+      if (catName) {
+        newParams.set('subject', catName);
+      }
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    const newParams = new URLSearchParams(searchParams);
+    if (val.trim()) {
+      newParams.set('search', val);
+    } else {
+      newParams.delete('search');
+      newParams.delete('q');
+    }
+    setSearchParams(newParams);
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -55,7 +106,7 @@ export function CoursesListPage() {
         <div className={styles.searchWrap}>
           <SearchBar
             value={search}
-            onChange={setSearch}
+            onChange={handleSearchChange}
             placeholder="Search courses by title, topic, or keyword (e.g. Organic Chemistry, Calculus, Python)..."
           />
         </div>
@@ -65,17 +116,18 @@ export function CoursesListPage() {
         <div className={styles.categoryChips}>
           <button
             className={`${styles.chip} ${selectedCatId === null ? styles.chipActive : ''}`}
-            onClick={() => setSelectedCatId(null)}
+            onClick={() => handleSelectCategory(null)}
           >
             All Disciplines
           </button>
           {categories.map((cat) => {
             const cId = cat.categoryId ?? cat.id ?? 0;
+            const isActive = selectedCatId === cId;
             return (
               <button
                 key={cId}
-                className={`${styles.chip} ${selectedCatId === cId ? styles.chipActive : ''}`}
-                onClick={() => setSelectedCatId(selectedCatId === cId ? null : cId)}
+                className={`${styles.chip} ${isActive ? styles.chipActive : ''}`}
+                onClick={() => handleSelectCategory(isActive ? null : cId, cat.name)}
               >
                 {cat.name}
               </button>
@@ -96,7 +148,11 @@ export function CoursesListPage() {
           description="We couldn't find any courses matching your filters. Try clearing your search query."
           action={{
             label: 'Clear Filters',
-            onClick: () => { setSearch(''); setSelectedCatId(null); },
+            onClick: () => {
+              setSearch('');
+              setSelectedCatId(null);
+              setSearchParams({});
+            },
           }}
         />
       ) : (

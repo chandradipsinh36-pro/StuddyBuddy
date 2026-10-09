@@ -282,9 +282,9 @@ export const TutorApplicationsPage: React.FC = () => {
                   <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', marginTop: 2 }}>
                     {app.user.email}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 4, color: 'var(--color-gray-600)', fontSize: 'var(--font-size-xs)' }}>
-                    <GraduationCap size={14} color="var(--color-primary-600)" />
-                    <span>{app.institute_name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 4, color: 'var(--color-gray-400)', fontSize: 'var(--font-size-xs)' }}>
+                    <GraduationCap size={14} color="var(--color-primary-400)" />
+                    <span style={{ fontWeight: 600, color: 'var(--color-gray-300)' }}>{app.institute_name}</span>
                     <span>• {app.experience_years} Years Experience</span>
                   </div>
                 </div>
@@ -292,16 +292,18 @@ export const TutorApplicationsPage: React.FC = () => {
 
               {/* Skills and Verification Assets */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: '1 1 240px' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                   {app.skills.map((s) => (
                     <span
                       key={s.skill_id}
                       style={{
-                        fontSize: '0.7rem',
-                        padding: '2px 6px',
-                        backgroundColor: 'var(--color-gray-100)',
-                        borderRadius: 'var(--radius-sm)',
-                        color: 'var(--color-gray-700)',
+                        fontSize: '0.72rem',
+                        fontWeight: 500,
+                        padding: '2px 8px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                        borderRadius: '9999px',
+                        color: 'var(--color-gray-300)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
                       }}
                     >
                       {s.skill_name}
@@ -310,10 +312,10 @@ export const TutorApplicationsPage: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginTop: 4 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--font-size-xs)', color: 'var(--color-primary-600)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--font-size-xs)', color: 'var(--color-primary-400)', fontWeight: 600 }}>
                     <Video size={14} /> 5-Min Trial Video
                   </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-600)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-400)' }}>
                     <FileText size={14} /> {app.documents.length} Docs Submitted
                   </span>
                 </div>

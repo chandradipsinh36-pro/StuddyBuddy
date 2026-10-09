@@ -99,3 +99,37 @@
   margin-top: 4px;
 }
 .helper { font-size: var(--font-size-xs); color: var(--color-gray-500); }
+
+/* =====================================================
+   Dark Mode Styles
+   ===================================================== */
+:global([data-theme="dark"]) .input {
+  background: #111111;
+  border-color: #2c2c2c;
+  color: #f5f5f5;
+}
+
+:global([data-theme="dark"]) .input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+:global([data-theme="dark"]) .leftIcon,
+:global([data-theme="dark"]) .rightIcon {
+  color: #737373;
+}
+
+:global([data-theme="dark"]) .rightIcon button {
+  color: #737373;
+}
+
+:global([data-theme="dark"]) .rightIcon button:hover {
+  color: #f5f5f5;
+  background-color: #222222;
+}
+
+:global([data-theme="dark"]) .hasError .input,
+:global([data-theme="dark"]) .hasError textarea {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  border-color: #ef4444 !important;
+}

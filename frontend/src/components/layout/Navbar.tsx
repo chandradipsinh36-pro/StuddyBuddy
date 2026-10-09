@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   BookOpen, Bell, Search, Menu, X, ChevronDown,
   LayoutDashboard, User, LogOut, Settings, ShoppingBag,
-  Bookmark, Star, Users, Package, FileText, Sun, Moon
+  Bookmark, Star, Users, Package, FileText, Sun, Moon, Award
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -19,11 +19,13 @@ const PUBLIC_NAV = [
   { label: 'Courses', to: ROUTES.COURSES },
   { label: 'Bundles', to: ROUTES.BUNDLES },
   { label: 'Tutors', to: ROUTES.TUTORS },
+  { label: 'Certificates', to: ROUTES.CERTIFICATES },
 ];
 
 const STUDENT_NAV = [
   { label: 'Dashboard', to: ROUTES.STUDENT_DASHBOARD, icon: <LayoutDashboard size={16} /> },
   { label: 'Courses', to: ROUTES.COURSES, icon: <BookOpen size={16} /> },
+  { label: 'Certificates', to: ROUTES.STUDENT_CERTIFICATES, icon: <Award size={16} /> },
   { label: 'Bundles', to: ROUTES.BUNDLES, icon: <Package size={16} /> },
   { label: 'Tutors', to: ROUTES.TUTORS, icon: <Users size={16} /> },
 ];
@@ -197,6 +199,9 @@ export function Navbar() {
                         </Link>
                         <Link to={ROUTES.STUDENT_PURCHASES} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
                           <ShoppingBag size={16} /> My Purchases
+                        </Link>
+                        <Link to={ROUTES.STUDENT_CERTIFICATES} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
+                          <Award size={16} /> My Certificates
                         </Link>
                         <Link to={ROUTES.STUDENT_SAVED} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
                           <Bookmark size={16} /> Saved

@@ -164,11 +164,17 @@
   --color-border-hover:  #333333;
   --color-border-focus:  #3B82F6;
 
-  /* Primary shades in dark mode */
-  --color-primary-900: #000000;
-  --color-primary-800: #080808;
-  --color-primary-700: #121212;
-  --color-primary-600: #1A3A6B;
+  /* Primary shades in dark mode — high-contrast luminous palette for text, icons, and tints */
+  --color-primary-50:    rgba(37, 99, 235, 0.12);
+  --color-primary-100:   rgba(37, 99, 235, 0.22);
+  --color-primary-200:   rgba(59, 130, 246, 0.35);
+  --color-primary-300:   #93C5FD;
+  --color-primary-400:   #60A5FA;
+  --color-primary-500:   #3B82F6;
+  --color-primary-600:   #60A5FA;
+  --color-primary-700:   #93C5FD;
+  --color-primary-800:   #BFDBFE;
+  --color-primary-900:   #FFFFFF;
 
   /* Status Colors Adjustments for Dark Mode */
   --color-success:       #10B981;
@@ -195,9 +201,6 @@
   --color-admin-light:  rgba(99, 102, 241, 0.22);
   --color-admin-border: rgba(165, 180, 252, 0.4);
   --color-admin-dark:   #C7D2FE;
-  --color-primary-50:    #111111;
-  --color-primary-100:   #1a1a1a;
-  --color-primary-200:   #1D4ED8;
 
   /* Deep Black Shadows */
   --shadow-xs:  0 1px 2px 0 rgb(0 0 0 / 0.6);

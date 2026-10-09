@@ -6,6 +6,7 @@ import { resourceService } from '../../services/resourceService';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
+import { ResourceThumbnailIcon, ResourceFormatBadge } from '../../components/shared/ResourceFormatBadge';
 import { ROUTES } from '../../constants';
 import type { Resource } from '../../types';
 import toast from 'react-hot-toast';
@@ -109,7 +110,11 @@ export function TutorResourcesPage() {
                   <tr key={resId}>
                     <td>
                       <div className={styles.resourceCell}>
-                        {r.thumbnailUrl && <img src={r.thumbnailUrl} alt={title} className={styles.thumb} />}
+                        {r.thumbnailUrl ? (
+                          <img src={r.thumbnailUrl} alt={title} className={styles.thumb} />
+                        ) : (
+                          <ResourceThumbnailIcon type={r.type || r.fileType} filename={title} url={fileUrl} />
+                        )}
                         <div>
                           <strong>{title}</strong>
                           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>
@@ -119,7 +124,9 @@ export function TutorResourcesPage() {
                       </div>
                     </td>
                     <td>{r.category || 'General'}</td>
-                    <td><Badge variant="outline">{(r.type || r.fileType || 'pdf').toUpperCase()}</Badge></td>
+                    <td>
+                      <ResourceFormatBadge type={r.type || r.fileType} filename={title} url={fileUrl} />
+                    </td>
                     <td>
                       {Number(r.price) === 0 || r.accessType === 'free' ? (
                         <span style={{ color: 'var(--color-success)', fontWeight: 'bold' }}>Free</span>

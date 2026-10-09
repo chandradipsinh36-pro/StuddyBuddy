@@ -1,20 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Lock, Bookmark, Eye, ShoppingCart, FileText, Video, Image, Headphones, Presentation } from 'lucide-react';
+import { Lock, Bookmark, Eye, ShoppingCart } from 'lucide-react';
 import type { Resource } from '../../types';
 import { Avatar } from '../ui/Avatar/Avatar';
 import { Badge } from '../ui/Badge/Badge';
 import { Rating } from '../ui/Rating/Rating';
+import { ResourceFormatIcon } from './ResourceFormatBadge';
 import { ROUTES } from '../../constants';
 import styles from './ResourceCard.module.css';
-
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  pdf:        <FileText size={14} />,
-  image:      <Image size={14} />,
-  ppt:        <Presentation size={14} />,
-  audio:      <Headphones size={14} />,
-  youtube:    <Video size={14} />,
-  test_paper: <FileText size={14} />,
-};
 
 const TYPE_LABELS: Record<string, string> = {
   pdf: 'PDF', image: 'Image', ppt: 'Slides', audio: 'Audio',
@@ -41,12 +33,15 @@ export function ResourceCard({ resource, onSave, isSaved }: ResourceCardProps) {
   return (
     <div className={styles.card}>
       <div className={styles.thumbnail}>
-        {resource.thumbnailUrl
-          ? <img src={resource.thumbnailUrl} alt={title} className={styles.thumbnailImg} loading="lazy" />
-          : <div className={styles.thumbnailPlaceholder}>{TYPE_ICONS[resType] || <FileText size={14} />}</div>
-        }
+        {resource.thumbnailUrl ? (
+          <img src={resource.thumbnailUrl} alt={title} className={styles.thumbnailImg} loading="lazy" />
+        ) : (
+          <div className={styles.thumbnailPlaceholder} style={{ background: '#f8fafc' }}>
+            <ResourceFormatIcon type={resType} filename={title} size={48} />
+          </div>
+        )}
         <div className={styles.typeTag}>
-          {TYPE_ICONS[resType] || <FileText size={14} />}
+          <ResourceFormatIcon type={resType} filename={title} size={14} />
           {TYPE_LABELS[resType] || resType.toUpperCase()}
         </div>
         {resource.accessType === 'premium' && (

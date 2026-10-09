@@ -45,7 +45,7 @@
   display: flex; align-items: center; gap: var(--space-2);
   text-decoration: none;
   font-size: var(--font-size-xl); font-weight: var(--font-weight-bold);
-  color: var(--color-primary-900);
+  color: var(--color-gray-900);
 }
 .logoIcon { color: var(--color-primary-500); }
 
@@ -293,4 +293,95 @@
   border-color: var(--color-primary-600);
   color: var(--color-white);
   font-weight: var(--font-weight-medium);
+}
+
+.uploadPrompt {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-600);
+}
+
+/* =====================================================
+   Dark Mode Styles
+   ===================================================== */
+:global([data-theme="dark"]) .card {
+  background: #0d0d0d;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+:global([data-theme="dark"]) .roleCard {
+  background: #111111;
+  border-color: #262626;
+}
+
+:global([data-theme="dark"]) .roleCard:hover {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: var(--color-primary-400);
+}
+
+:global([data-theme="dark"]) .roleCardActive {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
+}
+
+:global([data-theme="dark"]) .roleLabel {
+  color: #f5f5f5;
+}
+
+:global([data-theme="dark"]) .roleDesc {
+  color: #a3a3a3;
+}
+
+:global([data-theme="dark"]) .columnHeader {
+  border-bottom-color: #222222;
+}
+
+:global([data-theme="dark"]) .columnTitle {
+  color: #f5f5f5;
+}
+
+:global([data-theme="dark"]) .uploadBox {
+  background: #111111;
+  border-color: #333333;
+}
+
+:global([data-theme="dark"]) .uploadBox:hover {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: #3b82f6;
+}
+
+:global([data-theme="dark"]) .uploadLabel {
+  color: #f5f5f5;
+}
+
+:global([data-theme="dark"]) .uploadSub {
+  color: #a3a3a3;
+}
+
+:global([data-theme="dark"]) .uploadPrompt {
+  color: #60a5fa;
+}
+
+:global([data-theme="dark"]) .filePreviewChip {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: rgba(96, 165, 250, 0.35);
+  color: #93c5fd;
+}
+
+:global([data-theme="dark"]) .demoBtn {
+  background: #171717;
+  border-color: #2c2c2c;
+  color: #e5e5e5;
+}
+
+:global([data-theme="dark"]) .demoBtn:hover {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+:global([data-theme="dark"]) .tutorBadgeTitle {
+  color: #93c5fd;
 }

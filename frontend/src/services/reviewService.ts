@@ -42,15 +42,39 @@ export const reviewService = {
     await apiClient.delete(`/tutor-reviews/${reviewId}`);
   },
 
-  async getTutorReceivedReviews(): Promise<any[]> {
+  async getTutorReceivedReviews(tutorId?: number): Promise<any[]> {
     try {
-      const res = await apiClient.get<any>('/auth/me');
-      const userId = res.data?.id;
-      if (userId) {
-        return await this.getTutorReviews(userId);
+      // 1. Try dedicated tutor reviews endpoint
+      try {
+        const res = await apiClient.get<any[]>('/tutors/me/reviews');
+        if (Array.isArray(res.data)) {
+          return res.data;
+        }
+      } catch {
+        // Fall back to by-ID review lookup
       }
-    } catch {
-      /* ignore */
+
+      // 2. Resolve target tutor ID
+      let targetId = tutorId;
+      if (!targetId) {
+        const stored = localStorage.getItem('sb_user');
+        if (stored) {
+          try {
+            targetId = JSON.parse(stored)?.id;
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+      if (!targetId) {
+        const res = await apiClient.get<any>('/auth/me');
+        targetId = res.data?.id;
+      }
+      if (targetId) {
+        return await this.getTutorReviews(targetId);
+      }
+    } catch (err) {
+      console.error('Error loading tutor reviews:', err);
     }
     return [];
   },

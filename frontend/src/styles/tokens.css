@@ -163,20 +163,24 @@
   --color-border-hover:  #333333;
   --color-border-focus:  #3B82F6;
 
-  /* Primary shades in dark mode to prevent blue banner/footer bleed */
-  --color-primary-900: #000000;
-  --color-primary-800: #080808;
-  --color-primary-700: #121212;
-  --color-primary-600: #1A3A6B;
+  /* Primary shades in dark mode — deep midnight tones for hero, banner, and card backgrounds */
+  --color-primary-900: #040812;
+  --color-primary-800: #081020;
+  --color-primary-700: #0d1a33;
+  --color-primary-600: #172a4d;
+  --color-primary-500: #3B82F6;
+  --color-primary-400: #60A5FA;
+  --color-primary-300: #93C5FD;
+  --color-primary-200: rgba(59, 130, 246, 0.35);
+  --color-primary-100: rgba(37, 99, 235, 0.22);
+  --color-primary-50:  rgba(37, 99, 235, 0.12);
 
   /* Semantic adjustments for pitch-black theme */
-  --color-success-light: #064E3B;
-  --color-warning-light: #451A03;
-  --color-error-light:   #450A0A;
-  --color-premium-light: #2E1065;
-  --color-ai-light:      #164E63;
-  --color-primary-50:    #111111;
-  --color-primary-100:   #1a1a1a;
+  --color-success-light: rgba(16, 185, 129, 0.18);
+  --color-warning-light: rgba(245, 158, 11, 0.18);
+  --color-error-light:   rgba(239, 68, 68, 0.18);
+  --color-premium-light: rgba(124, 58, 237, 0.2);
+  --color-ai-light:      rgba(6, 182, 212, 0.2);
 
   /* Deep Black Shadows */
   --shadow-xs:  0 1px 2px 0 rgb(0 0 0 / 0.6);

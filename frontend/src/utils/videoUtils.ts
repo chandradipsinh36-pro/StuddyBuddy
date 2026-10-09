@@ -33,7 +33,7 @@ export function parseVideoUrl(url?: string | null): VideoInfo {
     const videoId = ytMatch[1];
     return {
       type: 'youtube',
-      embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&controls=0&modestbranding=1&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&enablejsapi=1`,
       originalUrl: trimmed.startsWith('http') ? trimmed : `https://${trimmed}`,
       videoId,
       providerLabel: 'YouTube',

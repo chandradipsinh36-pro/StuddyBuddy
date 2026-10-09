@@ -33,6 +33,7 @@ import { StudentProfilePage } from '../pages/student/StudentProfilePage';
 import { StudentPurchasesPage } from '../pages/student/StudentPurchasesPage';
 import { StudentSavedPage } from '../pages/student/StudentSavedPage';
 import { StudentSettingsPage } from '../pages/student/StudentSettingsPage';
+import { StudentCertificatesPage } from '../pages/student/StudentCertificatesPage';
 
 // Tutor
 import { TutorAnalyticsPage } from '../pages/tutor/TutorAnalyticsPage';
@@ -83,6 +84,7 @@ const router = createBrowserRouter([
       { path: '/resources/:id',    element: <Navigate to={ROUTES.BUNDLES} replace /> },
       { path: ROUTES.STUDY_GROUPS, element: <Navigate to={ROUTES.BUNDLES} replace /> },
       { path: '/study-groups/:id', element: <Navigate to={ROUTES.BUNDLES} replace /> },
+      { path: ROUTES.CERTIFICATES, element: <StudentCertificatesPage /> },
     ],
   },
 
@@ -94,11 +96,12 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { path: ROUTES.STUDENT_DASHBOARD, element: <StudentDashboard /> },
-      { path: ROUTES.STUDENT_PROFILE,   element: <StudentProfilePage /> },
-      { path: ROUTES.STUDENT_PURCHASES, element: <StudentPurchasesPage /> },
-      { path: ROUTES.STUDENT_SAVED,     element: <StudentSavedPage /> },
-      { path: ROUTES.STUDENT_SETTINGS,  element: <StudentSettingsPage /> },
+      { path: ROUTES.STUDENT_DASHBOARD,    element: <StudentDashboard /> },
+      { path: ROUTES.STUDENT_PROFILE,      element: <StudentProfilePage /> },
+      { path: ROUTES.STUDENT_PURCHASES,    element: <StudentPurchasesPage /> },
+      { path: ROUTES.STUDENT_SAVED,        element: <StudentSavedPage /> },
+      { path: ROUTES.STUDENT_CERTIFICATES, element: <StudentCertificatesPage /> },
+      { path: ROUTES.STUDENT_SETTINGS,     element: <StudentSettingsPage /> },
     ],
   },
 

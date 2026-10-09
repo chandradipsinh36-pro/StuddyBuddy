@@ -378,3 +378,118 @@
   color: var(--color-gray-500);
   margin-top: 2px;
 }
+
+/* =====================================================
+   Dark Mode Styles
+   ===================================================== */
+:global([data-theme="dark"]) .selectedCounter {
+  background-color: rgba(37, 99, 235, 0.18);
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+:global([data-theme="dark"]) .input {
+  background: #111111;
+  border-color: #2c2c2c;
+  color: #f5f5f5;
+}
+
+:global([data-theme="dark"]) .input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+:global([data-theme="dark"]) .selectedTag {
+  background: rgba(37, 99, 235, 0.18);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  color: #93c5fd;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+:global([data-theme="dark"]) .tagIcon {
+  color: #60a5fa;
+}
+
+:global([data-theme="dark"]) .removeTagBtn {
+  color: #60a5fa;
+}
+
+:global([data-theme="dark"]) .removeTagBtn:hover {
+  color: #f87171;
+}
+
+:global([data-theme="dark"]) .popularChip {
+  background-color: #171717;
+  color: #d4d4d4;
+  border-color: #2c2c2c;
+}
+
+:global([data-theme="dark"]) .popularChip:hover {
+  background-color: rgba(37, 99, 235, 0.18);
+  color: #93c5fd;
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+:global([data-theme="dark"]) .popularChipActive {
+  background-color: var(--color-primary-500) !important;
+  color: #ffffff !important;
+  border-color: var(--color-primary-500) !important;
+}
+
+:global([data-theme="dark"]) .dropdown {
+  background: #121212;
+  border-color: #2c2c2c;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+}
+
+:global([data-theme="dark"]) .categoryGroup:not(:last-child) {
+  border-bottom-color: #222222;
+}
+
+:global([data-theme="dark"]) .categoryTitle {
+  background: #181818;
+  color: #a3a3a3;
+}
+
+:global([data-theme="dark"]) .degreeItem {
+  color: #e5e5e5;
+}
+
+:global([data-theme="dark"]) .degreeItem:hover {
+  background-color: rgba(37, 99, 235, 0.18);
+  color: #60a5fa;
+}
+
+:global([data-theme="dark"]) .degreeItemActive {
+  background-color: rgba(37, 99, 235, 0.28);
+  color: #93c5fd;
+}
+
+:global([data-theme="dark"]) .degreeCode {
+  color: #60a5fa;
+}
+
+:global([data-theme="dark"]) .degreeName {
+  color: #d4d4d4;
+}
+
+:global([data-theme="dark"]) .degreeBadge {
+  background: #222222;
+  color: #a3a3a3;
+}
+
+:global([data-theme="dark"]) .customOption {
+  background-color: rgba(16, 185, 129, 0.12);
+  border-bottom-color: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+}
+
+:global([data-theme="dark"]) .customOption:hover {
+  background-color: rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="dark"]) .apiCategoryTitle {
+  background-color: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+  border-bottom-color: rgba(14, 165, 233, 0.3);
+}

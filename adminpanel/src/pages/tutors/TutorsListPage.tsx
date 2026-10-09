@@ -335,13 +335,13 @@ export const TutorsListPage: React.FC = () => {
                     backgroundColor: 'var(--color-bg-subtle)',
                     borderBottom: '1px solid var(--color-border)',
                     fontSize: 'var(--font-size-xs)',
-                    color: 'var(--color-gray-500)',
+                    color: 'var(--color-gray-400)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
+                    letterSpacing: '0.06em',
                   }}
                 >
                   <th style={{ padding: 'var(--space-3) var(--space-4)', fontWeight: 700 }}>Tutor</th>
-                  <th style={{ padding: 'var(--space-3) var(--space-4)', fontWeight: 700 }}>Institute</th>
+                  <th style={{ padding: 'var(--space-3) var(--space-4)', fontWeight: 700 }}>Qualifications / Institute</th>
                   <th style={{ padding: 'var(--space-3) var(--space-4)', fontWeight: 700 }}>Skills</th>
                   <th style={{ padding: 'var(--space-3) var(--space-4)', fontWeight: 700 }}>Experience</th>
                   <th style={{ padding: 'var(--space-3) var(--space-4)', fontWeight: 700 }}>Application</th>
@@ -361,7 +361,7 @@ export const TutorsListPage: React.FC = () => {
                         borderBottom: '1px solid var(--color-border-subtle)',
                         transition: 'background-color var(--transition-fast)',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-bg-subtle)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.025)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
                       {/* Tutor Cell */}
@@ -376,7 +376,7 @@ export const TutorsListPage: React.FC = () => {
                                 color: 'var(--color-gray-900)',
                                 cursor: 'pointer',
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-600)'; }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-400)'; }}
                               onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-gray-900)'; }}
                             >
                               {tutor.user.name}
@@ -388,30 +388,91 @@ export const TutorsListPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Institute */}
-                      <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--color-gray-700)', fontSize: 'var(--font-size-xs)' }}>
-                        {tutor.institute_name}
+                      {/* Qualifications / Institute */}
+                      <td style={{ padding: 'var(--space-3) var(--space-4)', maxWidth: 280 }}>
+                        {(() => {
+                          const raw = tutor.institute_name || '';
+                          if (!raw) return <span style={{ color: 'var(--color-gray-500)', fontSize: 'var(--font-size-xs)' }}>—</span>;
+                          const parts = raw.split(/,\s+(?=[A-Z])/).filter(Boolean);
+                          if (parts.length <= 1) {
+                            return (
+                              <span
+                                style={{
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600,
+                                  color: 'var(--color-gray-300)',
+                                  lineHeight: 1.4,
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                }}
+                                title={raw}
+                              >
+                                {raw}
+                              </span>
+                            );
+                          }
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              {parts.slice(0, 2).map((part, idx) => (
+                                <span
+                                  key={idx}
+                                  style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: 600,
+                                    padding: '2px 8px',
+                                    backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                                    color: 'var(--color-primary-400)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: 260,
+                                    display: 'inline-block',
+                                  }}
+                                  title={part}
+                                >
+                                  {part}
+                                </span>
+                              ))}
+                              {parts.length > 2 && (
+                                <span style={{ fontSize: '0.7rem', color: 'var(--color-gray-400)' }}>
+                                  +{parts.length - 2} more qualifications
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* Skills */}
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 220 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, maxWidth: 220 }}>
                           {tutor.skills.slice(0, 2).map((s) => (
                             <span
                               key={s.skill_id}
                               style={{
-                                fontSize: '0.7rem',
-                                padding: '2px 6px',
-                                backgroundColor: 'var(--color-gray-100)',
-                                borderRadius: 'var(--radius-sm)',
-                                color: 'var(--color-gray-700)',
+                                fontSize: '0.72rem',
+                                fontWeight: 500,
+                                padding: '2px 8px',
+                                backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                                borderRadius: '9999px',
+                                color: 'var(--color-gray-300)',
+                                border: '1px solid rgba(255, 255, 255, 0.12)',
+                                whiteSpace: 'nowrap',
+                                maxWidth: 180,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
                               }}
+                              title={s.skill_name}
                             >
                               {s.skill_name}
                             </span>
                           ))}
                           {tutor.skills.length > 2 && (
-                            <span style={{ fontSize: '0.7rem', color: 'var(--color-gray-400)', alignSelf: 'center' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--color-gray-400)', alignSelf: 'center', fontWeight: 600 }}>
                               +{tutor.skills.length - 2} more
                             </span>
                           )}
@@ -419,8 +480,23 @@ export const TutorsListPage: React.FC = () => {
                       </td>
 
                       {/* Experience */}
-                      <td style={{ padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}>
-                        {tutor.experience_years} years
+                      <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            padding: '2px 8px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--color-border)',
+                            color: 'var(--color-gray-300)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          {tutor.experience_years} yrs
+                        </span>
                       </td>
 
                       {/* Application Status */}

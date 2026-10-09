@@ -447,7 +447,7 @@ export function RegisterPage() {
                       tabIndex={0}
                     >
                       <Upload size={24} color="var(--color-primary-500)" />
-                      <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-primary-600)' }}>
+                      <span className={styles.uploadPrompt}>
                         Click to choose certificate or degree document
                       </span>
                       <span className={styles.uploadSub}>

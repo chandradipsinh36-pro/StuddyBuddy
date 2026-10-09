@@ -6,14 +6,27 @@ import {
 } from 'lucide-react';
 import { categoryService } from '../../services/categoryService';
 import { tutorService } from '../../services/tutorService';
-import { resourceService } from '../../services/resourceService';
+import { bundleService } from '../../services/bundleService';
 import { TutorCard } from '../../components/shared/TutorCard';
-import { ResourceCard } from '../../components/shared/ResourceCard';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { ROUTES } from '../../constants';
-import type { Category, Tutor, Resource } from '../../types';
+import type { Category, Tutor, Bundle } from '../../types';
 import styles from './LandingPage.module.css';
+
+const getSubjectEmoji = (name: string): string => {
+  const n = (name || '').toLowerCase();
+  if (n.includes('math')) return '📐';
+  if (n.includes('physic')) return '⚛️';
+  if (n.includes('chem')) return '🧪';
+  if (n.includes('bio')) return '🧬';
+  if (n.includes('comp') || n.includes('code') || n.includes('program') || n.includes('js') || n.includes('java')) return '💻';
+  if (n.includes('machine') || n.includes('ai') || n.includes('data')) return '🤖';
+  if (n.includes('eng') || n.includes('lit') || n.includes('grammar')) return '📖';
+  if (n.includes('test') || n.includes('exam')) return '📝';
+  if (n.includes('note') || n.includes('guide')) return '📑';
+  return '📚';
+};
 
 const HOW_IT_WORKS = [
   {
@@ -37,12 +50,12 @@ const HOW_IT_WORKS = [
 export function LandingPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
-  const [resources, setResources] = useState<Resource[]>([]);
+  const [bundles, setBundles] = useState<Bundle[]>([]);
 
   useEffect(() => {
     categoryService.getCategories().then(setCategories).catch(() => {});
     tutorService.getTutors({ limit: 3 }).then(res => setTutors(res.data || [])).catch(() => {});
-    resourceService.getResources({ limit: 4 }).then(res => setResources(res.data || [])).catch(() => {});
+    bundleService.getPublicBundles().then(res => setBundles(res || [])).catch(() => {});
   }, []);
 
   return (
@@ -134,20 +147,27 @@ export function LandingPage() {
           <div className={styles.container}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Browse by Subject</h2>
-              <Link to={ROUTES.EXPLORE} className={styles.seeAll}>
+              <Link to={ROUTES.COURSES} className={styles.seeAll}>
                 See all subjects <ChevronRight size={16} />
               </Link>
             </div>
             <div className={styles.categoriesGrid}>
-              {categories.map(cat => (
-                <Link key={cat.id || (cat as any).categoryId || cat.name} to={`${ROUTES.EXPLORE}?subject=${cat.slug || cat.name.toLowerCase()}`} className={styles.categoryCard}>
-                  <span className={styles.categoryIcon}>{cat.icon || '📚'}</span>
-                  <span className={styles.categoryName}>{cat.name}</span>
-                  {typeof cat.resourceCount === 'number' && (
-                    <span className={styles.categoryCount}>{cat.resourceCount} resources</span>
-                  )}
-                </Link>
-              ))}
+              {categories.map(cat => {
+                const cId = cat.categoryId ?? (cat as any).id;
+                return (
+                  <Link
+                    key={cId || cat.name}
+                    to={`${ROUTES.COURSES}?categoryId=${cId}&subject=${encodeURIComponent(cat.name)}`}
+                    className={styles.categoryCard}
+                  >
+                    <span className={styles.categoryIcon}>{cat.icon || getSubjectEmoji(cat.name)}</span>
+                    <span className={styles.categoryName}>{cat.name}</span>
+                    {typeof cat.resourceCount === 'number' && (
+                      <span className={styles.categoryCount}>{cat.resourceCount} resources</span>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -170,29 +190,6 @@ export function LandingPage() {
             <div className={styles.tutorGrid}>
               {tutors.slice(0, 3).map(tutor => (
                 <TutorCard key={tutor.id || (tutor as any).tutorId || (tutor as any).userId || tutor.name} tutor={tutor} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ===== POPULAR RESOURCES ===== */}
-      {resources.length > 0 && (
-        <section className={styles.section}>
-          <div className={styles.container}>
-            <div className={styles.sectionHeader}>
-              <div>
-                <Badge variant="premium" className={styles.sectionBadge}>Resources</Badge>
-                <h2 className={styles.sectionTitle}>Popular Learning Resources</h2>
-                <p className={styles.sectionSubtitle}>PDFs, videos, tests, and more — all verified and safe.</p>
-              </div>
-              <Link to={ROUTES.RESOURCES} className={styles.seeAll}>
-                Browse all resources <ChevronRight size={16} />
-              </Link>
-            </div>
-            <div className={styles.resourceGrid}>
-              {resources.slice(0, 4).map(resource => (
-                <ResourceCard key={resource.id || (resource as any).resourceId || resource.title} resource={resource} />
               ))}
             </div>
           </div>
@@ -291,26 +288,45 @@ export function LandingPage() {
             </Link>
           </div>
           <div className={styles.groupsGrid}>
-            {[
-              { name: 'Ulimate Maths Bundle', subject: 'Mathematics', items: '2 Resources', price: '₹1,350', emoji: '📐' },
-              { name: 'Physics & Science Pack', subject: 'Physics', items: '3 Resources', price: '₹499', emoji: '⚗️' },
-              { name: 'Computer Science Essentials', subject: 'Computer Science', items: '4 Resources', price: '₹799', emoji: '💻' },
-              { name: 'Complete Grammar & Literature', subject: 'English', items: '2 Resources', price: 'Free', emoji: '📚' },
-            ].map((g, i) => (
-              <Link key={i} to={ROUTES.BUNDLES} className={styles.groupCard}>
-                <div className={styles.groupEmoji}>{g.emoji}</div>
-                <div className={styles.groupInfo}>
-                  <div className={styles.groupName}>
-                    {g.name}
-                  </div>
-                  <div className={styles.groupSubject}>{g.subject} • {g.items}</div>
-                  <div className={styles.groupStats}>
-                    <span style={{ fontWeight: 800, color: 'var(--color-primary-600)' }}>{g.price}</span>
-                  </div>
-                </div>
-                <ChevronRight size={16} className={styles.groupArrow} />
-              </Link>
-            ))}
+            {bundles.length > 0 ? (
+              bundles.slice(0, 4).map((b) => {
+                const bId = b.id || (b as any).bundleId;
+                const resourceCount = b.bundleItems?.length || (b as any).resources?.length || (b as any)._count?.bundleItems || 0;
+                const priceNum = Number(b.price || (b as any).finalPrice || 0);
+                const priceDisplay = priceNum === 0 ? 'Free' : `₹${priceNum.toLocaleString()}`;
+                const subjectName = (b as any).category?.name || (b as any).subject || (b.tutor?.name ? `By ${b.tutor.name}` : 'Curated Pack');
+                const emoji = getSubjectEmoji(b.title || b.name || subjectName);
+
+                return (
+                  <Link key={bId} to={`/bundles/${bId}`} className={styles.groupCard}>
+                    <div className={styles.groupEmoji}>{emoji}</div>
+                    <div className={styles.groupInfo}>
+                      <div className={styles.groupName} title={b.title || b.name}>
+                        {b.title || b.name}
+                      </div>
+                      <div className={styles.groupSubject}>
+                        {subjectName} • {resourceCount} {resourceCount === 1 ? 'Resource' : 'Resources'}
+                      </div>
+                      <div className={styles.groupStats}>
+                        <span style={{ fontWeight: 800, color: 'var(--color-primary-600)' }}>
+                          {priceDisplay}
+                        </span>
+                        {b.discountPercent && b.discountPercent > 0 ? (
+                          <span style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600, marginLeft: 8 }}>
+                            {b.discountPercent}% OFF
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className={styles.groupArrow} />
+                  </Link>
+                );
+              })
+            ) : (
+              <div style={{ gridColumn: '1 / -1', padding: 'var(--space-6)', textAlign: 'center', color: 'var(--color-gray-500)' }}>
+                No study bundles available right now.
+              </div>
+            )}
           </div>
         </div>
       </section>
