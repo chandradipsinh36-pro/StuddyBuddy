@@ -174,7 +174,7 @@ export function Navbar() {
                   aria-expanded={profileOpen}
                 >
                   <Avatar src={user?.avatarUrl || user?.profilePic || undefined} name={user?.name ?? 'User'} size="sm" />
-                  <span className={styles.profileName}>{user?.name?.split(' ')[0]}</span>
+                  <span className={styles.profileName} title={user?.name}>{user?.name || 'User'}</span>
                   <ChevronDown size={14} className={`${styles.chevron} ${profileOpen ? styles.chevronOpen : ''}`} />
                 </button>
 

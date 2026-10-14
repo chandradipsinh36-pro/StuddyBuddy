@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ChevronRight, Upload, Video, Clock, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { tutorService } from '../../services/tutorService';
 import { Input } from '../../components/ui/Input/Input';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
@@ -27,6 +29,7 @@ const APPLICATION_STATUS_CONFIG = {
 };
 
 export function TutorOnboarding() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -34,11 +37,27 @@ export function TutorOnboarding() {
   const [appStatus] = useState<'pending' | 'under_review' | 'approved' | 'rejected' | 'needs_changes' | null>(null);
 
   const [formData, setFormData] = useState({
-    name: '', bio: '', phone: '', subjects: [] as string[],
-    highestQualification: '', experience: '', skills: '', documents: [] as File[],
-    trialVideoFile: null as File | null, trialVideoUrl: '',
+    name: user?.name || '',
+    bio: '',
+    phone: '',
+    subjects: [] as string[],
+    highestQualification: '',
+    experience: '',
+    skills: '',
+    documents: [] as File[],
+    trialVideoFile: null as File | null,
+    trialVideoUrl: '',
     trialVideoDuration: 0,
   });
+
+  useEffect(() => {
+    if (user?.name) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || user.name,
+      }));
+    }
+  }, [user?.name]);
 
   const updateFormData = (updates: Partial<typeof formData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
@@ -89,6 +108,47 @@ export function TutorOnboarding() {
         <h1 className={styles.title}>Tutor Onboarding</h1>
         <p className={styles.subtitle}>Complete all steps to start teaching on StudyBuddy</p>
       </div>
+
+      {user && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 18px',
+          background: 'var(--color-primary-50, rgba(37, 99, 235, 0.08))',
+          border: '1px solid var(--color-primary-200, rgba(37, 99, 235, 0.2))',
+          borderRadius: '12px',
+          marginBottom: '24px',
+          gap: '12px',
+          flexWrap: 'wrap',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Avatar src={user?.avatarUrl || user?.profilePic || undefined} name={user?.name ?? 'Tutor'} size="md" />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--color-gray-900)' }}>
+                {user?.name}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--color-gray-500)' }}>
+                {user?.email} • Verified Google Account
+              </div>
+            </div>
+          </div>
+          <div style={{
+            fontSize: '12px',
+            fontWeight: 600,
+            color: 'var(--color-primary-700)',
+            background: 'var(--color-white)',
+            padding: '5px 12px',
+            borderRadius: '999px',
+            border: '1px solid var(--color-primary-300)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            <Check size={14} color="#16a34a" /> Authenticated with Google
+          </div>
+        </div>
+      )}
 
       {/* Step indicator */}
       <div className={styles.steps}>

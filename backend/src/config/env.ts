@@ -14,6 +14,8 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().optional().default('dk5pi4iw'),
   CLOUDINARY_API_KEY: z.string().optional().default(''),
   CLOUDINARY_API_SECRET: z.string().optional().default('nIYF1QHzTyjNSvtJm8zpbGtjmxo'),
+  GOOGLE_CLIENT_ID: z.string().optional().default('174417435512-d3b8rmfsdq16tkohvvdicdkj7rt7os79.apps.googleusercontent.com'),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default('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'),
 });
 
 const parsed = envSchema.safeParse(process.env);

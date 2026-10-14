@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
 import { ROUTES } from '../../constants';
+import { GoogleLoginButton } from '../../components/auth/GoogleLoginButton';
 import toast from 'react-hot-toast';
 import styles from './Auth.module.css';
 
@@ -106,6 +107,12 @@ export function LoginPage() {
             Sign In
           </Button>
         </form>
+
+        <div className={styles.divider}>
+          <span>or continue with</span>
+        </div>
+
+        <GoogleLoginButton text="signin_with" />
 
         <div className={styles.divider}>
           <span>or try a demo account</span>

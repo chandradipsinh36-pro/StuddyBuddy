@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Flame, Save, BookOpen, Clock, Award } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar } from '../../components/ui/Avatar/Avatar';
@@ -12,11 +12,17 @@ import styles from './StudentProfilePage.module.css';
 
 export function StudentProfilePage() {
   const { user } = useAuth();
-  const [name, setName] = useState(user?.name || 'Alex Johnson');
-  const [bio, setBio] = useState('High school senior aiming for Computer Science & Mathematics in college. Love solving coding challenges and calculus problems!');
-  const [goal, setGoal] = useState('Ace JEE Advanced & AP Calculus BC');
+  const [name, setName] = useState(user?.name || 'Student');
+  const [bio, setBio] = useState('Enthusiastic learner on StudyBuddy aiming for academic excellence!');
+  const [goal, setGoal] = useState('Ace my upcoming examinations & master concepts');
   const [interests, setInterests] = useState<string[]>(['Mathematics', 'Computer Science', 'Physics']);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (user?.name) {
+      setName(user.name);
+    }
+  }, [user?.name]);
 
   const toggleInterest = (subject: string) => {
     setInterests(prev =>

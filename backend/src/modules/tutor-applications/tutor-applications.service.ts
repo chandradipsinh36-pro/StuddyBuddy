@@ -15,11 +15,19 @@ export const tutorApplicationsService = {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.role !== 'tutor') throw new AuthorizationError('Only tutors can submit applications');
 
-    // No duplicate pending/under_review applications
+    // Upsert if application already exists in pending/under_review
     const existing = await prisma.tutorApplication.findFirst({
       where: { userId, status: { in: ['pending', 'under_review'] } },
     });
-    if (existing) throw new ConflictError('You already have a pending application');
+    if (existing) {
+      return prisma.tutorApplication.update({
+        where: { applicationId: existing.applicationId },
+        data: {
+          ...(input.trialVideoUrl ? { trialVideoUrl: input.trialVideoUrl } : {}),
+        },
+        include: { documents: true },
+      });
+    }
 
     return prisma.tutorApplication.create({
       data: { userId, trialVideoUrl: input.trialVideoUrl },

@@ -121,26 +121,64 @@ export const tutorService = {
   // ── Onboarding / Application ──────────────────────────────────────
   async submitOnboarding(data: any): Promise<any> {
     const bio = data instanceof FormData ? (data.get('bio') as string) : data.bio;
-    const instituteName = data instanceof FormData ? (data.get('instituteName') as string) : data.instituteName;
+    const qualification = data instanceof FormData ? (data.get('highestQualification') as string) : data.highestQualification;
+    const instituteName = data instanceof FormData ? (data.get('instituteName') as string) : (data.instituteName || qualification);
     const rawExp = data instanceof FormData ? (data.get('experience') as string) : data.experience;
     const experienceYears = parseInt(rawExp || '1', 10);
 
-    // Save/update profile
+    // Save/update profile with qualifications
+    const profileBio = bio || (qualification ? `Degree / Qualification: ${qualification}` : 'Dedicated educator on StudyBuddy.');
     try {
       await apiClient.post('/tutors/me/profile', {
-        bio: bio || 'Dedicated educator on StudyBuddy.',
-        instituteName: instituteName || 'StudyBuddy Academy',
+        bio: profileBio,
+        instituteName: instituteName || qualification || 'Independent Educator',
         experienceYears: isNaN(experienceYears) ? 1 : experienceYears,
       });
     } catch {
       try {
         await apiClient.patch('/tutors/me/profile', {
-          bio: bio || undefined,
-          instituteName: instituteName || undefined,
+          bio: profileBio,
+          instituteName: instituteName || qualification || undefined,
           experienceYears: isNaN(experienceYears) ? undefined : experienceYears,
         });
       } catch {
         /* ignore */
+      }
+    }
+
+    // Save subjects / skills
+    const subjects = data instanceof FormData ? data.getAll('subjects') : (data.subjects || []);
+    if (Array.isArray(subjects) && subjects.length > 0) {
+      for (const subj of subjects) {
+        if (typeof subj === 'string' && subj.trim().length > 0) {
+          try {
+            await apiClient.post('/tutors/me/skills', { skillName: subj.trim(), proficiency: 'intermediate' });
+          } catch {
+            /* ignore duplicate skills */
+          }
+        }
+      }
+    }
+
+    // Save document certificates if provided
+    const documents = data instanceof FormData ? data.getAll('documents') : (data.documents || []);
+    if (Array.isArray(documents) && documents.length > 0) {
+      for (const doc of documents) {
+        if (doc instanceof File) {
+          try {
+            const reader = new FileReader();
+            const dataUrl = await new Promise<string>((resolve) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.readAsDataURL(doc);
+            });
+            await apiClient.post('/tutor-applications/me/documents', {
+              documentUrl: dataUrl,
+              documentType: 'qualification_certificate',
+            });
+          } catch (docErr) {
+            console.warn('Document upload warning:', docErr);
+          }
+        }
       }
     }
 

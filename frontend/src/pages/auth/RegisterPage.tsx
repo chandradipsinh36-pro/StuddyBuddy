@@ -14,6 +14,7 @@ import { Input } from '../../components/ui/Input/Input';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { DegreeSelect, SubjectMultiSelect } from '../../components/ui';
 import { ROUTES } from '../../constants';
+import { GoogleLoginButton } from '../../components/auth/GoogleLoginButton';
 import toast from 'react-hot-toast';
 import styles from './Auth.module.css';
 
@@ -306,8 +307,55 @@ export function RegisterPage() {
           </div>
 
           {role === 'tutor' ? (
-            /* Horizontal 2-Column Tutor Registration Layout */
-            <div className={styles.tutorFormGrid}>
+            <>
+              {/* Google First-Step Authentication Card for Tutors */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(59,130,246,0.12) 100%)',
+                border: '1.5px solid var(--color-primary-300, #93c5fd)',
+                borderRadius: 'var(--radius-lg, 12px)',
+                padding: 'var(--space-4) var(--space-5)',
+                marginBottom: 'var(--space-4)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--space-3)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    <span style={{ fontSize: '18px' }}>⚡</span>
+                    <strong style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-primary-900, #1e3a8a)' }}>
+                      First: Authenticate with Google
+                    </strong>
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'var(--color-primary-700)',
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    padding: '3px 8px',
+                    borderRadius: '999px',
+                    border: '1px solid var(--color-primary-200)'
+                  }}>
+                    Step 1 of 2
+                  </span>
+                </div>
+                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-600)', margin: 0, lineHeight: 1.5 }}>
+                  Sign in with your Google account first. Your full name and verified email will be saved, and you will then be immediately redirected to enter your qualifications, subjects, and teaching credentials.
+                </p>
+                <GoogleLoginButton
+                  role="tutor"
+                  text="continue_with"
+                  onSuccess={() => {
+                    navigate(ROUTES.TUTOR_ONBOARDING, { replace: true });
+                  }}
+                />
+              </div>
+
+              <div className={styles.divider}>
+                <span>or register manually with form below</span>
+              </div>
+
+              {/* Horizontal 2-Column Tutor Registration Layout */}
+              <div className={styles.tutorFormGrid}>
               {/* Left Column: Personal & Account Details */}
               <div className={styles.formColumn}>
                 <div className={styles.columnHeader}>
@@ -503,6 +551,7 @@ export function RegisterPage() {
                 </Button>
               </div>
             </div>
+            </>
           ) : (
             /* Student Registration (Single Column Compact) */
             <>
@@ -577,6 +626,12 @@ export function RegisterPage() {
             </>
           )}
         </form>
+
+        <div className={styles.divider}>
+          <span>or continue with</span>
+        </div>
+
+        <GoogleLoginButton role={role} text="signup_with" />
 
         <p className={styles.footer}>
           Already have an account?{' '}

@@ -10,6 +10,7 @@ import { TutorCard } from '../../components/shared/TutorCard';
 import { ProgressBar } from '../../components/ui/ProgressBar/ProgressBar';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
+import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { SkeletonCard, Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { getCourseProgress } from '../../utils/courseProgress';
 import { getCourseThumbnail } from '../../utils/videoUtils';
@@ -40,7 +41,7 @@ export function StudentDashboard() {
     ]).finally(() => setLoading(false));
   }, []);
 
-  const firstName = user?.name?.split(' ')[0] || 'there';
+  const displayName = user?.name || 'Student';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
@@ -58,9 +59,12 @@ export function StudentDashboard() {
     <div className={styles.page}>
       {/* Welcome Header */}
       <div className={styles.welcome}>
-        <div className={styles.welcomeText}>
-          <h1 className={styles.greeting}>{greeting}, {firstName}! 👋</h1>
-          <p className={styles.welcomeSubtitle}>Ready to learn something amazing today?</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+          <Avatar src={user?.avatarUrl || user?.profilePic || undefined} name={displayName} size="xl" />
+          <div className={styles.welcomeText}>
+            <h1 className={styles.greeting}>{greeting}, {displayName}! 👋</h1>
+            <p className={styles.welcomeSubtitle}>Ready to learn something amazing today?</p>
+          </div>
         </div>
         <div className={styles.welcomeActions}>
           <Link to={ROUTES.COURSES}>

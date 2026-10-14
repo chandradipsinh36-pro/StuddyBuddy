@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import styles from './Avatar.module.css';
 
 interface AvatarProps {
-  src?: string;
+  src?: string | null;
   name?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
@@ -27,18 +28,31 @@ function getColorFromName(name: string): string {
   return colors[charCode % colors.length];
 }
 
-export function Avatar({ name = 'User', size = 'md', className = '' }: AvatarProps) {
+export function Avatar({ src, name = 'User', size = 'md', className = '' }: AvatarProps) {
+  const [imgError, setImgError] = useState(false);
   const firstChar = getFirstChar(name);
   const bgColor = getColorFromName(name);
+
+  const showImage = Boolean(src && !imgError);
 
   return (
     <div
       className={`${styles.avatar} ${styles[size]} ${className}`}
-      style={{ backgroundColor: bgColor }}
+      style={{ backgroundColor: showImage ? 'transparent' : bgColor }}
       aria-label={name}
       title={name}
     >
-      <span className={styles.initials}>{firstChar}</span>
+      {showImage ? (
+        <img
+          src={src!}
+          alt={name}
+          className={styles.img}
+          onError={() => setImgError(true)}
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <span className={styles.initials}>{firstChar}</span>
+      )}
     </div>
   );
 }

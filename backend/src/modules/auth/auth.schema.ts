@@ -18,5 +18,13 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const googleAuthSchema = z.object({
+  credential: z.string().optional(),
+  code: z.string().optional(),
+  accessToken: z.string().optional(),
+  role: z.enum(['student', 'tutor']).optional().default('student'),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;

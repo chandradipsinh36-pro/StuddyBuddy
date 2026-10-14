@@ -8,6 +8,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   role: UserRole | null;
   login: (email: string, password: string) => Promise<void>;
+  googleLogin: (payload: { credential?: string; code?: string; accessToken?: string; role?: 'student' | 'tutor' }) => Promise<User>;
   setCurrentUser: (user: User, token?: string) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -52,6 +53,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(authUser);
   };
 
+  const googleLogin = async (payload: { credential?: string; code?: string; accessToken?: string; role?: 'student' | 'tutor' }) => {
+    const authUser = await authService.googleLogin(payload);
+    localStorage.setItem('sb_token', authUser.token);
+    localStorage.setItem('sb_user', JSON.stringify(authUser));
+    setUser(authUser);
+    return authUser;
+  };
+
   const setCurrentUser = (newUser: User, token?: string) => {
     const effectiveToken = token || `sb_token_${newUser.role}_${newUser.id}`;
     localStorage.setItem('sb_token', effectiveToken);
@@ -71,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: !!user,
       role: user?.role ?? null,
       login,
+      googleLogin,
       setCurrentUser,
       logout,
       refreshUser,

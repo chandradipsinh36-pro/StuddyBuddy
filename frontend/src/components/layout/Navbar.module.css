@@ -87,7 +87,7 @@
 .profileName {
   font-size: var(--font-size-sm); font-weight: var(--font-weight-medium);
   color: var(--color-gray-700);
-  max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 .chevron { color: var(--color-gray-500); transition: transform var(--transition-fast); }

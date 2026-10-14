@@ -17,6 +17,13 @@ export const authController = {
     } catch (err) { next(err); }
   },
 
+  async googleAuth(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await authService.googleAuth(req.body);
+      sendSuccess(res, result, { message: 'Google authentication successful' });
+    } catch (err) { next(err); }
+  },
+
   async logout(_req: Request, res: Response, next: NextFunction) {
     try {
       sendSuccess(res, null, { message: 'Logged out successfully' });
