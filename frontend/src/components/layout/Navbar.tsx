@@ -226,7 +226,7 @@ export function Navbar() {
                           <Package size={16} /> My Bundles
                         </Link>
                         <Link to={ROUTES.TUTOR_PROFILE_EDIT} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
-                          <User size={16} /> My Profile
+                          <User size={16} /> {!user?.isVerified ? 'My Profile & Application' : 'My Profile'}
                         </Link>
                         <Link to={ROUTES.TUTOR_EARNINGS} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
                           <Star size={16} /> Earnings

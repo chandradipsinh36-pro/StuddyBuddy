@@ -72,6 +72,9 @@ export interface TutorProfile {
   experienceYears: number;
   experience?: string | number;
   trialVideo?: string;
+  trialVideoUrl?: string;
+  applicationStatus?: string;
+  application?: any;
   subjects?: string[];
   skills?: string[] | TutorSkill[];
   createdAt: string;

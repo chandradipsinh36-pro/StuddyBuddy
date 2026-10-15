@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Users, Eye, IndianRupee, Star, TrendingUp, ArrowRight, Plus, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import {
+  BookOpen, Users, Eye, IndianRupee, Star, TrendingUp, ArrowRight,
+  Plus, CheckCircle2, Sparkles, Send, Clock, AlertCircle
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { earningsService } from '../../services/earningsService';
 import { resourceService } from '../../services/resourceService';
 import { reviewService } from '../../services/reviewService';
-import { applicationService } from '../../services/applicationService';
+import { tutorService } from '../../services/tutorService';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
 import { Rating } from '../../components/ui/Rating/Rating';
@@ -31,7 +34,7 @@ export function TutorDashboard() {
       earningsService.getSummary().then(setEarnings).catch(() => null),
       resourceService.getMyResources({ limit: 5 }).then(res => setResources(res.data || [])).catch(() => []),
       reviewService.getTutorReceivedReviews(tutorId).then(setReviews).catch(() => []),
-      applicationService.getMyApplication().then(app => setApplicationStatus(app.status)).catch(() => null),
+      tutorService.getMyProfile().then(p => setApplicationStatus(p?.applicationStatus || 'none')).catch(() => setApplicationStatus('none')),
     ]).finally(() => setLoading(false));
   }, [user?.id, refreshUser]);
 
@@ -50,31 +53,122 @@ export function TutorDashboard() {
     { icon: <TrendingUp size={20} />, label: 'This Month', value: earnings ? `₹${earnings.thisMonthEarnings?.toLocaleString() ?? 0}` : '₹0', color: 'success', link: ROUTES.TUTOR_EARNINGS },
   ];
 
+  const isApproved = user?.isVerified || applicationStatus === 'approved';
+  const isPending = applicationStatus === 'pending' || applicationStatus === 'under_review';
+  const isRejected = applicationStatus === 'rejected';
+  const isUnapplied = !isApproved && !isPending && !isRejected;
+
   return (
     <div className={styles.page}>
-      {/* Verification Status Banner */}
-      {!user?.isVerified ? (
+      {/* 1. Unapplied Tutor Banner (Registered but application not yet sent) */}
+      {isUnapplied && (
+        <div style={{
+          backgroundColor: '#eff6ff',
+          border: '1.5px solid #3b82f6',
+          borderRadius: 'var(--radius-xl, 16px)',
+          padding: '20px 24px',
+          marginBottom: 'var(--space-6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 'var(--space-4)',
+          flexWrap: 'wrap',
+          boxShadow: '0 4px 14px rgba(37, 99, 235, 0.08)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', flex: 1, minWidth: 280 }}>
+            <Sparkles size={28} color="#2563eb" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <strong style={{ color: '#1e40af', fontSize: 'var(--font-size-base)', fontWeight: 700 }}>
+                  Action Required: Complete &amp; Send Your Tutor Application
+                </strong>
+                <span style={{
+                  backgroundColor: '#dbeafe',
+                  color: '#1e40af',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: '9999px',
+                  textTransform: 'uppercase',
+                }}>
+                  Application Not Sent
+                </span>
+              </div>
+              <p style={{ color: '#1e3a8a', fontSize: 'var(--font-size-sm)', margin: '6px 0 0', lineHeight: 1.5 }}>
+                Welcome to StudyBuddy! Your educator account is registered. You haven&apos;t submitted your tutor verification application yet. Add your qualifications, degree certificate, and demo video in your Profile to request admin verification and start teaching.
+              </p>
+            </div>
+          </div>
+          <Link to={ROUTES.TUTOR_PROFILE_EDIT}>
+            <Button variant="primary" size="lg" leftIcon={<Send size={16} />}>
+              Complete &amp; Send Application
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {/* 2. Pending Admin Review Banner */}
+      {isPending && (
         <div className={styles.verificationBannerPending}>
-          <ShieldAlert size={26} color="#D97706" style={{ flexShrink: 0, marginTop: 2 }} />
+          <Clock size={26} color="#d97706" style={{ flexShrink: 0, marginTop: 2 }} />
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
               <strong className={styles.verificationPendingTitle}>
                 Tutor Verification In Progress
               </strong>
               <span className={styles.verificationPendingBadge}>
-                {applicationStatus || 'Pending Admin Approval'}
+                Pending Admin Review
               </span>
             </div>
             <p className={styles.verificationPendingDesc}>
-              Your tutor approval application has been sent to the Admin Panel. The admin is verifying your qualification certificate, trial video lecture, degree, and experience. Once approved, you can create courses, playlists, and resource bundles.
+              Your tutor application and credentials have been submitted and are in the review queue. Platform admins are reviewing your qualification certificate, degree, and demo video lecture. Once approved, you can create courses, playlists, and resource bundles.
             </p>
           </div>
+          <Link to={ROUTES.TUTOR_PROFILE_EDIT}>
+            <Button variant="secondary" size="sm">View Profile</Button>
+          </Link>
         </div>
-      ) : (
+      )}
+
+      {/* 3. Rejected Banner */}
+      {isRejected && (
+        <div style={{
+          backgroundColor: '#fef2f2',
+          border: '1.5px solid #ef4444',
+          borderRadius: 'var(--radius-xl, 16px)',
+          padding: '18px 22px',
+          marginBottom: 'var(--space-6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 'var(--space-4)',
+          flexWrap: 'wrap',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', flex: 1, minWidth: 280 }}>
+            <AlertCircle size={26} color="#dc2626" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <strong style={{ color: '#991b1b', fontSize: 'var(--font-size-base)', fontWeight: 700 }}>
+                Tutor Application Requires Changes
+              </strong>
+              <p style={{ color: '#b91c1c', fontSize: 'var(--font-size-sm)', margin: '4px 0 0', lineHeight: 1.5 }}>
+                Your previous application was reviewed and requires updates. Please check the admin feedback in your profile to update your details and resubmit.
+              </p>
+            </div>
+          </div>
+          <Link to={ROUTES.TUTOR_PROFILE_EDIT}>
+            <Button variant="danger" size="md" leftIcon={<Send size={16} />}>
+              Review &amp; Resubmit
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {/* 4. Approved Banner */}
+      {isApproved && (
         <div className={styles.verificationBannerApproved}>
-          <CheckCircle2 size={20} color="#16A34A" />
+          <CheckCircle2 size={20} color="#16a34a" />
           <span className={styles.verificationApprovedText}>
-            Verified Tutor Account • Full permissions enabled to create courses, playlists, and bundles.
+            Verified Tutor Account &bull; Full permissions enabled to create courses, playlists, and bundles.
           </span>
         </div>
       )}

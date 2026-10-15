@@ -34,14 +34,18 @@ const DEFAULT_CLIENT_ID = '174417435512-d3b8rmfsdq16tkohvvdicdkj7rt7os79.apps.go
 interface GoogleLoginButtonProps {
   role?: 'student' | 'tutor';
   text?: 'signin_with' | 'signup_with' | 'continue_with';
+  mode?: 'login' | 'register';
   onSuccess?: (user: any) => void;
+  onError?: (errorMessage: string, isUnregistered: boolean, isAlreadyExists: boolean) => void;
   className?: string;
 }
 
 export function GoogleLoginButton({
   role = 'student',
   text = 'continue_with',
+  mode = 'login',
   onSuccess,
+  onError,
   className = '',
 }: GoogleLoginButtonProps) {
   const { googleLogin } = useAuth();
@@ -58,22 +62,38 @@ export function GoogleLoginButton({
   const handleAuthSuccess = useCallback(async (payload: { credential?: string; accessToken?: string; code?: string }) => {
     try {
       setLoading(true);
-      const user = await googleLogin({ ...payload, role });
+      const user = await googleLogin({ ...payload, role, mode });
       toast.success(`Welcome, ${user.name}!`);
       if (onSuccess) {
         onSuccess(user);
       } else {
-        const dest = from || (user.role === 'tutor' ? (!user.isVerified ? ROUTES.TUTOR_ONBOARDING : ROUTES.TUTOR_DASHBOARD) : ROUTES.STUDENT_DASHBOARD);
+        const dest = from || (mode === 'register' ? ROUTES.HOME : (user.role === 'tutor' ? ROUTES.TUTOR_DASHBOARD : ROUTES.STUDENT_DASHBOARD));
         navigate(dest, { replace: true });
       }
     } catch (err: any) {
       console.error('Google Auth Error:', err);
-      const message = err?.response?.data?.error?.message || err?.message || 'Google sign in failed. Please try again.';
+      const rawMsg = err?.response?.data?.error?.message || err?.message || 'Google sign in failed. Please try again.';
+      const isUnregistered = err?.response?.data?.error?.code === 'ACCOUNT_NOT_REGISTERED' ||
+        err?.response?.status === 404 ||
+        rawMsg.toLowerCase().includes('not register');
+      const isAlreadyExists = err?.response?.data?.error?.code === 'ACCOUNT_ALREADY_EXISTS' ||
+        err?.response?.status === 409 ||
+        rawMsg.toLowerCase().includes('already exist');
+      
+      const message = isUnregistered
+        ? 'This account is not registered with Google. Register now.'
+        : isAlreadyExists
+        ? 'An account with this email already exists. Please log in instead.'
+        : rawMsg;
+
       toast.error(message);
+      if (onError) {
+        onError(message, isUnregistered, isAlreadyExists);
+      }
     } finally {
       setLoading(false);
     }
-  }, [googleLogin, role, onSuccess, from, navigate]);
+  }, [googleLogin, role, mode, onSuccess, onError, from, navigate]);
 
   // Load GIS script dynamically if not present
   useEffect(() => {
@@ -127,7 +147,7 @@ export function GoogleLoginButton({
         text: text === 'signup_with' ? 'signup_with' : text === 'signin_with' ? 'signin_with' : 'continue_with',
         shape: 'rectangular',
         logo_alignment: 'left',
-        width: 320,
+        width: 360,
       });
     } catch (e) {
       console.warn('Google GSI render error:', e);

@@ -64,6 +64,12 @@ export function TutorOnboarding() {
   };
 
   const handleSubmit = async () => {
+    const expNum = parseInt(formData.experience, 10);
+    if (isNaN(expNum) || expNum <= 2) {
+      toast.error('Teaching experience must be greater than 2 years.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const fd = new FormData();
@@ -186,7 +192,15 @@ export function TutorOnboarding() {
               helper="Choose from standard disciplines or search 65,000+ topics via OpenAlex"
             />
             <div style={{ marginTop: 'var(--space-4)' }}>
-              <Input label="Years of Teaching Experience" value={formData.experience} onChange={e => updateFormData({ experience: e.target.value })} type="number" placeholder="e.g. 5" />
+              <Input
+                label="Years of Teaching Experience * (Must be > 2 years)"
+                value={formData.experience}
+                onChange={e => updateFormData({ experience: e.target.value })}
+                type="number"
+                min="3"
+                placeholder="e.g. 3"
+                helper="Teaching experience must be greater than 2 years (minimum 3 years required)"
+              />
             </div>
             <div style={{ marginTop: 'var(--space-3)' }}>
               <Input label="Key Skills (comma-separated)" value={formData.skills} onChange={e => updateFormData({ skills: e.target.value })} placeholder="Calculus, Linear Algebra, Statistics, Python..." />

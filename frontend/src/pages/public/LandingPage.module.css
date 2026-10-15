@@ -455,3 +455,92 @@
   background: linear-gradient(135deg, #050b14 0%, #0c1833 50%, #060e1d 100%);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
+
+/* Unapplied Tutor Notification Alert on Landing Page */
+.unappliedTutorAlert {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdfa 100%);
+  border-bottom: 2px solid #3b82f6;
+  padding: 16px var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.unappliedTutorInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 280px;
+}
+
+.unappliedTutorIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.unappliedTutorTitle {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: #1e3a8a;
+  display: block;
+}
+
+.unappliedTutorDesc {
+  font-size: var(--font-size-sm);
+  color: #334155;
+  margin: 3px 0 0;
+  line-height: 1.4;
+}
+
+.unappliedTutorAction {
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.pendingTutorAlert {
+  background: #fffbeb;
+  border-bottom: 2px solid #f59e0b;
+  padding: 14px var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.pendingTutorIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #fef3c7;
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pendingTutorTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: #92400e;
+  display: block;
+}
+
+.pendingTutorDesc {
+  font-size: var(--font-size-xs);
+  color: #78350f;
+  margin: 2px 0 0;
+}
+

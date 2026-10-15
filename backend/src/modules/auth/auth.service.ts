@@ -4,7 +4,7 @@ import { prisma } from '../../config/database';
 import { env } from '../../config/env';
 import { hashPassword, comparePassword } from '../../utils/hash';
 import { signToken } from '../../utils/jwt';
-import { ConflictError, AuthenticationError, NotFoundError } from '../../utils/AppError';
+import { ConflictError, AuthenticationError, NotFoundError, AppError } from '../../utils/AppError';
 import { RegisterInput, LoginInput, GoogleAuthInput } from './auth.schema';
 import { saveBase64ToFile } from '../../middleware/resourceUpload';
 
@@ -160,20 +160,22 @@ export const authService = {
               })),
             },
           }),
-          tutorApplications: {
-            create: {
-              trialVideoUrl: input.trialVideoUrl || null,
-              status: 'pending',
-              ...(uploadedDocUrl && {
-                documents: {
-                  create: {
-                    documentUrl: uploadedDocUrl,
-                    documentType: 'qualification_certificate',
+          ...((input.trialVideoUrl || uploadedDocUrl) ? {
+            tutorApplications: {
+              create: {
+                trialVideoUrl: input.trialVideoUrl || null,
+                status: 'pending',
+                ...(uploadedDocUrl && {
+                  documents: {
+                    create: {
+                      documentUrl: uploadedDocUrl,
+                      documentType: 'qualification_certificate',
+                    },
                   },
-                },
-              }),
+                }),
+              },
             },
-          },
+          } : {}),
         }),
       },
     });
@@ -203,21 +205,11 @@ export const authService = {
 
     let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
-    if (user) {
-      if (user.status !== 'active') {
-        throw new AuthenticationError(`Your account has been ${user.status}`);
+    if (!user) {
+      if (input.mode === 'login') {
+        throw new AppError('This account is not registered with Google. Register now.', 404, 'ACCOUNT_NOT_REGISTERED');
       }
 
-      // Update full name and profile picture from Google account
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          name: googleUser.name || user.name,
-          profilePic: googleUser.picture || user.profilePic,
-          isVerified: true,
-        },
-      });
-    } else {
       // Register new user via Google
       const randomPassword = crypto.randomBytes(24).toString('hex');
       const passwordHash = await hashPassword(randomPassword);
@@ -235,18 +227,38 @@ export const authService = {
           ...(isTutor && {
             tutorProfile: {
               create: {
-                instituteName: 'Educator',
+                instituteName: '',
                 bio: `Tutor profile for ${googleUser.name}`,
                 experienceYears: 0,
               },
             },
-            tutorApplications: {
-              create: {
-                status: 'pending',
-                adminNote: 'Registered via Google OAuth',
-              },
-            },
           }),
+        },
+      });
+    } else {
+      if (input.mode === 'register') {
+        throw new AppError(
+          'An account with this email already exists. Please log in instead.',
+          409,
+          'ACCOUNT_ALREADY_EXISTS'
+        );
+      }
+
+      if (user.status !== 'active') {
+        throw new AuthenticationError(`Your account has been ${user.status}`);
+      }
+
+      // If logging in specifically as a tutor, verify user is registered as a tutor
+      if (input.mode === 'login' && input.role === 'tutor' && user.role !== 'tutor') {
+        throw new AppError('This account is registered as a student, not as a tutor. Register now.', 404, 'ACCOUNT_NOT_REGISTERED');
+      }
+
+      // Update full name and profile picture from Google account
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name: googleUser.name || user.name,
+          profilePic: googleUser.picture || user.profilePic,
         },
       });
     }

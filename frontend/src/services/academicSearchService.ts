@@ -1,4 +1,5 @@
 import { ALL_DEGREES, ALL_SUBJECTS, POPULAR_SUBJECTS } from '../constants/academicData';
+import { isSafeEducationalContent } from '../utils/contentModeration';
 
 // In-memory cache for external OpenAlex concepts
 const openAlexCache = new Map<string, string[]>();
@@ -41,13 +42,16 @@ export const academicSearchService = {
    */
   async searchDegreesGlobal(query: string): Promise<DegreeOption[]> {
     const trimmed = query.trim();
-    if (!trimmed || trimmed.length < 3) {
+    if (!trimmed || trimmed.length < 3 || !isSafeEducationalContent(trimmed).isSafe) {
       return [];
     }
 
     const cacheKey = trimmed.toLowerCase();
     if (degreeApiCache.has(cacheKey)) {
-      return degreeApiCache.get(cacheKey) || [];
+      const cached = degreeApiCache.get(cacheKey) || [];
+      return cached.filter(
+        (o) => isSafeEducationalContent(o.code).isSafe && isSafeEducationalContent(o.name).isSafe
+      );
     }
 
     const options: DegreeOption[] = [];
@@ -218,8 +222,11 @@ export const academicSearchService = {
     }
 
     // Save to cache
-    degreeApiCache.set(cacheKey, options);
-    return options;
+    const safeOptions = options.filter(
+      (o) => isSafeEducationalContent(o.code).isSafe && isSafeEducationalContent(o.name).isSafe
+    );
+    degreeApiCache.set(cacheKey, safeOptions);
+    return safeOptions;
   },
 
   /**
@@ -258,8 +265,8 @@ export const academicSearchService = {
    */
   async searchSubjectsGlobal(query: string): Promise<string[]> {
     const trimmed = query.trim();
-    if (!trimmed || trimmed.length < 2) {
-      return this.searchSubjectsLocal(query);
+    if (!trimmed || trimmed.length < 2 || !isSafeEducationalContent(trimmed).isSafe) {
+      return !isSafeEducationalContent(trimmed).isSafe ? [] : this.searchSubjectsLocal(query);
     }
 
     const localMatches = this.searchSubjectsLocal(query);
@@ -268,7 +275,7 @@ export const academicSearchService = {
     const cacheKey = trimmed.toLowerCase();
     if (openAlexCache.has(cacheKey)) {
       const cached = openAlexCache.get(cacheKey) || [];
-      return Array.from(new Set([...localMatches, ...cached]));
+      return Array.from(new Set([...localMatches, ...cached])).filter((s) => isSafeEducationalContent(s).isSafe);
     }
 
     const apiResults: string[] = [];
@@ -301,7 +308,8 @@ export const academicSearchService = {
               const cleanTitle = title.trim();
               if (
                 !cleanTitle.toLowerCase().includes('disambiguation') &&
-                !cleanTitle.toLowerCase().includes('list of')
+                !cleanTitle.toLowerCase().includes('list of') &&
+                isSafeEducationalContent(cleanTitle).isSafe
               ) {
                 apiResults.push(cleanTitle);
               }
@@ -316,19 +324,134 @@ export const academicSearchService = {
         if (Array.isArray(alexData?.results)) {
           alexData.results.forEach((item: any) => {
             if (typeof item?.display_name === 'string' && item.display_name.trim()) {
-              apiResults.push(item.display_name.trim());
+              const name = item.display_name.trim();
+              if (isSafeEducationalContent(name).isSafe) {
+                apiResults.push(name);
+              }
             }
           });
         }
       }
 
-      if (apiResults.length > 0) {
-        openAlexCache.set(cacheKey, apiResults);
+      const safeApiResults = apiResults.filter((s) => isSafeEducationalContent(s).isSafe);
+      if (safeApiResults.length > 0) {
+        openAlexCache.set(cacheKey, safeApiResults);
       }
     } catch {
       // Fallback silently to local matches on network error/timeout/abort
     }
 
-    return Array.from(new Set([...localMatches, ...apiResults]));
+    const combined = Array.from(new Set([...localMatches, ...apiResults]));
+    return combined.filter((s) => isSafeEducationalContent(s).isSafe);
+  },
+
+  /**
+   * Validates whether a custom degree follows recognized academic nomenclature
+   */
+  verifyDegreeRealWorld(degreeName: string): { isValid: boolean; error?: string } {
+    const trimmed = degreeName.trim();
+
+    // 1. Content Moderation (Block 18+, vulgarity, pornography, violence)
+    const safetyCheck = isSafeEducationalContent(trimmed);
+    if (!safetyCheck.isSafe) {
+      return { isValid: false, error: safetyCheck.reason || 'Inappropriate, adult, or vulgar content is not allowed.' };
+    }
+
+    if (trimmed.length < 2) {
+      return { isValid: false, error: 'Degree name must be at least 2 characters.' };
+    }
+    if (trimmed.length > 70) {
+      return { isValid: false, error: 'Degree name cannot exceed 70 characters.' };
+    }
+    if (/(https?:\/\/|www\.|\.com|@|[0-9]{7,})/i.test(trimmed)) {
+      return { isValid: false, error: 'Links, emails, or phone numbers are not allowed.' };
+    }
+    if (!/^[\p{L}\d\s.,/&()+#\-']+$/u.test(trimmed)) {
+      return { isValid: false, error: 'Degree contains invalid characters. Only letters, numbers, and standard academic punctuation are allowed.' };
+    }
+    if (!/\p{L}{2,}/u.test(trimmed)) {
+      return { isValid: false, error: 'Please enter a valid academic degree name.' };
+    }
+    if (/(.)\1{4,}/.test(trimmed)) {
+      return { isValid: false, error: 'Repeated characters detected. Please enter a valid qualification.' };
+    }
+
+    // Recognized degree prefix pattern or known accredited degree
+    const isAccreditedPrefix = /^(b\.?(sc|tech|e|a|com|ba|ca|des|arch|pharm|ed|p\.?t|stat|math)\b|bachelor('?s)?\s+(of|in)\b|m\.?(sc|tech|e|a|com|ba|ca|des|arch|pharm|ed|p\.?t|stat|math)\b|master('?s)?\s+(of|in)\b|ph\.?d\b|d\.?phil\b|doctorate\b|doctor\s+of\b|diploma\b|pg\s+diploma\b|postgraduate\b|associate\s+degree\b|mbbs\b|md\b|ms\b|bds\b|ll\.?b\b|ll\.?m\b|ca\b|cfa\b|cpa\b)/i.test(trimmed);
+
+    const matchesKnown = ALL_DEGREES.some(
+      (d) => d.code.toLowerCase() === trimmed.toLowerCase() || d.name.toLowerCase() === trimmed.toLowerCase()
+    );
+
+    if (!isAccreditedPrefix && !matchesKnown) {
+      return {
+        isValid: false,
+        error: 'Unrecognized degree format. Must start with a recognized academic prefix (e.g. B.Tech, B.Sc, Bachelor of, M.Sc, Master of, Ph.D., Diploma, MBA).'
+      };
+    }
+
+    return { isValid: true };
+  },
+
+  /**
+   * Validates whether a custom subject exists in local catalog or recognized global ontologies (OpenAlex/Wikipedia)
+   */
+  async verifySubjectRealWorld(subjectName: string): Promise<{ isValid: boolean; error?: string }> {
+    const trimmed = subjectName.trim();
+
+    // 1. Content Moderation (Block 18+, vulgarity, pornography, violence)
+    const safetyCheck = isSafeEducationalContent(trimmed);
+    if (!safetyCheck.isSafe) {
+      return { isValid: false, error: safetyCheck.reason || 'Inappropriate, adult, or vulgar content is not allowed.' };
+    }
+
+    if (trimmed.length < 2) {
+      return { isValid: false, error: 'Subject must be at least 2 characters.' };
+    }
+    if (trimmed.length > 50) {
+      return { isValid: false, error: 'Subject cannot exceed 50 characters.' };
+    }
+    if (trimmed.split(/\s+/).length > 6) {
+      return { isValid: false, error: 'Subject name must be 6 words or fewer.' };
+    }
+    if (/(https?:\/\/|www\.|\.com|@|[0-9]{7,})/i.test(trimmed)) {
+      return { isValid: false, error: 'Links, emails, or phone numbers are not allowed.' };
+    }
+    if (!/^[\p{L}\d\s.,/&()+#\-']+$/u.test(trimmed)) {
+      return { isValid: false, error: 'Subject contains invalid symbols. Only letters, numbers, and standard academic punctuation are allowed.' };
+    }
+    if (!/\p{L}{2,}/u.test(trimmed)) {
+      return { isValid: false, error: 'Please enter a valid academic discipline or programming subject.' };
+    }
+    if (/(.)\1{4,}/.test(trimmed)) {
+      return { isValid: false, error: 'Repeated characters detected. Please enter a valid subject.' };
+    }
+
+    // 1. Check local catalog
+    const localMatches = this.searchSubjectsLocal(trimmed);
+    if (localMatches.some((s) => s.toLowerCase() === trimmed.toLowerCase() || s.toLowerCase().includes(trimmed.toLowerCase()))) {
+      return { isValid: true };
+    }
+
+    // 2. Query OpenAlex & Wikipedia live
+    try {
+      const globalMatches = await this.searchSubjectsGlobal(trimmed);
+      const hasMatch = globalMatches.some(
+        (s) =>
+          s.toLowerCase() === trimmed.toLowerCase() ||
+          s.toLowerCase().includes(trimmed.toLowerCase()) ||
+          trimmed.toLowerCase().includes(s.toLowerCase())
+      );
+      if (hasMatch) {
+        return { isValid: true };
+      }
+    } catch {
+      return { isValid: true }; // Allow if network unavailable
+    }
+
+    return {
+      isValid: false,
+      error: `Could not verify "${trimmed}" in global academic databases. Please choose a recognized academic discipline or programming subject.`
+    };
   },
 };

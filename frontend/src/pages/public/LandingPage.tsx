@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, ShieldCheck, BookOpen, Bot,
-  Play, ChevronRight, Zap, Award, TrendingUp
+  Play, ChevronRight, Zap, Award, TrendingUp, Sparkles, Clock
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { categoryService } from '../../services/categoryService';
 import { tutorService } from '../../services/tutorService';
 import { bundleService } from '../../services/bundleService';
@@ -48,18 +49,73 @@ const HOW_IT_WORKS = [
 ];
 
 export function LandingPage() {
+  const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [tutorAppStatus, setTutorAppStatus] = useState<string | null>(null);
 
   useEffect(() => {
     categoryService.getCategories().then(setCategories).catch(() => {});
     tutorService.getTutors({ limit: 3 }).then(res => setTutors(res.data || [])).catch(() => {});
     bundleService.getPublicBundles().then(res => setBundles(res || [])).catch(() => {});
-  }, []);
+
+    if (user?.role === 'tutor' && !user?.isVerified) {
+      tutorService.getMyProfile().then(p => {
+        setTutorAppStatus(p?.applicationStatus || 'none');
+      }).catch(() => setTutorAppStatus('none'));
+    }
+  }, [user]);
 
   return (
     <div className={styles.page}>
+      {/* Highlight Banner for Registered Tutors Who Have Not Sent Application */}
+      {user?.role === 'tutor' && !user?.isVerified && (tutorAppStatus === 'none' || !tutorAppStatus) && (
+        <div className={styles.unappliedTutorAlert}>
+          <div className={styles.unappliedTutorInfo}>
+            <div className={styles.unappliedTutorIcon}>
+              <Sparkles size={24} />
+            </div>
+            <div>
+              <strong className={styles.unappliedTutorTitle}>
+                Welcome, {user.name}! Complete Your Educator Profile to Start Teaching
+              </strong>
+              <p className={styles.unappliedTutorDesc}>
+                Your tutor account is registered. You haven&apos;t submitted your tutor verification application yet. Add your qualifications, degree certificate, and demo video in your profile to request admin approval.
+              </p>
+            </div>
+          </div>
+          <Link to={ROUTES.TUTOR_PROFILE_EDIT} className={styles.unappliedTutorAction}>
+            <Button size="md" variant="primary" rightIcon={<ArrowRight size={16} />}>
+              Complete &amp; Send Application
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {/* Notice Banner for Registered Tutors Whose Application Is Pending Review */}
+      {user?.role === 'tutor' && !user?.isVerified && (tutorAppStatus === 'pending' || tutorAppStatus === 'under_review') && (
+        <div className={styles.pendingTutorAlert}>
+          <div className={styles.unappliedTutorInfo}>
+            <div className={styles.pendingTutorIcon}>
+              <Clock size={20} />
+            </div>
+            <div>
+              <strong className={styles.pendingTutorTitle}>
+                Tutor Application Status: Pending Admin Review
+              </strong>
+              <p className={styles.pendingTutorDesc}>
+                Your tutor application and credentials have been submitted and are in the review queue. We review demo videos and degree certificates within 24–48 hours.
+              </p>
+            </div>
+          </div>
+          <Link to={ROUTES.TUTOR_PROFILE_EDIT} className={styles.unappliedTutorAction}>
+            <Button size="sm" variant="secondary" rightIcon={<ArrowRight size={14} />}>
+              View Application
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* ===== HERO ===== */}
       <section className={styles.hero}>

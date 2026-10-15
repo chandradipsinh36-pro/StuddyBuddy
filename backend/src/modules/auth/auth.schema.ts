@@ -22,7 +22,8 @@ export const googleAuthSchema = z.object({
   credential: z.string().optional(),
   code: z.string().optional(),
   accessToken: z.string().optional(),
-  role: z.enum(['student', 'tutor']).optional().default('student'),
+  role: z.enum(['student', 'tutor']).optional(),
+  mode: z.enum(['login', 'register']).optional().default('login'),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

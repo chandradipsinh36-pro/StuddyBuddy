@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { BookOpen, Plus, X, Check, Sparkles, Globe, AlertCircle } from 'lucide-react';
 import { SUBJECT_CATEGORIES, POPULAR_SUBJECTS } from '../../../constants/academicData';
 import { academicSearchService } from '../../../services/academicSearchService';
+import { isSafeEducationalContent } from '../../../utils/contentModeration';
 import styles from './SubjectMultiSelect.module.css';
 
 export interface SubjectMultiSelectProps {
@@ -11,6 +12,7 @@ export interface SubjectMultiSelectProps {
   error?: string;
   helper?: string;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
@@ -20,14 +22,28 @@ export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
   error,
   helper = 'Select from standard disciplines or type any custom subject/specialization',
   placeholder = 'Search or type subject (e.g. Mathematics, Computer Science, AI)...',
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [globalSubjects, setGlobalSubjects] = useState<string[]>([]);
   const [isSearchingApi, setIsSearchingApi] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isValidatingCustom, setIsValidatingCustom] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Active sanitation: immediately purge any inappropriate/adult subject if it appears in selectedSubjects
+  useEffect(() => {
+    if (!selectedSubjects || selectedSubjects.length === 0) return;
+    const unsafeItems = selectedSubjects.filter((s) => !isSafeEducationalContent(s).isSafe);
+    if (unsafeItems.length > 0) {
+      const cleanSubjects = selectedSubjects.filter((s) => isSafeEducationalContent(s).isSafe);
+      onChange(cleanSubjects);
+      setValidationError(`Removed restricted or adult content: "${unsafeItems.join(', ')}". 18+ content is strictly prohibited.`);
+    }
+  }, [selectedSubjects, onChange]);
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -43,7 +59,7 @@ export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
   // Debounced search with OpenAlex fallback for niche topics
   useEffect(() => {
     const trimmed = inputValue.trim();
-    if (!trimmed || trimmed.length < 3) {
+    if (!trimmed || trimmed.length < 3 || !isSafeEducationalContent(trimmed).isSafe) {
       setGlobalSubjects([]);
       setIsSearchingApi(false);
       return;
@@ -54,9 +70,9 @@ export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
       try {
         const results = await academicSearchService.searchSubjectsGlobal(trimmed);
         const localMatches = academicSearchService.searchSubjectsLocal(trimmed);
-        const uniqueApiResults = results.filter(
-          (r) => !localMatches.some((l) => l.toLowerCase() === r.toLowerCase())
-        );
+        const uniqueApiResults = results
+          .filter((r) => isSafeEducationalContent(r).isSafe)
+          .filter((r) => !localMatches.some((l) => l.toLowerCase() === r.toLowerCase()));
         setGlobalSubjects(uniqueApiResults);
       } catch {
         setGlobalSubjects([]);
@@ -72,11 +88,47 @@ export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
     const trimmed = subject.trim();
     if (!trimmed) return;
 
+    // Content Moderation check
+    const safety = isSafeEducationalContent(trimmed);
+    if (!safety.isSafe) {
+      setValidationError(safety.reason || 'Inappropriate, adult, or vulgar content is strictly prohibited.');
+      return;
+    }
+
     if (!selectedSubjects.some((s) => s.toLowerCase() === trimmed.toLowerCase())) {
       onChange([...selectedSubjects, trimmed]);
     }
+    setValidationError(null);
     setInputValue('');
     setIsOpen(false);
+  };
+
+  const handleAddCustomSubject = async (subject: string) => {
+    const trimmed = subject.trim();
+    if (!trimmed) return;
+
+    // Content Moderation check FIRST
+    const safety = isSafeEducationalContent(trimmed);
+    if (!safety.isSafe) {
+      setValidationError(safety.reason || 'Inappropriate, adult, or vulgar content is strictly prohibited.');
+      return;
+    }
+
+    setIsValidatingCustom(true);
+    setValidationError(null);
+    try {
+      const res = await academicSearchService.verifySubjectRealWorld(trimmed);
+      if (!res.isValid) {
+        setValidationError(res.error || 'Please enter a recognized academic discipline or programming subject.');
+        setIsValidatingCustom(false);
+        return;
+      }
+
+      setValidationError(null);
+      handleAddSubject(trimmed);
+    } finally {
+      setIsValidatingCustom(false);
+    }
   };
 
   const handleRemoveSubject = (subjectToRemove: string) => {
@@ -95,12 +147,14 @@ export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
 
   // Filter local categories
   const filteredCategories = SUBJECT_CATEGORIES.map((cat) => {
-    const matchingSubjects = cat.subjects.filter(
-      (s) =>
-        !query ||
-        s.toLowerCase().includes(query) ||
-        cat.category.toLowerCase().includes(query)
-    );
+    const matchingSubjects = cat.subjects
+      .filter((s) => isSafeEducationalContent(s).isSafe)
+      .filter(
+        (s) =>
+          !query ||
+          s.toLowerCase().includes(query) ||
+          cat.category.toLowerCase().includes(query)
+      );
     return {
       ...cat,
       subjects: matchingSubjects,
@@ -112,14 +166,14 @@ export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
   );
 
   return (
-    <div className={`${styles.wrapper} ${isOpen ? styles.wrapperOpen : ''}`} ref={containerRef}>
+    <div className={`${styles.wrapper} ${disabled ? styles.disabledWrapper : ''} ${isOpen && !disabled ? styles.wrapperOpen : ''}`} ref={containerRef}>
       {/* Header with Label and Counter */}
       <div className={styles.headerRow}>
         <label className={styles.label}>
           <span>{label}</span>
         </label>
         <span className={styles.selectedCounter}>
-          {selectedSubjects.length} selected
+          {selectedSubjects.filter((s) => isSafeEducationalContent(s).isSafe).length} selected
         </span>
       </div>
 
@@ -133,18 +187,30 @@ export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
           ref={inputRef}
           type="text"
           className={styles.input}
-          placeholder={placeholder}
+          placeholder={disabled ? 'Locked while application is under review' : placeholder}
           value={inputValue}
-          onFocus={() => setIsOpen(true)}
+          disabled={disabled}
+          onFocus={() => {
+            if (!disabled) setIsOpen(true);
+          }}
           onChange={(e) => {
-            setInputValue(e.target.value);
+            if (disabled) return;
+            const val = e.target.value;
+            setInputValue(val);
+            const safety = isSafeEducationalContent(val);
+            if (!safety.isSafe) {
+              setValidationError(safety.reason || 'Inappropriate, adult, or vulgar content is strictly prohibited.');
+            } else {
+              setValidationError(null);
+            }
             setIsOpen(true);
           }}
           onKeyDown={(e) => {
+            if (disabled) return;
             if (e.key === 'Enter') {
               e.preventDefault();
               if (inputValue.trim()) {
-                handleAddSubject(inputValue.trim());
+                handleAddCustomSubject(inputValue.trim());
               }
             } else if (e.key === 'Escape') {
               setIsOpen(false);
@@ -153,30 +219,36 @@ export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
         />
 
         <div className={styles.rightActions}>
-          {inputValue.trim() && (
+          {inputValue.trim() && !disabled && (
             <button
               type="button"
               className={styles.addBtn}
-              onClick={() => handleAddSubject(inputValue.trim())}
+              disabled={isValidatingCustom || disabled}
+              onClick={() => handleAddCustomSubject(inputValue.trim())}
             >
               <Plus size={14} />
-              <span>Add</span>
+              <span>{isValidatingCustom ? 'Verifying...' : 'Add'}</span>
             </button>
           )}
         </div>
 
         {/* Dropdown with categories and global OpenAlex concepts */}
-        {isOpen && (
+        {isOpen && !disabled && (
           <div className={styles.dropdown}>
-            {/* Custom entry button */}
-            {query && !exactMatchExists && (
+            {/* Custom entry button - ONLY if content is safe */}
+            {query && !exactMatchExists && isSafeEducationalContent(query).isSafe && (
               <button
                 type="button"
                 className={styles.customOption}
-                onClick={() => handleAddSubject(inputValue.trim())}
+                disabled={isValidatingCustom}
+                onClick={() => handleAddCustomSubject(inputValue.trim())}
               >
                 <Sparkles size={15} />
-                <span>Add custom subject: &ldquo;{inputValue.trim()}&rdquo;</span>
+                <span>
+                  {isValidatingCustom
+                    ? 'Verifying against global academic registries...'
+                    : `Add custom subject: "${inputValue.trim()}"`}
+                </span>
               </button>
             )}
 
@@ -207,14 +279,16 @@ export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
               </div>
             ))}
 
-            {/* OpenAlex Global Academic Disciplines API Results */}
-            {globalSubjects.length > 0 && (
+            {/* OpenAlex Global Academic Disciplines API Results (Strictly filtered for safe educational content) */}
+            {globalSubjects.filter((s) => isSafeEducationalContent(s).isSafe).length > 0 && (
               <div className={styles.categoryGroup}>
                 <div className={styles.apiResultsHeader}>
                   <Globe size={13} />
                   <span>Global Academic Topics (via OpenAlex)</span>
                 </div>
-                {globalSubjects.map((s) => {
+                {globalSubjects
+                  .filter((s) => isSafeEducationalContent(s).isSafe)
+                  .map((s) => {
                   const isSelected = selectedSubjects.some(
                     (sel) => sel.toLowerCase() === s.toLowerCase()
                   );
@@ -247,50 +321,56 @@ export const SubjectMultiSelect: React.FC<SubjectMultiSelectProps> = ({
       </div>
 
       {/* 2. Selected Tags BELOW Input Field */}
-      {selectedSubjects.length > 0 && (
+      {selectedSubjects.filter((s) => isSafeEducationalContent(s).isSafe).length > 0 && (
         <div className={styles.selectedTagsContainer}>
-          {selectedSubjects.map((s) => (
+          {selectedSubjects
+            .filter((s) => isSafeEducationalContent(s).isSafe)
+            .map((s) => (
             <span key={s} className={styles.selectedTag}>
               <span>{s}</span>
-              <button
-                type="button"
-                className={styles.removeTagBtn}
-                onClick={() => handleRemoveSubject(s)}
-                title={`Remove ${s}`}
-              >
-                <X size={14} />
-              </button>
+              {!disabled && (
+                <button
+                  type="button"
+                  className={styles.removeTagBtn}
+                  onClick={() => handleRemoveSubject(s)}
+                  title={`Remove ${s}`}
+                >
+                  <X size={14} />
+                </button>
+              )}
             </span>
           ))}
         </div>
       )}
 
       {/* 3. Popular Subjects Pills BELOW Selected Tags */}
-      <div className={styles.popularContainer}>
-        <span className={styles.popularLabel}>Popular:</span>
-        <div className={styles.popularPillsGrid}>
-          {POPULAR_SUBJECTS.map((subj) => {
-            const isSelected = selectedSubjects.some(
-              (s) => s.toLowerCase() === subj.toLowerCase()
-            );
-            return (
-              <button
-                key={subj}
-                type="button"
-                className={`${styles.popularChip} ${isSelected ? styles.popularChipActive : ''}`}
-                onClick={() => handleTogglePopular(subj)}
-              >
-                {isSelected ? '✓ ' : '+ '} {subj}
-              </button>
-            );
-          })}
+      {!disabled && (
+        <div className={styles.popularContainer}>
+          <span className={styles.popularLabel}>Popular:</span>
+          <div className={styles.popularPillsGrid}>
+            {POPULAR_SUBJECTS.map((subj) => {
+              const isSelected = selectedSubjects.some(
+                (s) => s.toLowerCase() === subj.toLowerCase()
+              );
+              return (
+                <button
+                  key={subj}
+                  type="button"
+                  className={`${styles.popularChip} ${isSelected ? styles.popularChipActive : ''}`}
+                  onClick={() => handleTogglePopular(subj)}
+                >
+                  {isSelected ? '✓ ' : '+ '} {subj}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {error ? (
+      {validationError || error ? (
         <p className={styles.error} role="alert">
           <AlertCircle size={13} style={{ flexShrink: 0 }} />
-          <span>{error}</span>
+          <span>{validationError || error}</span>
         </p>
       ) : helper ? (
         <p className={styles.helper}>{helper}</p>

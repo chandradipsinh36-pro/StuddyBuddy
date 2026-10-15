@@ -15,18 +15,22 @@ export const tutorApplicationsService = {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.role !== 'tutor') throw new AuthorizationError('Only tutors can submit applications');
 
-    // Upsert if application already exists in pending/under_review
+    if (user.isVerified) {
+      throw new BadRequestError('Your tutor account is already verified and approved.');
+    }
+
+    // Check if an application is already pending or under review
     const existing = await prisma.tutorApplication.findFirst({
       where: { userId, status: { in: ['pending', 'under_review'] } },
     });
     if (existing) {
-      return prisma.tutorApplication.update({
-        where: { applicationId: existing.applicationId },
-        data: {
-          ...(input.trialVideoUrl ? { trialVideoUrl: input.trialVideoUrl } : {}),
-        },
-        include: { documents: true },
-      });
+      throw new BadRequestError('You have already submitted an application. It is currently under review and cannot be submitted again.');
+    }
+
+    // Check teaching experience requirement (> 2 years)
+    const profile = await prisma.tutorProfile.findUnique({ where: { tutorId: userId } });
+    if (profile && profile.experienceYears <= 2) {
+      throw new BadRequestError('Teaching experience must be greater than 2 years.');
     }
 
     return prisma.tutorApplication.create({
@@ -69,12 +73,15 @@ export const tutorApplicationsService = {
 
   // Documents
   async addDocument(userId: number, input: AddDocumentInput) {
-    const application = await prisma.tutorApplication.findFirst({
+    let application = await prisma.tutorApplication.findFirst({
       where: { userId },
       orderBy: { appliedAt: 'desc' },
     });
-    if (!application) throw new NotFoundError('Application');
-    if (IMMUTABLE_STATUSES.includes(application.status as any)) {
+    if (!application) {
+      application = await prisma.tutorApplication.create({
+        data: { userId, status: 'pending' },
+      });
+    } else if (IMMUTABLE_STATUSES.includes(application.status as any)) {
       throw new BadRequestError(`Cannot add documents to a ${application.status} application`);
     }
 

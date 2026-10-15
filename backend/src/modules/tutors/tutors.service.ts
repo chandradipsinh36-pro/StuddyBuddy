@@ -144,6 +144,7 @@ export const tutorsService = {
             adminNote: true,
             reviewedAt: true,
             appliedAt: true,
+            documents: true,
           },
         },
       },
@@ -187,6 +188,13 @@ export const tutorsService = {
 
   async updateMyProfile(tutorId: number, input: any) {
     const { name, bio, instituteName, experienceYears, trialVideoUrl, skills } = input;
+
+    if (experienceYears !== undefined && trialVideoUrl) {
+      const exp = Number(experienceYears);
+      if (isNaN(exp) || exp <= 2) {
+        throw new BadRequestError('Teaching experience must be greater than 2 years.');
+      }
+    }
 
     // 1. Upsert tutorProfile
     await prisma.tutorProfile.upsert({

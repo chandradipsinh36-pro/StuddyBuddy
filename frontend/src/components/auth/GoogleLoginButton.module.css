@@ -10,23 +10,32 @@
 
 .googleBtnWrapper {
   width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
 }
 
 .googleBtnWrapper > div {
-  width: 100% !important;
+  margin: 0 auto !important;
   display: flex !important;
   justify-content: center !important;
 }
 
 .googleBtnWrapper iframe {
   margin: 0 auto !important;
+  display: block !important;
+}
+
+.googleBtnWrapper * {
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
 .customGoogleBtn {
   width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
   height: 44px;
   display: inline-flex;
   align-items: center;

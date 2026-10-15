@@ -33,7 +33,7 @@ export const authService = {
     return authUser;
   },
 
-  async googleLogin(payload: { credential?: string; code?: string; accessToken?: string; role?: 'student' | 'tutor' }): Promise<AuthUser> {
+  async googleLogin(payload: { credential?: string; code?: string; accessToken?: string; role?: 'student' | 'tutor'; mode?: 'login' | 'register' }): Promise<AuthUser> {
     const res = await apiClient.post<AuthResponse>('/auth/google', payload);
     const { user, token } = res.data;
     const authUser: AuthUser = { ...user, token, avatarUrl: user.profilePic ?? undefined };

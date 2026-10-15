@@ -124,22 +124,25 @@ export const tutorService = {
     const qualification = data instanceof FormData ? (data.get('highestQualification') as string) : data.highestQualification;
     const instituteName = data instanceof FormData ? (data.get('instituteName') as string) : (data.instituteName || qualification);
     const rawExp = data instanceof FormData ? (data.get('experience') as string) : data.experience;
-    const experienceYears = parseInt(rawExp || '1', 10);
+    const experienceYears = parseInt(rawExp || '0', 10);
+    if (experienceYears <= 2) {
+      throw new Error('Teaching experience must be greater than 2 years.');
+    }
 
     // Save/update profile with qualifications
-    const profileBio = bio || (qualification ? `Degree / Qualification: ${qualification}` : 'Dedicated educator on StudyBuddy.');
+    const profileBio = bio || (qualification ? `Degree / Qualification: ${qualification}` : '');
     try {
       await apiClient.post('/tutors/me/profile', {
         bio: profileBio,
-        instituteName: instituteName || qualification || 'Independent Educator',
-        experienceYears: isNaN(experienceYears) ? 1 : experienceYears,
+        instituteName: instituteName || qualification || '',
+        experienceYears,
       });
     } catch {
       try {
         await apiClient.patch('/tutors/me/profile', {
           bio: profileBio,
           instituteName: instituteName || qualification || undefined,
-          experienceYears: isNaN(experienceYears) ? undefined : experienceYears,
+          experienceYears,
         });
       } catch {
         /* ignore */
@@ -157,6 +160,25 @@ export const tutorService = {
             /* ignore duplicate skills */
           }
         }
+      }
+    }
+
+    // Submit tutor application first so application record exists
+    let trialVideoUrl = data instanceof FormData ? (data.get('trialVideoUrl') as string) : data.trialVideoUrl;
+    if (!trialVideoUrl || !trialVideoUrl.startsWith('http')) {
+      trialVideoUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+    }
+
+    let app;
+    try {
+      const res = await apiClient.post('/tutor-applications', { trialVideoUrl });
+      app = res.data;
+    } catch {
+      try {
+        const res = await apiClient.patch('/tutor-applications/me', { trialVideoUrl });
+        app = res.data;
+      } catch (err) {
+        console.warn('Application already submitted or error:', err);
       }
     }
 
@@ -179,25 +201,6 @@ export const tutorService = {
             console.warn('Document upload warning:', docErr);
           }
         }
-      }
-    }
-
-    // Submit tutor application
-    let trialVideoUrl = data instanceof FormData ? (data.get('trialVideoUrl') as string) : data.trialVideoUrl;
-    if (!trialVideoUrl || !trialVideoUrl.startsWith('http')) {
-      trialVideoUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-    }
-
-    let app;
-    try {
-      const res = await apiClient.post('/tutor-applications', { trialVideoUrl });
-      app = res.data;
-    } catch {
-      try {
-        const res = await apiClient.patch('/tutor-applications/me', { trialVideoUrl });
-        app = res.data;
-      } catch (err) {
-        console.warn('Application already submitted or error:', err);
       }
     }
 

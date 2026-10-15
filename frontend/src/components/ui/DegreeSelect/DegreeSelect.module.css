@@ -5,6 +5,20 @@
   position: relative;
 }
 
+.disabledWrapper {
+  opacity: 0.75;
+}
+
+.disabledWrapper .input {
+  background-color: var(--color-gray-50, #f8fafc);
+  cursor: not-allowed;
+}
+
+.disabledWrapper .popularChip {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
 .wrapperOpen {
   z-index: 40;
 }

@@ -33,6 +33,12 @@ export const adminApplicationService = {
           ],
         },
       }),
+      NOT: {
+        AND: [
+          { trialVideoUrl: null },
+          { documents: { none: {} } },
+        ],
+      },
     };
 
     const [applications, total] = await Promise.all([

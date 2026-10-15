@@ -1,644 +1,441 @@
-import { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  BookOpen, User, Mail, Lock, Eye, EyeOff, Upload, Video,
-  FileCheck, X, ShieldAlert, Award, Briefcase
+  BookOpen, UserCheck, ArrowRight, ShieldCheck, Mail, Lock, User,
+  Eye, EyeOff, UserPlus, CheckCircle2, AlertCircle
 } from 'lucide-react';
-import { authService } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
-import { Badge } from '../../components/ui/Badge/Badge';
-import { DegreeSelect, SubjectMultiSelect } from '../../components/ui';
 import { ROUTES } from '../../constants';
 import { GoogleLoginButton } from '../../components/auth/GoogleLoginButton';
+import { getErrorMessage } from '../../api/client';
 import toast from 'react-hot-toast';
 import styles from './Auth.module.css';
 
-const registerSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Full name is required')
-    .min(2, 'Name must be at least 2 characters')
-    .max(60, 'Name cannot exceed 60 characters'),
-  email: z
-    .string()
-    .min(1, 'Email address is required')
-    .email('Please enter a valid email address (e.g. you@example.com)'),
-  password: z
-    .string()
-    .min(1, 'Password is required')
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Za-z]/, 'Password must contain at least one letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
-  role: z.enum(['student', 'tutor']),
-  trialVideoLink: z.string().optional(),
-  highestQualification: z.string().optional(),
-  experienceYears: z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (data.password !== data.confirmPassword) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Passwords do not match',
-      path: ['confirmPassword'],
-    });
-  }
-
-  if (data.role === 'tutor') {
-    if (!data.trialVideoLink || !data.trialVideoLink.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Trial demo video link is required for tutor verification',
-        path: ['trialVideoLink'],
-      });
-    } else {
-      try {
-        const url = new URL(data.trialVideoLink.trim());
-        if (!['http:', 'https:'].includes(url.protocol)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Video link must begin with http:// or https://',
-            path: ['trialVideoLink'],
-          });
-        }
-      } catch {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Please enter a valid URL (e.g. https://youtube.com/...)',
-          path: ['trialVideoLink'],
-        });
-      }
-    }
-
-    if (!data.highestQualification || !data.highestQualification.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Highest degree / qualification is required',
-        path: ['highestQualification'],
-      });
-    } else if (data.highestQualification.trim().length < 2) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Qualification must be at least 2 characters',
-        path: ['highestQualification'],
-      });
-    }
-
-    if (!data.experienceYears || !data.experienceYears.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Teaching experience is required (enter 0 if beginner)',
-        path: ['experienceYears'],
-      });
-    } else {
-      const exp = Number(data.experienceYears);
-      if (isNaN(exp) || exp < 0 || exp > 50) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Experience must be between 0 and 50 years',
-          path: ['experienceYears'],
-        });
-      }
-    }
-  }
-});
-
-type FormData = z.infer<typeof registerSchema>;
-
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { setCurrentUser } = useAuth();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialRole = searchParams.get('role') === 'tutor' ? 'tutor' : 'student';
+  const { user, register: registerUser } = useAuth();
+
+  const [role, setRole] = useState<'student' | 'tutor'>(initialRole);
+
+  // Manual Form States
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [role, setRole] = useState<'student' | 'tutor'>('student');
-  const [certificateFile, setCertificateFile] = useState<File | null>(null);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const [subjectError, setSubjectError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [alreadyExistsError, setAlreadyExistsError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
 
-  // Teaching subjects list
-  const [subjectsList, setSubjectsList] = useState<string[]>(['Mathematics (General)']);
-  // Academic degrees list (multi-select)
-  const [degreesList, setDegreesList] = useState<string[]>(['B.Tech']);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    clearErrors,
-    formState: { errors, isSubmitting, isSubmitted, touchedFields }
-  } = useForm<FormData>({
-    resolver: zodResolver(registerSchema),
-    mode: 'onTouched',
-    reValidateMode: 'onChange',
-    defaultValues: { role: 'student', trialVideoLink: '', highestQualification: '', experienceYears: '' },
-  });
-
-  const getFieldError = (fieldName: keyof FormData) => {
-    if (isSubmitted || touchedFields[fieldName]) {
-      return errors[fieldName]?.message;
+  useEffect(() => {
+    const roleParam = searchParams.get('role');
+    if (roleParam === 'tutor' || roleParam === 'student') {
+      setRole(roleParam);
     }
-    return undefined;
-  };
+  }, [searchParams]);
 
   const handleRoleChange = (newRole: 'student' | 'tutor') => {
     setRole(newRole);
-    setValue('role', newRole);
-    setFileError(null);
-    setSubjectError(null);
-    clearErrors();
+    setSearchParams({ role: newRole });
+    setErrors({});
+    setAlreadyExistsError(null);
   };
 
-  const ALLOWED_CERT_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'webp'];
+  const validateManualForm = () => {
+    const errs: {
+      name?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    } = {};
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    const isAllowed = (ext ? ALLOWED_CERT_EXTENSIONS.includes(ext) : false) || file.type === 'application/pdf' || file.type.startsWith('image/');
-
-    if (!isAllowed) {
-      setFileError('Only PDF and image files (PNG, JPG, JPEG) are allowed.');
-      toast.error('Only PDF and image files are allowed for qualification certificate.');
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      errs.name = 'Full name is required';
+    } else if (trimmedName.length < 2) {
+      errs.name = 'Name must be at least 2 characters';
     }
 
-    // Check size (max 15MB)
-    if (file.size > 15 * 1024 * 1024) {
-      setFileError('File size must be under 15MB');
-      return;
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      errs.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      errs.email = 'Please enter a valid email address';
     }
 
-    setCertificateFile(file);
-    setFileError(null);
+    if (!password) {
+      errs.password = 'Password is required';
+    } else if (password.length < 8) {
+      errs.password = 'Password must be at least 8 characters long';
+    }
+
+    if (!confirmPassword) {
+      errs.confirmPassword = 'Confirm password is required';
+    } else if (password !== confirmPassword) {
+      errs.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
-  const readFileAsDataUrl = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  const handleManualRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAlreadyExistsError(null);
 
-  const onSubmit = async (data: FormData) => {
-    if (role === 'tutor') {
-      if (!certificateFile) {
-        setFileError('Please upload your qualification certificate or diploma.');
-        toast.error('Please upload your qualification certificate.');
-        return;
-      }
-      const ext = certificateFile.name.split('.').pop()?.toLowerCase();
-      const isAllowed = (ext ? ALLOWED_CERT_EXTENSIONS.includes(ext) : false) || certificateFile.type === 'application/pdf' || certificateFile.type.startsWith('image/');
-      if (!isAllowed) {
-        setFileError('Only PDF and image files (PNG, JPG, JPEG) are allowed.');
-        toast.error('Only PDF and image files are allowed for qualification certificate.');
-        return;
-      }
-      if (!data.trialVideoLink || !data.trialVideoLink.trim()) {
-        toast.error('Please provide a trial video link.');
-        return;
-      }
-    }
+    if (!validateManualForm()) return;
 
     try {
-      let documentUrl: string | undefined;
-      if (certificateFile) {
-        documentUrl = await readFileAsDataUrl(certificateFile);
-      }
+      setSubmitting(true);
+      const newUser = await registerUser({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        role,
+      });
 
       if (role === 'tutor') {
-        const finalSubjects = [...subjectsList];
-        if (finalSubjects.length === 0) {
-          setSubjectError('Please add at least one teaching subject.');
-          toast.error('Please add at least one teaching subject.');
-          return;
-        }
-
-        const authUser = await authService.register({
-          name: data.name,
-          email: data.email,
-          password: data.password,
-          role: 'tutor',
-          trialVideoUrl: data.trialVideoLink?.trim() || undefined,
-          highestQualification: data.highestQualification?.trim() || undefined,
-          experienceYears: data.experienceYears ? Number(data.experienceYears) : undefined,
-          documentUrl,
-          subjects: finalSubjects,
-        });
-
-        // Store authenticated session
-        setCurrentUser(authUser, authUser.token);
-
-        toast.success(`Welcome to StudyBuddy, ${data.name}! Your tutor approval application has been sent to the admin.`);
-        // Direct redirect to Tutor Dashboard, NOT login page
-        navigate(ROUTES.TUTOR_DASHBOARD, { replace: true });
+        toast.success(`Welcome to StudyBuddy, ${newUser.name}! Your educator account has been created.`);
+        navigate(ROUTES.HOME, { replace: true });
       } else {
-        const authUser = await authService.register({
-          name: data.name,
-          email: data.email,
-          password: data.password,
-          role: 'student',
-        });
-
-        // Store authenticated session
-        setCurrentUser(authUser, authUser.token);
-
-        toast.success(`Welcome to StudyBuddy, ${data.name}! Your account has been created.`);
-        // Direct redirect to Student Dashboard, NOT login page
-        navigate(ROUTES.STUDENT_DASHBOARD, { replace: true });
+        toast.success(`Welcome to StudyBuddy, ${newUser.name}! Account created successfully.`);
+        navigate(ROUTES.HOME, { replace: true });
       }
     } catch (err: any) {
-      const message = err?.response?.data?.error?.message || err?.message || 'Registration failed. Please try again.';
-      toast.error(message);
+      const msg = getErrorMessage(err, 'Failed to create account. Please try again.');
+      toast.error(msg);
+      if (msg.toLowerCase().includes('already exist')) {
+        setAlreadyExistsError(msg);
+        setErrors((prev) => ({ ...prev, email: msg }));
+      } else if (msg.toLowerCase().includes('email')) {
+        setErrors((prev) => ({ ...prev, email: msg }));
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className={styles.page}>
-      <div className={`${styles.card} ${role === 'tutor' ? styles.cardTutor : ''}`}>
+      <div className={styles.card}>
         <div className={styles.header}>
           <Link to={ROUTES.HOME} className={styles.logo}>
             <BookOpen size={28} className={styles.logoIcon} />
             <span>StudyBuddy</span>
           </Link>
           <h1 className={styles.title}>
-            {role === 'tutor' ? 'Apply as an Expert Tutor' : 'Create your account'}
+            {role === 'tutor' ? 'Join as an Educator' : 'Create your account'}
           </h1>
           <p className={styles.subtitle}>
             {role === 'tutor'
-              ? 'Join our vetted network of educators and earn by teaching'
-              : 'Join thousands of learners and educators worldwide'}
+              ? 'Register to start teaching, creating courses, and earning on StudyBuddy'
+              : 'Join thousands of students and learners worldwide'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className={styles.form} noValidate>
-          {/* Role Selector */}
-          <div>
-            <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-gray-700)', marginBottom: 'var(--space-2)' }}>
-              I am joining as a...
-            </p>
-            <div className={styles.roleSelector}>
-              <button
-                type="button"
-                className={`${styles.roleCard} ${role === 'student' ? styles.roleCardActive : ''}`}
-                onClick={() => handleRoleChange('student')}
-              >
-                <span className={styles.roleEmoji}>🎓</span>
-                <span className={styles.roleLabel}>Student</span>
-                <span className={styles.roleDesc}>I want to learn</span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.roleCard} ${role === 'tutor' ? styles.roleCardActive : ''}`}
-                onClick={() => handleRoleChange('tutor')}
-              >
-                <span className={styles.roleEmoji}>👨‍🏫</span>
-                <span className={styles.roleLabel}>Tutor</span>
-                <span className={styles.roleDesc}>I want to teach</span>
-              </button>
+        {/* If user is already logged in, show quick navigation */}
+        {user ? (
+          <div style={{
+            background: 'var(--color-primary-50, rgba(37,99,235,0.06))',
+            border: '1.5px solid var(--color-primary-200, #bfdbfe)',
+            borderRadius: 'var(--radius-xl, 16px)',
+            padding: 'var(--space-6)',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--space-4)',
+          }}>
+            <div style={{
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              background: 'var(--color-primary-100, #dbeafe)',
+              color: 'var(--color-primary-600, #2563eb)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto',
+            }}>
+              <UserCheck size={26} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, margin: '0 0 4px', color: 'var(--color-gray-900)' }}>
+                You are already logged in
+              </h2>
+              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-600)', margin: 0 }}>
+                Signed in as <strong>{user.name}</strong> ({user.email}) &bull; Role: <strong style={{ textTransform: 'capitalize' }}>{user.role}</strong>
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+              {user.role === 'tutor' ? (
+                <>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    onClick={() => navigate(ROUTES.TUTOR_PROFILE_EDIT)}
+                    rightIcon={<ArrowRight size={16} />}
+                  >
+                    Go to Profile & Send Application
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    fullWidth
+                    onClick={() => navigate(ROUTES.HOME)}
+                  >
+                    Go to Home Page
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    onClick={() => navigate(ROUTES.HOME)}
+                    rightIcon={<ArrowRight size={16} />}
+                  >
+                    Go to Home Page
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    fullWidth
+                    onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)}
+                  >
+                    Go to Student Dashboard
+                  </Button>
+                </>
+              )}
             </div>
           </div>
-
-          {role === 'tutor' ? (
-            <>
-              {/* Google First-Step Authentication Card for Tutors */}
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(59,130,246,0.12) 100%)',
-                border: '1.5px solid var(--color-primary-300, #93c5fd)',
-                borderRadius: 'var(--radius-lg, 12px)',
-                padding: 'var(--space-4) var(--space-5)',
-                marginBottom: 'var(--space-4)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-3)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <span style={{ fontSize: '18px' }}>⚡</span>
-                    <strong style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-primary-900, #1e3a8a)' }}>
-                      First: Authenticate with Google
-                    </strong>
+        ) : (
+          <div className={styles.form}>
+            {/* Role Selector (Compact Student vs Tutor) */}
+            <div>
+              <p style={{ fontSize: 'var(--font-size-xs, 12px)', fontWeight: 600, color: 'var(--color-gray-600)', marginBottom: 6 }}>
+                I AM JOINING AS A
+              </p>
+              <div className={styles.roleSelector}>
+                <button
+                  type="button"
+                  className={`${styles.roleCard} ${role === 'student' ? styles.roleCardActive : ''}`}
+                  onClick={() => handleRoleChange('student')}
+                >
+                  <span className={styles.roleEmoji}>🎓</span>
+                  <div className={styles.roleTextGroup}>
+                    <span className={styles.roleLabel}>Student</span>
+                    <span className={styles.roleDesc}>I want to learn</span>
                   </div>
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: 'var(--color-primary-700)',
-                    background: 'rgba(255, 255, 255, 0.8)',
-                    padding: '3px 8px',
-                    borderRadius: '999px',
-                    border: '1px solid var(--color-primary-200)'
-                  }}>
-                    Step 1 of 2
-                  </span>
-                </div>
-                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-600)', margin: 0, lineHeight: 1.5 }}>
-                  Sign in with your Google account first. Your full name and verified email will be saved, and you will then be immediately redirected to enter your qualifications, subjects, and teaching credentials.
-                </p>
-                <GoogleLoginButton
-                  role="tutor"
-                  text="continue_with"
-                  onSuccess={() => {
-                    navigate(ROUTES.TUTOR_ONBOARDING, { replace: true });
-                  }}
-                />
-              </div>
-
-              <div className={styles.divider}>
-                <span>or register manually with form below</span>
-              </div>
-
-              {/* Horizontal 2-Column Tutor Registration Layout */}
-              <div className={styles.tutorFormGrid}>
-              {/* Left Column: Personal & Account Details */}
-              <div className={styles.formColumn}>
-                <div className={styles.columnHeader}>
-                  <span className={styles.columnTitle}>
-                    <User size={18} color="var(--color-primary-600)" />
-                    Personal & Account Details
-                  </span>
-                  <span className={styles.columnSubtitle}>Step 1</span>
-                </div>
-
-                <Input
-                  label="Full Name *"
-                  type="text"
-                  placeholder="Dr. Sarah Chen"
-                  leftIcon={<User size={16} />}
-                  error={getFieldError('name')}
-                  autoComplete="name"
-                  {...register('name')}
-                />
-
-                <Input
-                  label="Email address *"
-                  type="email"
-                  placeholder="you@example.com"
-                  leftIcon={<Mail size={16} />}
-                  error={getFieldError('email')}
-                  autoComplete="email"
-                  {...register('email')}
-                />
-
-                <Input
-                  label="Password *"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="At least 8 characters"
-                  leftIcon={<Lock size={16} />}
-                  rightIcon={
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  }
-                  error={getFieldError('password')}
-                  autoComplete="new-password"
-                  {...register('password')}
-                />
-
-                <Input
-                  label="Confirm Password *"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="Repeat your password"
-                  leftIcon={<Lock size={16} />}
-                  rightIcon={
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
-                      aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                    >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  }
-                  error={getFieldError('confirmPassword')}
-                  autoComplete="new-password"
-                  {...register('confirmPassword')}
-                />
-
-                <Input
-                  label="Teaching Experience (Years) *"
-                  type="number"
-                  placeholder="e.g. 5"
-                  leftIcon={<Briefcase size={16} />}
-                  error={getFieldError('experienceYears')}
-                  {...register('experienceYears')}
-                />
-              </div>
-
-              {/* Right Column: Academic & Verification Credentials */}
-              <div className={styles.formColumn}>
-                <div className={styles.columnHeader}>
-                  <span className={styles.columnTitle}>
-                    <Award size={18} color="var(--color-primary-600)" />
-                    Academic & Verification Details
-                  </span>
-                  <Badge variant="primary">Required for approval</Badge>
-                </div>
-
-                {/* Degrees & Qualifications with DegreeSelect (Multi-select) */}
-                <DegreeSelect
-                  label="Degrees & Qualifications *"
-                  selectedDegrees={degreesList}
-                  onChange={(newDegrees: string[]) => {
-                    setDegreesList(newDegrees);
-                    setValue('highestQualification', newDegrees.join(', '), { shouldValidate: true, shouldTouch: true });
-                    if (newDegrees.length > 0) {
-                      clearErrors('highestQualification');
-                    }
-                  }}
-                  error={getFieldError('highestQualification')}
-                  helper="Select one or more degrees/qualifications or type any custom specialization"
-                />
-
-                {/* Teaching Subjects with SubjectMultiSelect */}
-                <SubjectMultiSelect
-                  label="Teaching Subjects *"
-                  selectedSubjects={subjectsList}
-                  onChange={(newSubjects) => {
-                    setSubjectsList(newSubjects);
-                    if (newSubjects.length > 0) {
-                      setSubjectError(null);
-                    }
-                  }}
-                  error={subjectError || undefined}
-                  helper="Select from all major global subjects or search 65,000+ academic disciplines"
-                />
-
-                {/* Upload Qualification Certificate */}
-                <div>
-                  <label className={styles.uploadLabel}>
-                    <FileCheck size={16} color="var(--color-primary-600)" />
-                    Upload Qualification Certificate *
-                  </label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,image/*,.png,.jpg,.jpeg,.webp"
-                    style={{ display: 'none' }}
-                    onChange={handleFileChange}
-                  />
-                  {!certificateFile ? (
-                    <div
-                      className={styles.uploadBox}
-                      onClick={() => fileInputRef.current?.click()}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <Upload size={24} color="var(--color-primary-500)" />
-                      <span className={styles.uploadPrompt}>
-                        Click to choose certificate or degree document
-                      </span>
-                      <span className={styles.uploadSub}>
-                        Supports PDF and Images (PNG, JPG) up to 15MB
-                      </span>
-                    </div>
-                  ) : (
-                    <div className={styles.filePreviewChip}>
-                      <div className={styles.fileInfo}>
-                        <FileCheck size={16} color="var(--color-success)" />
-                        <span><strong>{certificateFile.name}</strong> ({(certificateFile.size / 1024 / 1024).toFixed(2)} MB)</span>
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.fileRemoveBtn}
-                        onClick={() => setCertificateFile(null)}
-                        title="Remove file"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  )}
-                  {fileError && (
-                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-error)', marginTop: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <ShieldAlert size={12} /> {fileError}
-                    </p>
-                  )}
-                </div>
-
-                {/* Upload Trial Video Link */}
-                <Input
-                  label="Upload Trial Video Link *"
-                  type="url"
-                  placeholder="https://www.youtube.com/watch?v=... or Loom / Google Drive link"
-                  leftIcon={<Video size={16} />}
-                  helper="Provide a 3-5 minute teaching demonstration or intro video link"
-                  error={getFieldError('trialVideoLink')}
-                  {...register('trialVideoLink')}
-                />
-              </div>
-
-              {/* Bottom Full-Width Action Row */}
-              <div className={styles.formFullWidth}>
-                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', lineHeight: 'var(--line-height-relaxed)', margin: 0 }}>
-                  By registering, you agree to the StudyBuddy{' '}
-                  <a href="#" style={{ color: 'var(--color-primary-500)' }}>Terms of Service</a>,{' '}
-                  <a href="#" style={{ color: 'var(--color-primary-500)' }}>Tutor Code of Conduct</a>, and{' '}
-                  <a href="#" style={{ color: 'var(--color-primary-500)' }}>Privacy Policy</a>.
-                </p>
-
-                <Button type="submit" isLoading={isSubmitting} fullWidth size="lg">
-                  Register and Send Request to Become Tutor
-                </Button>
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.roleCard} ${role === 'tutor' ? styles.roleCardActive : ''}`}
+                  onClick={() => handleRoleChange('tutor')}
+                >
+                  <span className={styles.roleEmoji}>👨‍🏫</span>
+                  <div className={styles.roleTextGroup}>
+                    <span className={styles.roleLabel}>Tutor</span>
+                    <span className={styles.roleDesc}>I want to teach</span>
+                  </div>
+                </button>
               </div>
             </div>
-            </>
-          ) : (
-            /* Student Registration (Single Column Compact) */
-            <>
+
+            {/* Direct Registration Form */}
+            <form onSubmit={handleManualRegister} className={styles.form} noValidate>
+              {role === 'tutor' && (
+                <div className={styles.tutorNoteBox}>
+                  <ShieldCheck size={18} color="#2563eb" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>
+                    <strong>Educator Registration:</strong> Register now with your name and password. You can add your degree and certificates in your profile to complete your verification.
+                  </span>
+                </div>
+              )}
+
+              {/* Full Name */}
               <Input
                 label="Full Name"
                 type="text"
-                placeholder="Alex Johnson"
+                id="register-name"
+                placeholder="e.g. Jane Doe"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
+                }}
+                error={errors.name}
                 leftIcon={<User size={16} />}
-                error={getFieldError('name')}
                 autoComplete="name"
-                {...register('name')}
+                disabled={submitting}
               />
 
+              {/* Email Address */}
               <Input
-                label="Email address"
+                label="Email Address"
                 type="email"
+                id="register-email"
                 placeholder="you@example.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+                error={errors.email}
                 leftIcon={<Mail size={16} />}
-                error={getFieldError('email')}
                 autoComplete="email"
-                {...register('email')}
+                disabled={submitting}
               />
 
+              {/* Password */}
               <Input
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
+                id="register-password"
                 placeholder="At least 8 characters"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                error={errors.password}
+                helper={!errors.password ? 'Must be at least 8 characters' : undefined}
                 leftIcon={<Lock size={16} />}
                 rightIcon={
                   <button
                     type="button"
+                    className={styles.passwordToggleBtn}
                     onClick={() => setShowPassword(!showPassword)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    tabIndex={-1}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 }
-                error={getFieldError('password')}
                 autoComplete="new-password"
-                {...register('password')}
+                disabled={submitting}
               />
 
-              <Input
-                label="Confirm Password"
-                type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Repeat your password"
-                leftIcon={<Lock size={16} />}
-                rightIcon={
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
-                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                  >
-                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                }
-                error={getFieldError('confirmPassword')}
-                autoComplete="new-password"
-                {...register('confirmPassword')}
-              />
+              {/* Confirm Password */}
+              <div>
+                <Input
+                  label="Confirm Password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="register-confirm-password"
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                  }}
+                  error={errors.confirmPassword}
+                  leftIcon={<Lock size={16} />}
+                  rightIcon={
+                    <button
+                      type="button"
+                      className={styles.passwordToggleBtn}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  }
+                  autoComplete="new-password"
+                  disabled={submitting}
+                />
 
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', lineHeight: 'var(--line-height-relaxed)' }}>
-                By registering, you agree to the StudyBuddy{' '}
-                <a href="#" style={{ color: 'var(--color-primary-500)' }}>Terms of Service</a> and{' '}
-                <a href="#" style={{ color: 'var(--color-primary-500)' }}>Privacy Policy</a>.
-              </p>
+                {/* Password match feedback */}
+                {confirmPassword.length > 0 && !errors.confirmPassword && (
+                  password === confirmPassword ? (
+                    <div className={`${styles.passwordMatchNote} ${styles.passwordMatchSuccess}`}>
+                      <CheckCircle2 size={13} />
+                      <span>Passwords match</span>
+                    </div>
+                  ) : (
+                    <div className={`${styles.passwordMatchNote} ${styles.passwordMatchError}`}>
+                      <AlertCircle size={13} />
+                      <span>Passwords do not match</span>
+                    </div>
+                  )
+                )}
+              </div>
 
-              <Button type="submit" isLoading={isSubmitting} fullWidth size="lg">
-                Create Student Account
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                fullWidth
+                isLoading={submitting}
+                leftIcon={<UserPlus size={18} />}
+              >
+                {role === 'tutor' ? 'Create Educator Account' : 'Create Student Account'}
               </Button>
-            </>
-          )}
-        </form>
 
-        <div className={styles.divider}>
-          <span>or continue with</span>
-        </div>
+              {/* Second Choice: Google Authentication */}
+              <div className={styles.divider}>OR REGISTER WITH GOOGLE</div>
 
-        <GoogleLoginButton role={role} text="signup_with" />
+              <GoogleLoginButton
+                role={role}
+                mode="register"
+                text="signup_with"
+                className={styles.primaryGoogleBtn}
+                onSuccess={(newUser) => {
+                  toast.success(`Welcome to StudyBuddy, ${newUser.name}!`);
+                  navigate(ROUTES.HOME, { replace: true });
+                }}
+                onError={(msg, _isUnregistered, isAlreadyExists) => {
+                  if (isAlreadyExists) {
+                    setAlreadyExistsError(msg);
+                  }
+                }}
+              />
+
+              {/* Already Registered error alert banner */}
+              {alreadyExistsError && (
+                <div className={styles.unregisteredBox}>
+                  <AlertCircle size={20} className={styles.unregisteredIcon} color="#e11d48" />
+                  <div className={styles.unregisteredContent}>
+                    <div className={styles.unregisteredTitle}>Account Already Exists</div>
+                    <p className={styles.unregisteredMessage}>{alreadyExistsError}</p>
+                    <Link
+                      to={`${ROUTES.LOGIN}?role=${role}`}
+                      className={styles.registerNowBtn}
+                    >
+                      Sign in now →
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </form>
+
+            <p className={styles.termsNotice} style={{ margin: 'var(--space-2) auto 0' }}>
+              By creating an account, you agree to StudyBuddy's{' '}
+              <a href="#" className={styles.termsLink}>Terms of Service</a> and{' '}
+              <a href="#" className={styles.termsLink}>Privacy Policy</a>.
+            </p>
+          </div>
+        )}
 
         <p className={styles.footer}>
           Already have an account?{' '}
-          <Link to={ROUTES.LOGIN} className={styles.footerLink}>Sign in</Link>
+          <Link to={`${ROUTES.LOGIN}?role=${role}`} className={styles.footerLink}>
+            Sign in
+          </Link>
         </p>
       </div>
     </div>
   );
 }
-

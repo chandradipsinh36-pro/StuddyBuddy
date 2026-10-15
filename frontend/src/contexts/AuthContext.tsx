@@ -7,8 +7,20 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   role: UserRole | null;
-  login: (email: string, password: string) => Promise<void>;
-  googleLogin: (payload: { credential?: string; code?: string; accessToken?: string; role?: 'student' | 'tutor' }) => Promise<User>;
+  login: (email: string, password: string) => Promise<User>;
+  register: (payload: {
+    name: string;
+    email: string;
+    password: string;
+    role: 'student' | 'tutor';
+    trialVideoUrl?: string;
+    highestQualification?: string;
+    experienceYears?: number;
+    documentUrl?: string;
+    subjects?: string[];
+    bio?: string;
+  }) => Promise<User>;
+  googleLogin: (payload: { credential?: string; code?: string; accessToken?: string; role?: 'student' | 'tutor'; mode?: 'login' | 'register' }) => Promise<User>;
   setCurrentUser: (user: User, token?: string) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -51,9 +63,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('sb_token', authUser.token);
     localStorage.setItem('sb_user', JSON.stringify(authUser));
     setUser(authUser);
+    return authUser;
   };
 
-  const googleLogin = async (payload: { credential?: string; code?: string; accessToken?: string; role?: 'student' | 'tutor' }) => {
+  const register = async (payload: Parameters<typeof authService.register>[0]) => {
+    const authUser = await authService.register(payload);
+    localStorage.setItem('sb_token', authUser.token);
+    localStorage.setItem('sb_user', JSON.stringify(authUser));
+    setUser(authUser);
+    return authUser;
+  };
+
+  const googleLogin = async (payload: { credential?: string; code?: string; accessToken?: string; role?: 'student' | 'tutor'; mode?: 'login' | 'register' }) => {
     const authUser = await authService.googleLogin(payload);
     localStorage.setItem('sb_token', authUser.token);
     localStorage.setItem('sb_user', JSON.stringify(authUser));
@@ -80,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: !!user,
       role: user?.role ?? null,
       login,
+      register,
       googleLogin,
       setCurrentUser,
       logout,
