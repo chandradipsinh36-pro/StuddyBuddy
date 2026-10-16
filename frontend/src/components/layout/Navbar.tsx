@@ -182,9 +182,9 @@ export function Navbar() {
                   <div className={styles.dropdown}>
                     <div className={styles.dropdownUser}>
                       <Avatar src={user?.avatarUrl || user?.profilePic || undefined} name={user?.name ?? 'User'} size="md" />
-                      <div>
-                        <div className={styles.dropdownName}>{user?.name}</div>
-                        <div className={styles.dropdownEmail}>{user?.email}</div>
+                      <div className={styles.dropdownUserInfo}>
+                        <div className={styles.dropdownName} title={user?.name}>{user?.name}</div>
+                        <div className={styles.dropdownEmail} title={user?.email}>{user?.email}</div>
                         <div className={styles.dropdownRole}>{role === 'tutor' ? '👨‍🏫 Tutor' : '🎓 Student'}</div>
                       </div>
                     </div>
@@ -287,6 +287,31 @@ export function Navbar() {
               {item.label}
             </NavLink>
           ))}
+          {isAuthenticated && role === 'student' && (
+            <>
+              <hr className={styles.mobileDivider} />
+              <Link to={ROUTES.STUDENT_PURCHASES} className={styles.mobileLink} onClick={() => setMobileOpen(false)}>
+                <ShoppingBag size={16} /> My Purchases & Cart
+              </Link>
+              <Link to={ROUTES.STUDENT_SAVED} className={styles.mobileLink} onClick={() => setMobileOpen(false)}>
+                <Bookmark size={16} /> Saved Items
+              </Link>
+              <Link to={ROUTES.STUDENT_SETTINGS} className={styles.mobileLink} onClick={() => setMobileOpen(false)}>
+                <Settings size={16} /> Settings
+              </Link>
+            </>
+          )}
+          {isAuthenticated && role === 'tutor' && (
+            <>
+              <hr className={styles.mobileDivider} />
+              <Link to={ROUTES.TUTOR_PROFILE_EDIT} className={styles.mobileLink} onClick={() => setMobileOpen(false)}>
+                <User size={16} /> {!user?.isVerified ? 'My Profile & Application' : 'My Profile'}
+              </Link>
+              <Link to={ROUTES.TUTOR_SETTINGS} className={styles.mobileLink} onClick={() => setMobileOpen(false)}>
+                <Settings size={16} /> Settings
+              </Link>
+            </>
+          )}
           <hr className={styles.mobileDivider} />
           <button className={styles.mobileLink} onClick={toggleTheme}>
             {theme === 'dark' ? <Sun size={16} color="#F59E0B" /> : <Moon size={16} />}

@@ -17,7 +17,6 @@ import {
   Sparkles,
   Layers,
   CheckCircle2,
-  ExternalLink,
   Tag,
   Calendar,
   AlertCircle,
@@ -32,6 +31,8 @@ import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
 import { resourceService } from '../../services/resourceService';
 import { bundleService } from '../../services/bundleService';
+import { DocumentViewerModal } from '../../components/shared/DocumentViewerModal';
+import { StudentVideoPlayer } from '../../components/shared/StudentVideoPlayer';
 import { ROUTES } from '../../constants';
 import type { Bundle, Resource } from '../../types';
 import toast from 'react-hot-toast';
@@ -49,6 +50,48 @@ export function TutorBundlesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBundle, setEditingBundle] = useState<Bundle | null>(null);
   const [viewingBundle, setViewingBundle] = useState<Bundle | null>(null);
+  const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
+  const [previewDocTitle, setPreviewDocTitle] = useState<string>('');
+  const [previewVideo, setPreviewVideo] = useState<{ url: string; title: string } | null>(null);
+
+  const handlePreviewResource = async (res: any) => {
+    let rawFile = res.fileUrl || res.url;
+    const title = res.title || res.filename || 'Teaching Resource';
+    const type = (res.type || res.fileType || '').toLowerCase();
+    const rId = res.id || res.resourceId;
+
+    if (!rawFile && rId) {
+      const match = availableResources.find(r => r.id === rId || r.resourceId === rId);
+      if (match) {
+        rawFile = (match as any).fileUrl || (match as any).url;
+      }
+    }
+
+    if (!rawFile && rId) {
+      try {
+        const fetched = await resourceService.getResource(rId);
+        rawFile = fetched?.fileUrl || (fetched as any)?.url;
+      } catch (e) {
+        console.warn('Could not fetch resource details:', e);
+      }
+    }
+
+    if (type === 'youtube' || res.youtubeUrl) {
+      const vidUrl = res.youtubeUrl || rawFile;
+      if (vidUrl) {
+        setPreviewVideo({ url: vidUrl, title });
+        return;
+      }
+    }
+
+    if (rawFile) {
+      const viewUrl = rawFile.startsWith('http') ? rawFile : `http://localhost:5000${rawFile.startsWith('/') ? '' : '/'}${rawFile}`;
+      setPreviewDocTitle(title);
+      setPreviewDocUrl(viewUrl);
+    } else {
+      toast.error('No attached previewable document found.');
+    }
+  };
 
   // Form State
   const [bundleName, setBundleName] = useState('');
@@ -1104,16 +1147,15 @@ export function TutorBundlesPage() {
                         </div>
 
                         {resId && (
-                          <Link
-                            to={ROUTES.RESOURCE_DETAIL(resId)}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => handlePreviewResource(res)}
                             className={styles.viewResourceButton}
-                            title="Open resource page in new tab"
+                            title="Open resource viewer window"
                           >
-                            <span>Open</span>
-                            <ExternalLink size={12} />
-                          </Link>
+                            <span>View</span>
+                            <Eye size={12} />
+                          </button>
                         )}
                       </div>
                     );
@@ -1142,6 +1184,33 @@ export function TutorBundlesPage() {
           </div>
         )}
       </Modal>
+
+      {/* In-page Document Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={Boolean(previewDocUrl)}
+        url={previewDocUrl}
+        title={previewDocTitle}
+        onClose={() => setPreviewDocUrl(null)}
+      />
+
+      {/* In-page Video Preview Modal */}
+      {previewVideo && (
+        <Modal
+          isOpen={Boolean(previewVideo)}
+          onClose={() => setPreviewVideo(null)}
+          title={previewVideo.title}
+          size="lg"
+        >
+          <div style={{ padding: 'var(--space-2)' }}>
+            <StudentVideoPlayer
+              videoUrl={previewVideo.url}
+              title={previewVideo.title}
+              autoPlay={true}
+              isStudentSide={false}
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

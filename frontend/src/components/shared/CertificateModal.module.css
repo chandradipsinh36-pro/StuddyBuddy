@@ -510,8 +510,32 @@
     print-color-adjust: exact !important;
   }
 
-  @page {
-    size: landscape;
-    margin: 5mm;
+@media (max-width: 640px) {
+  .modalOverlay {
+    padding: var(--space-2);
   }
+  .modalHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .actionButtons {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .actionButtons button {
+    flex: 1;
+    min-width: 120px;
+  }
+  .certScrollWrapper {
+    padding: var(--space-3);
+    justify-content: flex-start;
+  }
+}
+
+@page {
+  size: landscape;
+  margin: 5mm;
+}
+
 }

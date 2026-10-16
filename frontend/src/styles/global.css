@@ -22,17 +22,38 @@ body {
   background-color: var(--color-surface);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  width: 100%;
+  min-width: 320px;
 }
 
-img, video, svg { display: block; max-width: 100%; }
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+img, video, iframe, embed, object {
+  display: block;
+  max-width: 100%;
+}
 
 a { color: inherit; text-decoration: none; }
 
-button { cursor: pointer; font-family: inherit; border: none; background: none; }
+button {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  background: none;
+  touch-action: manipulation;
+}
 
 input, textarea, select {
   font-family: inherit;
   font-size: inherit;
+  max-width: 100%;
 }
 
 ul, ol { list-style: none; }
@@ -41,6 +62,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   color: var(--color-gray-900);
+  word-break: break-word;
 }
 
 h1 { font-size: var(--font-size-4xl); }
@@ -50,7 +72,14 @@ h4 { font-size: var(--font-size-xl); }
 h5 { font-size: var(--font-size-lg); }
 h6 { font-size: var(--font-size-base); }
 
-p { line-height: var(--line-height-relaxed); }
+@media (max-width: 768px) {
+  h1 { font-size: clamp(1.75rem, 6vw, 2.25rem); }
+  h2 { font-size: clamp(1.35rem, 5vw, 1.75rem); }
+  h3 { font-size: clamp(1.15rem, 4vw, 1.4rem); }
+  h4 { font-size: clamp(1.05rem, 3.5vw, 1.25rem); }
+}
+
+p { line-height: var(--line-height-relaxed); word-break: break-word; }
 
 /* === Layout Container === */
 .container {
@@ -60,8 +89,19 @@ p { line-height: var(--line-height-relaxed); }
   padding-inline: var(--space-6);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .container { padding-inline: var(--space-4); }
+}
+@media (max-width: 480px) {
+  .container { padding-inline: var(--space-3); }
+}
+
+/* === Responsive Table Utility === */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: var(--space-4);
 }
 
 /* === Focus Styles === */

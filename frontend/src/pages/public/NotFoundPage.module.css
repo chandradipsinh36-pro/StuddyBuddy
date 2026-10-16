@@ -38,3 +38,12 @@
   gap: var(--space-3);
   justify-content: center;
 }
+
+@media (max-width: 640px) {
+  .page { padding: var(--space-6) var(--space-3); }
+  .errorCode { font-size: clamp(4rem, 18vw, 6rem); }
+  .title { font-size: clamp(1.25rem, 5vw, 1.5rem); }
+  .btnGroup { flex-direction: column; width: 100%; max-width: 280px; }
+  .btnGroup button, .btnGroup a { width: 100%; text-align: center; }
+}
+

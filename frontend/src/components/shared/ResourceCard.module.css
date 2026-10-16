@@ -80,3 +80,11 @@
 
 .price { font-size: var(--font-size-base); font-weight: var(--font-weight-bold); color: var(--color-premium); }
 .free  { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); color: var(--color-success); }
+
+@media (max-width: 480px) {
+  .body {
+    padding: var(--space-3);
+    gap: var(--space-2);
+  }
+}
+

@@ -148,11 +148,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
         {/* Footer Actions */}
         <div
+          className="admin-modal-actions"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 'var(--space-3)',
             borderTop: '1px solid var(--color-border)',
             paddingTop: 'var(--space-4)',
           }}

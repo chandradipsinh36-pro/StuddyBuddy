@@ -124,7 +124,7 @@ export const TutorApplicationsPage: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ width: 280 }}>
+        <div style={{ width: 'min(280px, 100%)' }}>
           <SearchInput
             value={searchParam}
             onChange={handleSearchChange}
@@ -139,6 +139,10 @@ export const TutorApplicationsPage: React.FC = () => {
           display: 'flex',
           borderBottom: '1px solid var(--color-border)',
           gap: 'var(--space-6)',
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
+          paddingBottom: '2px',
+          scrollbarWidth: 'none',
         }}
       >
         <button
@@ -326,9 +330,9 @@ export const TutorApplicationsPage: React.FC = () => {
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  alignItems: 'flex-end',
+                  alignItems: 'flex-start',
                   gap: 'var(--space-2)',
-                  minWidth: 160,
+                  flex: '1 1 160px',
                 }}
               >
                 <div style={{ fontSize: '0.72rem', color: 'var(--color-gray-400)' }}>

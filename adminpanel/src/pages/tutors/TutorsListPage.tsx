@@ -320,7 +320,7 @@ export const TutorsListPage: React.FC = () => {
             onAction={handleResetFilters}
           />
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-container">
             <table
               style={{
                 width: '100%',

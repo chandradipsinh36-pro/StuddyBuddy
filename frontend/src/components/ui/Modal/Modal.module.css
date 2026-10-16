@@ -50,3 +50,24 @@
 .closeBtn:hover { background: var(--color-gray-100); color: var(--color-gray-900); }
 
 .body { padding: var(--space-6); }
+
+@media (max-width: 640px) {
+  .overlay {
+    padding: var(--space-2);
+    align-items: center;
+  }
+  .modal {
+    max-height: calc(100dvh - var(--space-4));
+    border-radius: var(--radius-lg);
+    width: 100%;
+  }
+  .header {
+    padding: var(--space-3) var(--space-4);
+  }
+  .title {
+    font-size: var(--font-size-base);
+  }
+  .body {
+    padding: var(--space-4);
+  }
+}

@@ -34,12 +34,14 @@ export const AdminLayout: React.FC = () => {
         <AdminHeader onOpenMobileMenu={() => setMobileOpen(true)} />
 
         <main
+          className="admin-main-container"
           style={{
             flex: 1,
             padding: 'var(--space-6)',
             maxWidth: '1440px',
             width: '100%',
             margin: '0 auto',
+            minWidth: 0,
           }}
         >
           <Outlet />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, CheckCircle, ShieldCheck, Star, FileText, Video, Paperclip, ExternalLink,
+  ArrowLeft, CheckCircle, ShieldCheck, Star, FileText, Video, Paperclip,
   BookOpen, Lock, Eye, CheckCircle2, Play, Trophy, Award, Sparkles, RotateCcw, ChevronRight
 } from 'lucide-react';
 import { parseVideoUrl, getVideoThumbnail, getCourseThumbnail } from '../../utils/videoUtils';
@@ -57,7 +57,7 @@ export function CourseDetailPage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
   const [completedLessonIndices, setCompletedLessonIndices] = useState<number[]>([]);
-  const [engagements, setEngagements] = useState<Record<number, LessonEngagement>>({});
+  const [_engagements, setEngagements] = useState<Record<number, LessonEngagement>>({});
   const [certificateModalOpen, setCertificateModalOpen] = useState(false);
 
   useEffect(() => {
@@ -500,23 +500,26 @@ export function CourseDetailPage() {
                             )}
 
                             {lesson.videoUrl && user?.role === 'tutor' ? (
-                              <a
-                                href={lesson.videoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                type="button"
+                                onClick={() => scrollToLesson(idx)}
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: 4,
                                   fontSize: 'var(--font-size-xs)',
                                   color: 'var(--color-primary-600)',
-                                  textDecoration: 'none',
-                                  fontWeight: 500,
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: 0,
+                                  fontWeight: 600,
                                 }}
+                                title="Play video in course player"
                               >
-                                <span>Open Video</span>
-                                <ExternalLink size={12} />
-                              </a>
+                                <Play size={12} />
+                                <span>Watch Lecture</span>
+                              </button>
                             ) : null}
                           </div>
                         ) : (

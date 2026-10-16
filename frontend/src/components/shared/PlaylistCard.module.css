@@ -125,3 +125,14 @@
 .footerBtn {
   margin-top: var(--space-3);
 }
+
+@media (max-width: 480px) {
+  .body {
+    padding: var(--space-3);
+  }
+  .footerBtn button, .footerBtn a {
+    width: 100%;
+    text-align: center;
+  }
+}
+

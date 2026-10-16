@@ -12,7 +12,6 @@ import {
   Sliders,
   Gauge,
   Check,
-  Shield,
   Loader2,
 } from 'lucide-react';
 import { parseVideoUrl } from '../../utils/videoUtils';

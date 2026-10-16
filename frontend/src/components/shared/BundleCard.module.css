@@ -268,3 +268,22 @@
   border-top-color: #222222;
 }
 
+@media (max-width: 480px) {
+  .card {
+    padding: var(--space-4);
+  }
+  .cardTitle {
+    font-size: 1rem;
+  }
+  .cardFooter {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .cardActionBtn {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 14px;
+  }
+}
+
+

@@ -75,6 +75,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenMobileMenu, page
 
   return (
     <header
+      className="admin-header"
       style={{
         height: 'var(--header-height)',
         backgroundColor: 'var(--color-white)',
@@ -174,7 +175,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenMobileMenu, page
                 position: 'absolute',
                 top: 'calc(100% + 8px)',
                 right: 0,
-                width: 320,
+                width: 'min(320px, calc(100vw - 20px))',
                 padding: 'var(--space-3)',
                 zIndex: 'var(--z-dropdown)',
                 boxShadow: 'var(--shadow-xl)',
@@ -273,7 +274,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenMobileMenu, page
             aria-label="Admin account menu"
           >
             <Avatar name={adminUser?.name || 'Admin'} size={34} />
-            <div style={{ textAlign: 'left', display: window.innerWidth <= 640 ? 'none' : 'block' }}>
+            <div className="admin-header-profile-text" style={{ textAlign: 'left' }}>
               <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-gray-900)', lineHeight: 1.2 }}>
                 {adminUser?.name || 'Admin Chief'}
               </div>
@@ -293,7 +294,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenMobileMenu, page
                 position: 'absolute',
                 top: 'calc(100% + 8px)',
                 right: 0,
-                width: 220,
+                width: 'min(240px, calc(100vw - 20px))',
                 padding: 'var(--space-2)',
                 zIndex: 'var(--z-dropdown)',
                 boxShadow: 'var(--shadow-xl)',

@@ -30,7 +30,8 @@
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -88,3 +89,30 @@
 .courseTitle:hover {
   color: var(--color-primary-600);
 }
+
+@media (max-width: 768px) {
+  .page {
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--space-4) var(--space-3);
+  }
+  .title {
+    font-size: clamp(1.4rem, 5vw, 1.85rem);
+  }
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .header button, .header a {
+    width: 100%;
+    text-align: center;
+  }
+  .table {
+    min-width: 580px;
+  }
+}
+

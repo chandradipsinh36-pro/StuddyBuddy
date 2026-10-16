@@ -6,11 +6,12 @@ import {
   Upload,
   FileText,
   CheckCircle2,
-  ExternalLink,
   X,
   AlertTriangle,
   ShieldCheck,
   Video,
+  Eye,
+  BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { resourceService } from '../../services/resourceService';
@@ -19,6 +20,9 @@ import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { Select } from '../../components/ui/Select/Select';
 import { Button } from '../../components/ui/Button/Button';
 import { SubjectAutocomplete } from '../../components/ui/SubjectAutocomplete/SubjectAutocomplete';
+import { DocumentViewerModal } from '../../components/shared/DocumentViewerModal';
+import { Modal } from '../../components/ui/Modal/Modal';
+import { StudentVideoPlayer } from '../../components/shared/StudentVideoPlayer';
 import { RESOURCE_TYPES, DIFFICULTY_LEVELS, ROUTES } from '../../constants';
 import type { Resource } from '../../types';
 import toast from 'react-hot-toast';
@@ -29,6 +33,32 @@ export function TutorResourceEditPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
+  const [previewDocTitle, setPreviewDocTitle] = useState<string>('');
+  const [previewVideo, setPreviewVideo] = useState<{ url: string; title: string } | null>(null);
+
+  const handlePreviewFile = () => {
+    if (!resource) return;
+    const rawFile = resource.fileUrl;
+    const title = resource.title || resource.filename || 'Resource File';
+    const type = (resource.type || (resource as any).fileType || '').toLowerCase();
+
+    if (type === 'youtube' || (resource as any).youtubeUrl) {
+      const vidUrl = (resource as any).youtubeUrl || rawFile;
+      if (vidUrl) {
+        setPreviewVideo({ url: vidUrl, title });
+        return;
+      }
+    }
+
+    if (rawFile) {
+      const viewUrl = rawFile.startsWith('http') ? rawFile : `http://localhost:5000${rawFile.startsWith('/') ? '' : '/'}${rawFile}`;
+      setPreviewDocTitle(title);
+      setPreviewDocUrl(viewUrl);
+    } else {
+      toast.error('No attached previewable document found.');
+    }
+  };
 
   const ALLOWED_EXTENSIONS = [
     'pdf',
@@ -402,22 +432,44 @@ export function TutorResourceEditPage() {
                       </div>
                     </div>
                   </div>
-                  <a
-                    href={resource.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      fontSize: 'var(--font-size-xs)',
-                      color: 'var(--color-primary-600)',
-                      fontWeight: 600,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    <ExternalLink size={14} /> View File
-                  </a>
+                  <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={handlePreviewFile}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 'var(--font-size-xs)',
+                        color: 'var(--color-primary-600)',
+                        fontWeight: 600,
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                      title="Open resource viewer window"
+                    >
+                      <Eye size={14} /> View Resource Window
+                    </button>
+                    {resource.courseId && (
+                      <Link
+                        to={ROUTES.COURSE_DETAIL(resource.courseId)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: 'var(--font-size-xs)',
+                          color: 'var(--color-primary-600)',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                        }}
+                        title="View in Course Page"
+                      >
+                        <BookOpen size={14} /> View in Course
+                      </Link>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -495,6 +547,33 @@ export function TutorResourceEditPage() {
           </div>
         </form>
       </div>
+
+      {/* In-page Document Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={Boolean(previewDocUrl)}
+        url={previewDocUrl}
+        title={previewDocTitle}
+        onClose={() => setPreviewDocUrl(null)}
+      />
+
+      {/* In-page Video Preview Modal */}
+      {previewVideo && (
+        <Modal
+          isOpen={Boolean(previewVideo)}
+          onClose={() => setPreviewVideo(null)}
+          title={previewVideo.title}
+          size="lg"
+        >
+          <div style={{ padding: 'var(--space-2)' }}>
+            <StudentVideoPlayer
+              videoUrl={previewVideo.url}
+              title={previewVideo.title}
+              autoPlay={true}
+              isStudentSide={false}
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

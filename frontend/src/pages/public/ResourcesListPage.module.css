@@ -76,6 +76,33 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: var(--space-6);
 }
+
+@media (max-width: 768px) {
+  .page {
+    padding: var(--space-6) var(--space-4);
+  }
+  .filterBar {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--space-4) var(--space-3);
+  }
+  .title {
+    font-size: clamp(1.4rem, 5vw, 1.85rem);
+  }
+  .filterBar {
+    grid-template-columns: 1fr;
+    padding: var(--space-3);
+  }
+  .grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}
+

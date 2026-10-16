@@ -284,7 +284,7 @@ export const AdminBundlesPage: React.FC = () => {
             }}
           />
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-container">
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 'var(--font-size-sm)' }}>
               <thead>
                 <tr style={{ backgroundColor: 'var(--color-bg-subtle)', borderBottom: '1px solid var(--color-border)', fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>

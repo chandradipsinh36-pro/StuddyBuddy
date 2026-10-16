@@ -139,14 +139,7 @@ export const TutorApplicationReviewPage: React.FC = () => {
       </div>
 
       {/* Two-Column Responsive Layout (Section 19 & 33) */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 340px',
-          gap: 'var(--space-6)',
-          alignItems: 'start',
-        }}
-      >
+      <div className="admin-split-layout">
         {/* LEFT / MAIN COLUMN */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', minWidth: 0 }}>
           {/* Candidate Profile Summary Header */}

@@ -194,3 +194,16 @@
   text-decoration: none;
   display: block;
 }
+
+@media (max-width: 480px) {
+  .card {
+    padding: var(--space-4);
+  }
+  .name {
+    max-width: 180px;
+  }
+  .viewLink button {
+    width: 100%;
+  }
+}
+

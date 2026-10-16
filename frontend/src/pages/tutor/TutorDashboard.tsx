@@ -14,6 +14,9 @@ import { Button } from '../../components/ui/Button/Button';
 import { Rating } from '../../components/ui/Rating/Rating';
 import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
+import { DocumentViewerModal } from '../../components/shared/DocumentViewerModal';
+import { Modal } from '../../components/ui/Modal/Modal';
+import { StudentVideoPlayer } from '../../components/shared/StudentVideoPlayer';
 import { ROUTES } from '../../constants';
 import type { Resource } from '../../types';
 import toast from 'react-hot-toast';
@@ -26,6 +29,31 @@ export function TutorDashboard() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
+  const [previewDocTitle, setPreviewDocTitle] = useState<string>('');
+  const [previewVideo, setPreviewVideo] = useState<{ url: string; title: string } | null>(null);
+
+  const handleQuickPreview = (r: Resource) => {
+    const rawFile = (r as any).fileUrl || (r as any).url;
+    const title = r.title || (r as any).filename || 'Teaching Resource';
+    const type = (r.type || (r as any).fileType || '').toLowerCase();
+
+    if (type === 'youtube' || (r as any).youtubeUrl) {
+      const vidUrl = (r as any).youtubeUrl || rawFile;
+      if (vidUrl) {
+        setPreviewVideo({ url: vidUrl, title });
+        return;
+      }
+    }
+
+    if (rawFile) {
+      const viewUrl = rawFile.startsWith('http') ? rawFile : `http://localhost:5000${rawFile.startsWith('/') ? '' : '/'}${rawFile}`;
+      setPreviewDocTitle(title);
+      setPreviewDocUrl(viewUrl);
+    } else {
+      toast.error('No attached previewable document found.');
+    }
+  };
 
   useEffect(() => {
     refreshUser();
@@ -226,22 +254,43 @@ export function TutorDashboard() {
           </div>
           <div className={styles.resourceList}>
             {resources.length > 0 ? (
-              resources.slice(0, 3).map(r => (
-                <div key={r.id} className={styles.resourceRow}>
-                  <div className={styles.resourceInfo}>
-                    <span className={styles.resourceTitle}>{r.title}</span>
-                    <div className={styles.resourceMeta}>
-                      <Badge variant={r.status === 'published' ? 'success' : r.status === 'processing' ? 'warning' : 'default'}>{r.status}</Badge>
-                      <span className={styles.resourceStat}><Eye size={12} /> {r.viewCount ?? 0}</span>
-                      <span className={styles.resourceStat}><Star size={12} /> {r.averageRating ?? r.rating ?? 5.0}</span>
-                      {r.price && <span className={styles.resourcePrice}>₹{r.price}</span>}
+              resources.slice(0, 3).map(r => {
+                const resId = r.id || (r as any).resourceId || 1;
+                return (
+                  <div key={r.id} className={styles.resourceRow}>
+                    <div className={styles.resourceInfo}>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickPreview(r)}
+                        className={styles.resourceTitle}
+                        style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+                        title="Open resource viewer window"
+                      >
+                        {r.title}
+                      </button>
+                      <div className={styles.resourceMeta}>
+                        <Badge variant={r.status === 'published' ? 'success' : r.status === 'processing' ? 'warning' : 'default'}>{r.status}</Badge>
+                        <span className={styles.resourceStat}><Eye size={12} /> {r.viewCount ?? 0}</span>
+                        <span className={styles.resourceStat}><Star size={12} /> {r.averageRating ?? r.rating ?? 5.0}</span>
+                        {r.price && <span className={styles.resourcePrice}>₹{r.price}</span>}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title="Open resource viewer window"
+                        onClick={() => handleQuickPreview(r)}
+                      >
+                        View
+                      </Button>
+                      <Link to={ROUTES.TUTOR_RESOURCE_EDIT(resId)}>
+                        <Button size="sm" variant="ghost" title="Edit resource">Edit</Button>
+                      </Link>
                     </div>
                   </div>
-                  <Link to={ROUTES.TUTOR_RESOURCE_EDIT(r.id || (r as any).resourceId || 1)}>
-                    <Button size="sm" variant="ghost">Edit</Button>
-                  </Link>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p style={{ color: 'var(--color-gray-500)', padding: '16px 0' }}>No resources published yet.</p>
             )}
@@ -279,6 +328,33 @@ export function TutorDashboard() {
           </div>
         </div>
       </div>
+
+      {/* In-page Document Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={Boolean(previewDocUrl)}
+        url={previewDocUrl}
+        title={previewDocTitle}
+        onClose={() => setPreviewDocUrl(null)}
+      />
+
+      {/* In-page Video Preview Modal */}
+      {previewVideo && (
+        <Modal
+          isOpen={Boolean(previewVideo)}
+          onClose={() => setPreviewVideo(null)}
+          title={previewVideo.title}
+          size="lg"
+        >
+          <div style={{ padding: 'var(--space-2)' }}>
+            <StudentVideoPlayer
+              videoUrl={previewVideo.url}
+              title={previewVideo.title}
+              autoPlay={true}
+              isStudentSide={false}
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

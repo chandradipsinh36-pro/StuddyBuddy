@@ -67,7 +67,7 @@ export const AdminLoginPage: React.FC = () => {
           backgroundColor: 'var(--color-surface, #0a0a0a)',
           border: '1px solid var(--color-border, #222222)',
           borderRadius: 'var(--radius-2xl)',
-          padding: 'var(--space-8)',
+          padding: 'clamp(var(--space-5), 5vw, var(--space-8))',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
         }}
       >

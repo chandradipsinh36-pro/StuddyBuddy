@@ -139,7 +139,7 @@ export function ExplorePage() {
               <div className={styles.section}>
                 {tab === 'all' && <h2 className={styles.sectionTitle}>Curated Study Bundles</h2>}
                 {bundles.length > 0 ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                  <div className={styles.bundlesGrid}>
                     {bundles.map(b => <BundleCard key={b.id || b.bundleId} bundle={b} />)}
                   </div>
                 ) : (

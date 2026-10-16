@@ -52,6 +52,7 @@
 
 .tutorGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
 .resourceGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5); }
+.bundlesGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: var(--space-5); }
 .skeletonGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5); margin-top: var(--space-8); }
 
 @media (max-width: 1024px) {
@@ -62,6 +63,7 @@
 @media (max-width: 640px) {
   .tutorGrid { grid-template-columns: 1fr; }
   .resourceGrid { grid-template-columns: 1fr; }
+  .bundlesGrid { grid-template-columns: 1fr; }
   .skeletonGrid { grid-template-columns: 1fr; }
   .toolbar { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
 }

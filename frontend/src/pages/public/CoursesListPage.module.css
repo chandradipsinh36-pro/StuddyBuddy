@@ -238,3 +238,34 @@
 .freeTag {
   color: var(--color-success);
 }
+
+@media (max-width: 768px) {
+  .page {
+    padding: var(--space-6) var(--space-4);
+  }
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-4);
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--space-4) var(--space-3);
+  }
+  .title {
+    font-size: clamp(1.4rem, 5vw, 1.85rem);
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .searchWrap {
+    min-width: 100%;
+  }
+  .banner {
+    height: 140px;
+  }
+  .cardBody {
+    padding: var(--space-4);
+  }
+}
