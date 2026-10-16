@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle, ShieldCheck, Star, FileText, Video, Paperclip, ExternalLink,
-  BookOpen, Lock, Eye, CheckCircle2, Circle, Play, Trophy, Award, Sparkles, RotateCcw, ChevronRight
+  BookOpen, Lock, Eye, CheckCircle2, Play, Trophy, Award, Sparkles, RotateCcw, ChevronRight
 } from 'lucide-react';
 import { parseVideoUrl, getVideoThumbnail, getCourseThumbnail } from '../../utils/videoUtils';
 import { courseService } from '../../services/courseService';
@@ -137,29 +137,12 @@ export function CourseDetailPage() {
         engagedAt: new Date().toISOString(),
       },
     }));
-  };
-
-  const handleToggleLesson = (idx: number, _lessonTitle?: string) => {
-    if (!user?.id) {
-      toast.error('Please log in as a student to track your course progress.');
-      return;
-    }
-    const res = toggleLessonProgress(user.id, courseId, idx);
-    if (res.requiresEngagement) {
-      toast.error(
-        `⚠️ Learning required: Please watch Lecture #${idx + 1} video or review the attached study notes before you can mark it as completed!`,
-        { duration: 5000 }
-      );
-      scrollToLesson(idx);
-      return;
-    }
-    setCompletedLessonIndices((prev) =>
-      res.isCompleted ? [...prev, idx] : prev.filter((i) => i !== idx)
-    );
-    if (res.isCompleted) {
-      toast.success(`Lecture #${idx + 1} completed! 🎉`);
-    } else {
-      toast('Lecture marked as incomplete.', { icon: 'ℹ️' });
+    // Auto-mark lesson as completed when video is played or material is viewed
+    if (user?.id && !completedLessonIndices.includes(idx)) {
+      const updated = toggleLessonProgress(user.id, courseId, idx);
+      if (updated.isCompleted) {
+        setCompletedLessonIndices((prev) => [...prev, idx]);
+      }
     }
   };
 
@@ -212,6 +195,10 @@ export function CourseDetailPage() {
     }
     if (user?.role !== 'student') {
       toast.error('Only students can enroll in courses.');
+      return;
+    }
+    if (isEnrolled) {
+      toast('You are already enrolled in this course!', { icon: '✅' });
       return;
     }
     if (!course) return;
@@ -483,37 +470,33 @@ export function CourseDetailPage() {
                         {isLessonUnlocked ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             {hasAccess && (
-                              <button
-                                type="button"
-                                onClick={() => handleToggleLesson(idx, lesson.title)}
+                              <span
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: 5,
                                   backgroundColor: isCompleted ? '#ECFDF5' : '#F1F5F9',
                                   border: isCompleted ? '1.5px solid #10B981' : '1px solid #CBD5E1',
-                                  color: isCompleted ? '#065F46' : '#475569',
+                                  color: isCompleted ? '#065F46' : '#94A3B8',
                                   borderRadius: 8,
                                   padding: '4px 10px',
                                   fontSize: '0.75rem',
                                   fontWeight: 700,
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease',
+                                  userSelect: 'none',
                                 }}
-                                title={isCompleted ? 'Click to mark as incomplete' : 'Click to mark as completed'}
                               >
                                 {isCompleted ? (
                                   <>
                                     <CheckCircle2 size={13} color="#10B981" />
-                                    <span>Completed</span>
+                                    <span>✓ Viewed</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Circle size={13} color="#94A3B8" />
-                                    <span>Mark Complete</span>
+                                    <Eye size={13} color="#94A3B8" />
+                                    <span>Not viewed</span>
                                   </>
                                 )}
-                              </button>
+                              </span>
                             )}
 
                             {lesson.videoUrl && user?.role === 'tutor' ? (
@@ -563,55 +546,10 @@ export function CourseDetailPage() {
                                 videoUrl={lesson.videoUrl || videoInfo.embedUrl}
                                 title={lesson.title ? `Lecture #${idx + 1}: ${lesson.title}` : `Lecture #${idx + 1}`}
                                 onPlay={() => handleRecordEngagement(idx, 'video')}
-                                onEnded={() => {
-                                  handleRecordEngagement(idx, 'video');
-                                  if (!completedLessonIndices.includes(idx)) {
-                                    handleToggleLesson(idx, lesson.title);
-                                  }
-                                }}
+                                onEnded={() => handleRecordEngagement(idx, 'video')}
                                 isStudentSide={user?.role !== 'tutor'}
                               />
                             </div>
-
-                            {/* Video Study Engagement Status Strip */}
-                            {hasAccess && (
-                              <div className={`${styles.engagementStrip} ${engagements[idx]?.videoWatched ? styles.engagementWatched : styles.engagementPending}`}>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
-                                  {engagements[idx]?.videoWatched ? (
-                                    <>
-                                      <CheckCircle2 size={14} color="#10B981" />
-                                      <span>Lecture video watched & studied</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Video size={14} color="#2563EB" />
-                                      <span>Watch video lecture or view notes below to unlock completion</span>
-                                    </>
-                                  )}
-                                </span>
-                                {!engagements[idx]?.videoWatched && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      handleRecordEngagement(idx, 'video');
-                                      toast.success(`Lecture #${idx + 1} video active! Watch tutorial to learn.`);
-                                    }}
-                                    style={{
-                                      background: '#EFF6FF',
-                                      border: '1px solid #BFDBFE',
-                                      color: '#1D4ED8',
-                                      padding: '3px 10px',
-                                      borderRadius: 6,
-                                      fontSize: '0.75rem',
-                                      fontWeight: 700,
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    ▶ Start Studying Video
-                                  </button>
-                                )}
-                              </div>
-                            )}
                           </div>
                         )
                       ) : (
@@ -717,61 +655,34 @@ export function CourseDetailPage() {
                         )}
                       </div>
 
-                      {/* Lesson Quick Navigation / Verified Completion Bar */}
-                      {hasAccess && (() => {
-                        const isEngaged = Boolean(engagements[idx]?.videoWatched || engagements[idx]?.materialViewed);
-                        return (
-                          <div className={styles.lessonActionBar}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', flexWrap: 'wrap' }}>
-                              {isCompleted ? (
-                                <span style={{ color: '#059669', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                  <CheckCircle2 size={15} color="#10B981" /> Lecture Completed
-                                </span>
-                              ) : isEngaged ? (
-                                <span style={{ color: '#2563EB', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                  <Eye size={15} color="#2563EB" /> Studied (Ready to mark complete)
-                                </span>
-                              ) : (
-                                <span style={{ color: '#D97706', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                  <Lock size={13} color="#D97706" /> Watch video or study notes to complete
-                                </span>
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={() => handleToggleLesson(idx, lesson.title)}
-                                className={`${styles.lessonToggleBtn} ${isCompleted ? styles.lessonBtnCompleted : isEngaged ? styles.lessonBtnEngaged : styles.lessonBtnLocked}`}
-                              >
-                                {isCompleted ? (
-                                  'Mark as Incomplete'
-                                ) : isEngaged ? (
-                                  <>
-                                    <CheckCircle2 size={13} color="#10B981" />
-                                    <span>✓ Mark Lesson Complete</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Lock size={12} />
-                                    <span>Complete Locked (Study First)</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-
-                            {idx < totalLessons - 1 && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => scrollToLesson(idx + 1)}
-                                style={{ fontSize: '0.78rem', height: 28, padding: '0 8px', gap: 4, display: 'inline-flex', alignItems: 'center' }}
-                              >
-                                <span>Next Lecture</span>
-                                <ChevronRight size={13} />
-                              </Button>
+                      {/* Lesson Quick Navigation */}
+                      {hasAccess && (
+                        <div className={styles.lessonActionBar}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', flexWrap: 'wrap' }}>
+                            {isCompleted ? (
+                              <span style={{ color: '#059669', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <CheckCircle2 size={15} color="#10B981" /> Lecture Viewed
+                              </span>
+                            ) : (
+                              <span style={{ color: '#D97706', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <Eye size={13} color="#D97706" /> Watch video or open materials to mark as viewed
+                              </span>
                             )}
                           </div>
-                        );
-                      })()}
+
+                          {idx < totalLessons - 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => scrollToLesson(idx + 1)}
+                              style={{ fontSize: '0.78rem', height: 28, padding: '0 8px', gap: 4, display: 'inline-flex', alignItems: 'center' }}
+                            >
+                              <span>Next Lecture</span>
+                              <ChevronRight size={13} />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1212,6 +1123,7 @@ export function CourseDetailPage() {
             description: course.description || undefined,
           }}
           onSuccess={() => {
+            setCheckoutOpen(false);
             setIsEnrolled(true);
             loadData();
           }}

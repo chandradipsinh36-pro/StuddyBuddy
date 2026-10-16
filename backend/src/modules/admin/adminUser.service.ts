@@ -196,119 +196,129 @@ export const adminUserService = {
     const target = await prisma.user.findUnique({ where: { id: targetId } });
     if (!target) throw new NotFoundError('User');
 
-    await prisma.$transaction(async (tx) => {
-      // 1. Unlink admin reviewer references
-      await tx.tutorApplication.updateMany({
-        where: { reviewedBy: targetId },
-        data: { reviewedBy: null },
-      });
-      await tx.refund.updateMany({
-        where: { reviewedBy: targetId },
-        data: { reviewedBy: null },
-      });
-      await tx.groupMessageReport.updateMany({
-        where: { reviewedBy: targetId },
-        data: { reviewedBy: null },
-      });
+    await prisma.$transaction(
+      async (tx) => {
+        // 1. Unlink admin reviewer references if user was an admin
+        if (target.role === 'admin') {
+          await tx.tutorApplication.updateMany({
+            where: { reviewedBy: targetId },
+            data: { reviewedBy: null },
+          });
+          await tx.refund.updateMany({
+            where: { reviewedBy: targetId },
+            data: { reviewedBy: null },
+          });
+          await tx.groupMessageReport.updateMany({
+            where: { reviewedBy: targetId },
+            data: { reviewedBy: null },
+          });
+        }
 
-      // 2. Group reports & messages
-      await tx.groupMessageReport.deleteMany({
-        where: { reportedBy: targetId },
-      });
-      await tx.groupMessageReport.deleteMany({
-        where: { message: { senderId: targetId } },
-      });
-      await tx.groupMessage.deleteMany({
-        where: { senderId: targetId },
-      });
-      await tx.groupPayment.deleteMany({
-        where: { paidBy: targetId },
-      });
+        // 2. Group reports & messages
+        await tx.groupMessageReport.deleteMany({
+          where: { reportedBy: targetId },
+        });
+        await tx.groupMessageReport.deleteMany({
+          where: { message: { senderId: targetId } },
+        });
+        await tx.groupMessage.deleteMany({
+          where: { senderId: targetId },
+        });
+        await tx.groupPayment.deleteMany({
+          where: { paidBy: targetId },
+        });
 
-      // 3. Groups created by user
-      await tx.groupPayment.deleteMany({
-        where: { group: { createdBy: targetId } },
-      });
-      await tx.groupMessageReport.deleteMany({
-        where: { message: { group: { createdBy: targetId } } },
-      });
-      await tx.groupMessage.deleteMany({
-        where: { group: { createdBy: targetId } },
-      });
-      await tx.groupMember.deleteMany({
-        where: { group: { createdBy: targetId } },
-      });
-      await tx.group.deleteMany({
-        where: { createdBy: targetId },
-      });
+        // 3. Groups created by user
+        await tx.groupPayment.deleteMany({
+          where: { group: { createdBy: targetId } },
+        });
+        await tx.groupMessageReport.deleteMany({
+          where: { message: { group: { createdBy: targetId } } },
+        });
+        await tx.groupMessage.deleteMany({
+          where: { group: { createdBy: targetId } },
+        });
+        await tx.groupMember.deleteMany({
+          where: { group: { createdBy: targetId } },
+        });
+        await tx.group.deleteMany({
+          where: { createdBy: targetId },
+        });
 
-      // 4. Refunds & Payments made by user
-      await tx.refund.deleteMany({
-        where: { payment: { studentId: targetId } },
-      });
-      await tx.refund.deleteMany({
-        where: { studentId: targetId },
-      });
-      await tx.payment.deleteMany({
-        where: { studentId: targetId },
-      });
+        // 4. Refunds & Payments made by user
+        await tx.refund.deleteMany({
+          where: { payment: { studentId: targetId } },
+        });
+        await tx.refund.deleteMany({
+          where: { studentId: targetId },
+        });
+        await tx.payment.deleteMany({
+          where: { studentId: targetId },
+        });
 
-      // 5. Reviews & Enrollments
-      await tx.tutorReview.deleteMany({
-        where: { OR: [{ tutorId: targetId }, { studentId: targetId }] },
-      });
-      await tx.courseReview.deleteMany({
-        where: { studentId: targetId },
-      });
-      await tx.enrollment.deleteMany({
-        where: { studentId: targetId },
-      });
+        // 5. Reviews & Enrollments
+        await tx.tutorReview.deleteMany({
+          where: { OR: [{ tutorId: targetId }, { studentId: targetId }] },
+        });
+        await tx.courseReview.deleteMany({
+          where: { studentId: targetId },
+        });
+        await tx.enrollment.deleteMany({
+          where: { studentId: targetId },
+        });
 
-      // 6. Resources uploaded by user
-      await tx.bundleItem.deleteMany({
-        where: { resource: { uploadedBy: targetId } },
-      });
-      await tx.resourceCategory.deleteMany({
-        where: { resource: { uploadedBy: targetId } },
-      });
-      await tx.resourceModerationLog.deleteMany({
-        where: { resource: { uploadedBy: targetId } },
-      });
-      await tx.resourceExtractedContent.deleteMany({
-        where: { resource: { uploadedBy: targetId } },
-      });
-      await tx.videoModerationScene.deleteMany({
-        where: { resource: { uploadedBy: targetId } },
-      });
-      await tx.videoMetadata.deleteMany({
-        where: { resource: { uploadedBy: targetId } },
-      });
-      await tx.payment.deleteMany({
-        where: { resource: { uploadedBy: targetId } },
-      });
-      await tx.resource.deleteMany({
-        where: { uploadedBy: targetId },
-      });
+        // 6. Resources uploaded by user (only applicable for tutors/admins)
+        if (target.role !== 'student') {
+          await tx.bundleItem.deleteMany({
+            where: { resource: { uploadedBy: targetId } },
+          });
+          await tx.resourceCategory.deleteMany({
+            where: { resource: { uploadedBy: targetId } },
+          });
+          await tx.resourceModerationLog.deleteMany({
+            where: { resource: { uploadedBy: targetId } },
+          });
+          await tx.resourceExtractedContent.deleteMany({
+            where: { resource: { uploadedBy: targetId } },
+          });
+          await tx.videoModerationScene.deleteMany({
+            where: { resource: { uploadedBy: targetId } },
+          });
+          await tx.videoMetadata.deleteMany({
+            where: { resource: { uploadedBy: targetId } },
+          });
+          await tx.payment.deleteMany({
+            where: { resource: { uploadedBy: targetId } },
+          });
+          await tx.resource.deleteMany({
+            where: { uploadedBy: targetId },
+          });
 
-      // 7. Tutor courses (payments, enrollments, reviews on them)
-      await tx.payment.deleteMany({
-        where: { course: { tutorId: targetId } },
-      });
-      await tx.enrollment.deleteMany({
-        where: { course: { tutorId: targetId } },
-      });
-      await tx.courseReview.deleteMany({
-        where: { course: { tutorId: targetId } },
-      });
-      await tx.course.deleteMany({
-        where: { tutorId: targetId },
-      });
+          // 7. Tutor courses (payments, enrollments, reviews on them)
+          await tx.payment.deleteMany({
+            where: { course: { tutorId: targetId } },
+          });
+          await tx.enrollment.deleteMany({
+            where: { course: { tutorId: targetId } },
+          });
+          await tx.courseReview.deleteMany({
+            where: { course: { tutorId: targetId } },
+          });
+          await tx.course.deleteMany({
+            where: { tutorId: targetId },
+          });
+        }
 
-      // 8. Delete user record (cascades tutorProfile, tutorSkills, tutorApplications, groupMemberships, bundles)
-      await tx.user.delete({
-        where: { id: targetId },
-      });
-    });
+        // 8. Delete user record (cascades tutorProfile, tutorSkills, tutorApplications, groupMemberships, bundles)
+        await tx.user.delete({
+          where: { id: targetId },
+        });
+      },
+      {
+        maxWait: 15000,
+        timeout: 60000,
+      }
+    );
 
     logger.info({
       event: 'admin:user:delete',

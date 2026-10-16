@@ -130,11 +130,69 @@ export function isLessonEngaged(
     const key = `sb_progress_${studentId}_${courseId}`;
     const raw = localStorage.getItem(key);
     if (!raw) return false;
-    const parsed: CourseProgressData = JSON.parse(raw);
+    const parsed: CourseProgressData = raw ? JSON.parse(raw) : { completedLessons: [] };
     const eng = parsed.lessonEngagement?.[lessonIdx];
     return Boolean(eng?.videoWatched || eng?.materialViewed);
   } catch {
     return false;
+  }
+}
+
+/**
+ * Automatically marks a lesson as viewed & completed whenever the student
+ * watches the video or views attached study materials.
+ */
+export function markLessonCompleted(
+  studentId: number | string | undefined,
+  courseId: number | string | undefined,
+  lessonIdx: number,
+  type: 'video' | 'material'
+): { completedLessons: number[]; completedCount: number } {
+  if (!studentId || !courseId) return { completedLessons: [], completedCount: 0 };
+  try {
+    const key = `sb_progress_${studentId}_${courseId}`;
+    const raw = localStorage.getItem(key);
+    const parsed: CourseProgressData = raw ? JSON.parse(raw) : { completedLessons: [] };
+    const current: number[] = Array.isArray(parsed.completedLessons) ? parsed.completedLessons : [];
+    const currentEngagement = parsed.lessonEngagement || {};
+    const existing = currentEngagement[lessonIdx] || {};
+
+    const updatedEngagement: LessonEngagement = {
+      ...existing,
+      videoWatched: type === 'video' ? true : existing.videoWatched,
+      materialViewed: type === 'material' ? true : existing.materialViewed,
+      engagedAt: new Date().toISOString(),
+    };
+    currentEngagement[lessonIdx] = updatedEngagement;
+
+    let updatedCompleted = current;
+    if (!current.includes(lessonIdx)) {
+      updatedCompleted = [...current, lessonIdx];
+    }
+
+    parsed.completedLessons = updatedCompleted;
+    parsed.lessonEngagement = currentEngagement;
+    parsed.updatedAt = new Date().toISOString();
+
+    localStorage.setItem(key, JSON.stringify(parsed));
+
+    window.dispatchEvent(
+      new CustomEvent('course-progress-updated', {
+        detail: {
+          studentId,
+          courseId,
+          lessonIdx,
+          isCompleted: true,
+          completedCount: updatedCompleted.length,
+          engagement: updatedEngagement,
+        },
+      })
+    );
+
+    return { completedLessons: updatedCompleted, completedCount: updatedCompleted.length };
+  } catch (err) {
+    console.error('Failed to auto-complete lesson progress:', err);
+    return { completedLessons: [], completedCount: 0 };
   }
 }
 

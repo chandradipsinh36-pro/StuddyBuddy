@@ -57,12 +57,28 @@ export const paymentsService = {
     if (!course) throw new NotFoundError('Course');
     if (!course.isPublished) throw new BadRequestError('This course is not currently available for enrollment');
 
-    // 3. Prevent duplicate active enrollment
+    // 3. Check for existing active enrollment
     const existingEnrollment = await prisma.enrollment.findUnique({
       where: { studentId_courseId: { studentId, courseId: input.courseId } },
     });
     if (existingEnrollment && existingEnrollment.status === 'active') {
-      throw new ConflictError('You are already enrolled in this course');
+      const existingPayment = await prisma.payment.findFirst({
+        where: { studentId, courseId: input.courseId, status: 'success' },
+        orderBy: { paidAt: 'desc' },
+      });
+      return {
+        payment: existingPayment || {
+          paymentId: 0,
+          studentId,
+          courseId: input.courseId,
+          amount: course.price,
+          status: 'success',
+          transactionRef: `ENROLLED-${studentId}-${input.courseId}`,
+        },
+        enrollment: existingEnrollment,
+        transactionRef: existingPayment?.transactionRef || `ENROLLED-${studentId}-${input.courseId}`,
+        alreadyEnrolled: true,
+      };
     }
 
     // 4. Calculate & validate price

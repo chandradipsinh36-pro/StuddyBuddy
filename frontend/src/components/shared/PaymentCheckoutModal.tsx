@@ -274,8 +274,22 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
         enrollment: result.enrollment,
       });
     } catch (err: any) {
-      const msg = err?.response?.data?.error?.message || 'Payment could not be completed. Please try again.';
-      toast.error(msg);
+      const msg = (err?.response?.data?.error?.message || err?.response?.data?.message || '').toLowerCase();
+      // If already enrolled, treat as success and close gracefully
+      if (msg.includes('already enrolled') || msg.includes('already have') || (err?.response?.status === 409)) {
+        toast.success('You are already enrolled in this course!');
+        onSuccess({
+          payment: null,
+          transactionRef: `EXISTING-${Date.now()}`,
+          paymentMethod: 'existing',
+          amount: 0,
+          enrollment: null,
+        });
+        onClose();
+        return;
+      }
+      const displayMsg = err?.response?.data?.error?.message || err?.response?.data?.message || 'Payment could not be completed. Please try again.';
+      toast.error(displayMsg);
       setProcessing(false);
       setProcessingStep(1);
     }

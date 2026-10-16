@@ -128,16 +128,29 @@ export const tutorEarningsService = {
 
   async getAnalytics(tutorId: number) {
     const summary = await this.getSummary(tutorId);
+
+    // Fetch courses with enrollment counts
     const courses = await prisma.course.findMany({
       where: { tutorId },
-      select: { courseId: true, title: true, isPublished: true, _count: { select: { enrollments: true, reviews: true } } },
+      select: {
+        courseId: true,
+        title: true,
+        isPublished: true,
+        price: true,
+        _count: { select: { enrollments: true, reviews: true } },
+      },
     });
+
+    // Fetch resources
     const resources = await prisma.resource.findMany({
       where: { uploadedBy: tutorId },
       select: { resourceId: true, filename: true, isLocked: true, price: true, fileType: true },
     });
 
     const courseIds = courses.map((c) => c.courseId);
+    const resourceIds = resources.map((r) => r.resourceId);
+
+    // Ratings
     const [courseReviews, tutorReviews] = await Promise.all([
       courseIds.length > 0 ? prisma.courseReview.findMany({ where: { courseId: { in: courseIds } }, select: { rating: true } }) : [],
       prisma.tutorReview.findMany({ where: { tutorId }, select: { rating: true } }),
@@ -146,60 +159,159 @@ export const tutorEarningsService = {
     const allRatings = [...courseReviews.map((r) => r.rating), ...tutorReviews.map((r) => r.rating)];
     const avgRating = allRatings.length > 0
       ? Number((allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(1))
-      : 5.0;
+      : 0;
 
-    const totalPurchases = courses.reduce((acc, c) => acc + c._count.enrollments, 0);
-    const totalViews = courses.length * 85 + resources.length * 45;
+    // Get real course payment data — shows revenue per course from actual payments
+    const coursePayments = courseIds.length > 0
+      ? await prisma.payment.findMany({
+          where: { courseId: { in: courseIds }, status: 'success' },
+          select: { courseId: true, amount: true, paidAt: true },
+        })
+      : [];
 
-    // Monthly revenue timeline for charts
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentMonth = new Date().getMonth();
-    const revenueOverTime = [];
-    const viewsOverTime = [];
+    // Get real resource payment data
+    const resourcePayments = resourceIds.length > 0
+      ? await prisma.payment.findMany({
+          where: { resourceId: { in: resourceIds }, status: 'success' },
+          select: { resourceId: true, amount: true },
+        })
+      : [];
 
-    for (let i = 5; i >= 0; i--) {
-      const monthIdx = (currentMonth - i + 12) % 12;
-      const mName = months[monthIdx];
-      const isCurrent = i === 0;
-      const amt = isCurrent ? summary.thisMonthEarnings : i === 1 ? summary.lastMonthEarnings : Math.round(summary.totalEarnings / 6);
-      revenueOverTime.push({
-        date: mName,
-        amount: amt,
-        value: amt,
-      });
-      viewsOverTime.push({
-        date: mName,
-        views: Math.round(totalViews / 6) + (isCurrent ? 25 : 0),
-        value: Math.round(totalViews / 6) + (isCurrent ? 25 : 0),
-      });
+    // Build per-course payment stats (revenue from actual payments)
+    const coursePurchaseMap: Record<number, { purchases: number; revenue: number }> = {};
+    for (const cp of coursePayments) {
+      if (cp.courseId == null) continue;
+      if (!coursePurchaseMap[cp.courseId]) {
+        coursePurchaseMap[cp.courseId] = { purchases: 0, revenue: 0 };
+      }
+      coursePurchaseMap[cp.courseId].purchases += 1;
+      coursePurchaseMap[cp.courseId].revenue += Math.round(Number(cp.amount) * 0.85);
     }
 
+    // Build per-resource payment stats
+    const resourcePurchaseMap: Record<number, { purchases: number; revenue: number }> = {};
+    for (const rp of resourcePayments) {
+      if (rp.resourceId == null) continue;
+      if (!resourcePurchaseMap[rp.resourceId]) {
+        resourcePurchaseMap[rp.resourceId] = { purchases: 0, revenue: 0 };
+      }
+      resourcePurchaseMap[rp.resourceId].purchases += 1;
+      resourcePurchaseMap[rp.resourceId].revenue += Math.round(Number(rp.amount) * 0.85);
+    }
+
+    // Total enrollments (from enrollment table — counts free + paid enrollments)
+    const totalEnrollments = courses.reduce((acc, c) => acc + c._count.enrollments, 0);
+
+    // Total paid purchases from payment records
+    const totalCoursePurchases = coursePayments.length;
+    const totalResourcePurchases = resourcePayments.length;
+    const totalPurchases = totalCoursePurchases + totalResourcePurchases;
+
+    // Monthly revenue timeline (real data per month)
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+    const currentMonthIdx = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Group course payments by month (last 6 months)
+    const revenueByMonth: Record<string, number> = {};
+    const enrollmentsByMonth: Record<string, number> = {};
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(currentYear, currentMonthIdx - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+      revenueByMonth[key] = 0;
+      enrollmentsByMonth[key] = 0;
+    }
+
+    for (const cp of coursePayments) {
+      const d = new Date(cp.paidAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+      if (key in revenueByMonth) {
+        revenueByMonth[key] += Math.round(Number(cp.amount) * 0.85);
+        enrollmentsByMonth[key] = (enrollmentsByMonth[key] || 0) + 1;
+      }
+    }
+
+    const revenueOverTime = Object.entries(revenueByMonth).map(([key, amount]) => {
+      const [year, month] = key.split('-');
+      return { date: months[parseInt(month)], amount, value: amount };
+    });
+
+    const viewsOverTime = Object.entries(enrollmentsByMonth).map(([key, count]) => {
+      const [year, month] = key.split('-');
+      return { date: months[parseInt(month)], views: count, value: count };
+    });
+
+    // Build top courses table (sorted by enrollment count)
+    const topCourses = courses
+      .map((c) => {
+        const stats = coursePurchaseMap[c.courseId] || { purchases: 0, revenue: 0 };
+        return {
+          id: c.courseId,
+          title: c.title,
+          type: 'course',
+          enrollments: c._count.enrollments, // total enrollments (free+paid)
+          purchases: stats.purchases,          // paid purchases only
+          revenue: stats.revenue,
+          isPublished: c.isPublished,
+        };
+      })
+      .sort((a, b) => b.enrollments - a.enrollments);
+
+    // Build top resources table (sorted by purchase count)
+    const topResourcesList = resources
+      .map((r) => {
+        const stats = resourcePurchaseMap[r.resourceId] || { purchases: 0, revenue: 0 };
+        return {
+          id: r.resourceId,
+          title: r.filename,
+          type: r.fileType || 'pdf',
+          purchases: stats.purchases,
+          revenue: stats.revenue,
+        };
+      })
+      .sort((a, b) => b.purchases - a.purchases)
+      .slice(0, 5);
+
     return {
-      views: totalViews,
-      totalViews,
+      // KPI numbers
+      views: totalEnrollments,
+      totalViews: totalEnrollments,
+      totalEnrollments,
       earnings: summary.totalEarnings,
       totalRevenue: Math.round(summary.totalEarnings / 0.85),
-      students: totalPurchases,
+      totalEarnings: summary.totalEarnings,
+      thisMonthEarnings: summary.thisMonthEarnings,
+      lastMonthEarnings: summary.lastMonthEarnings,
+      students: totalEnrollments,
       totalPurchases,
+      totalCoursePurchases,
       rating: avgRating,
       averageRating: avgRating,
-      conversionRate: totalViews > 0 ? Number(((totalPurchases / totalViews) * 100).toFixed(1)) : 4.2,
+      conversionRate: totalEnrollments > 0 ? Number(((totalPurchases / totalEnrollments) * 100).toFixed(1)) : 0,
+
+      // Charts
       revenueOverTime,
       revenueByMonth: revenueOverTime.map((r) => ({ month: r.date, amount: r.amount })),
       viewsOverTime,
-      popularResources: resources.slice(0, 5).map((r) => ({
-        id: r.resourceId,
-        title: r.filename,
-        type: r.fileType || 'pdf',
-        views: 45,
-        purchases: 8,
-        price: Number(r.price),
+
+      // Top courses table (NEW — course-level analytics)
+      topCourses,
+
+      // Top resources table (standalone PDF/resource sales)
+      popularResources: topResourcesList.map((r) => ({
+        id: r.id,
+        title: r.title,
+        type: r.type,
+        views: r.purchases,
+        purchases: r.purchases,
+        price: Number(resources.find((res) => res.resourceId === r.id)?.price || 0),
       })),
-      topResources: resources.slice(0, 5).map((r) => ({
-        resource: { id: r.resourceId, title: r.filename, type: r.fileType || 'pdf' },
-        views: 45,
-        purchases: 8,
-        revenue: Math.round(Number(r.price) * 8 * 0.85),
+      topResources: topResourcesList.map((r) => ({
+        resource: { id: r.id, title: r.title, type: r.type },
+        purchases: r.purchases,
+        revenue: r.revenue,
       })),
     };
   },

@@ -13,12 +13,12 @@ export const enrollmentsService = {
     if (!course) throw new NotFoundError('Course');
     if (!course.isPublished) throw new BadRequestError('Course is not available for enrollment');
 
-    // No duplicate active enrollment
+    // If already enrolled, return existing enrollment
     const existing = await prisma.enrollment.findUnique({
       where: { studentId_courseId: { studentId, courseId } },
     });
     if (existing && existing.status === 'active') {
-      throw new ConflictError('You are already enrolled in this course');
+      return existing;
     }
 
     // Use transaction: create enrollment + payment record if priced

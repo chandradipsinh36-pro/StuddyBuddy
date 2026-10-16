@@ -544,12 +544,6 @@ export const StudentVideoPlayer: React.FC<StudentVideoPlayerProps> = ({
         <div className={styles.videoTitle} title={title}>
           {title || 'Lecture Video'}
         </div>
-        {isStudentSide && (
-          <div className={styles.studentBadge}>
-            <Shield size={12} color="#60A5FA" />
-            <span>Focus Mode</span>
-          </div>
-        )}
       </div>
 
       {/* 3. Transparent Click Surface */}

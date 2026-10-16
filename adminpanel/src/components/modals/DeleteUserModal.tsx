@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ConfirmModal } from '../common/ConfirmModal';
 import { Avatar } from '../common/Avatar';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import type { User } from '../../types/admin';
 
 interface DeleteUserModalProps {
@@ -16,13 +17,20 @@ export const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const { adminUser } = useAdminAuth();
   const [confirmed, setConfirmed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   if (!user) return null;
 
+  const isSelf = Boolean(adminUser && adminUser.id === user.id);
+
   const handleSubmit = async () => {
+    if (isSelf) {
+      setError('Administrators cannot delete their own account.');
+      return;
+    }
     if (!confirmed) {
       setError('You must check the confirmation box to proceed with deletion.');
       return;
@@ -34,7 +42,7 @@ export const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
       setConfirmed(false);
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to delete user.');
+      setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Failed to delete user.');
     } finally {
       setIsLoading(false);
     }
@@ -55,9 +63,24 @@ export const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
       confirmText="Delete Account Permanently"
       cancelText="Cancel"
       isLoading={isLoading}
-      isConfirmDisabled={!confirmed}
+      isConfirmDisabled={isSelf || !confirmed}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        {isSelf && (
+          <div
+            style={{
+              padding: 'var(--space-3) var(--space-4)',
+              backgroundColor: '#FEF3C7',
+              border: '1px solid #F59E0B',
+              borderRadius: 'var(--radius-lg)',
+              fontSize: 'var(--font-size-xs)',
+              color: '#92400E',
+              fontWeight: 500,
+            }}
+          >
+            ⚠️ You are logged into this account (#{user.id}). Administrators cannot delete their own account.
+          </div>
+        )}
         {/* User Card */}
         <div
           style={{
